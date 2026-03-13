@@ -163,13 +163,8 @@
 <div class="card">
     <div class="table-header">
         <h2 style="margin:0; color:var(--primary);">📋 Kayıtlı Müşteri Cihazları</h2>
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            <select class="filter-select" id="firmaFiltre" onchange="listele()">
-                <option value="">Tüm Firmalar</option>
-            </select>
-            <div class="search-box">
-                <input type="text" id="araInput" onkeyup="tabloAra()" placeholder="Cihaz adı, seri no ara...">
-            </div>
+        <div class="search-box" style="width:320px;">
+            <input type="text" id="araInput" onkeyup="tabloAra()" placeholder="Firma, cihaz adı, seri no ara...">
         </div>
     </div>
     <table>
@@ -252,11 +247,6 @@
         mSel.innerHTML = '<option value="">Firma seçin...</option>' +
             data.musteriler.map(m => `<option value="${m.id}">${m.firma_adi}</option>`).join('');
 
-        // Firma filtre
-        const fFiltre = document.getElementById("firmaFiltre");
-        fFiltre.innerHTML = '<option value="">Tüm Firmalar</option>' +
-            data.musteriler.map(m => `<option value="${m.id}">${m.firma_adi}</option>`).join('');
-
         // Kategori select
         const kSel = document.getElementById("kategori_id");
         kSel.innerHTML = '<option value="">Kategori seçin...</option>' +
@@ -275,11 +265,9 @@
 
     // ── LİSTELE ──
     async function listele() {
-        const firmaId = document.getElementById("firmaFiltre").value;
         const res = await fetch('/api/musteri-cihazlari');
         tumCihazlar = await res.json();
-        const filtered = firmaId ? tumCihazlar.filter(c => c.musteri_id == firmaId) : tumCihazlar;
-        renderTablo(filtered);
+        renderTablo(tumCihazlar);
     }
 
     function renderTablo(data) {
@@ -397,16 +385,14 @@
     // ── ARAMA ──
     function tabloAra() {
         const filter = document.getElementById("araInput").value.toUpperCase();
-        const firmaId = document.getElementById("firmaFiltre").value;
-        let data = firmaId ? tumCihazlar.filter(c => c.musteri_id == firmaId) : tumCihazlar;
-        if (filter) {
-            data = data.filter(c =>
-                (c.cihaz_adi || '').toUpperCase().includes(filter) ||
-                (c.seri_no || '').toUpperCase().includes(filter) ||
-                (c.envanter_no || '').toUpperCase().includes(filter) ||
-                (c.marka || '').toUpperCase().includes(filter)
-            );
-        }
+        if (!filter) { renderTablo(tumCihazlar); return; }
+        const data = tumCihazlar.filter(c =>
+            (c.firma_adi || '').toUpperCase().includes(filter) ||
+            (c.cihaz_adi || '').toUpperCase().includes(filter) ||
+            (c.seri_no || '').toUpperCase().includes(filter) ||
+            (c.envanter_no || '').toUpperCase().includes(filter) ||
+            (c.marka || '').toUpperCase().includes(filter)
+        );
         renderTablo(data);
     }
 
