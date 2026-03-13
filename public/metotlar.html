@@ -86,6 +86,7 @@
                         <th>Metot Adı</th>
                         <th>Bağlı Talimatlar</th>
                         <th>Referanslar (SKT)</th>
+                        <th>İşlem</th>
                     </tr>
                 </thead>
                 <tbody id="metotListe"></tbody>
@@ -96,7 +97,34 @@
     <script>
         async function baslat() {
             yardimciVerileriYukle();
-            // metotlariYukle(); // Liste API'si hazır olduğunda açılabilir
+            metotlariYukle();
+        }
+
+        async function metotlariYukle() {
+            try {
+                const res = await fetch('/api/metotlar');
+                const metotlar = await res.json();
+                const tbody = document.getElementById("metotListe");
+                if (metotlar.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:20px;">Henüz metot eklenmedi.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = metotlar.map(m => `
+                    <tr>
+                        <td><strong>${m.metot_kodu}</strong></td>
+                        <td>${m.metot_adi}</td>
+                        <td>${(m.talimat_detay || []).map(t => `<span class="badge">${t.talimat_kodu}</span>`).join('')}</td>
+                        <td>${(m.referans_detay || []).map(r => `<span class="badge">${r.cihaz_adi}</span>`).join('')}</td>
+                        <td><button onclick="metotSil(${m.id})" style="background:#fee2e2;color:#dc2626;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:0.8rem;">🗑️ Sil</button></td>
+                    </tr>
+                `).join('');
+            } catch (err) { console.error("Liste yükleme hatası:", err); }
+        }
+
+        async function metotSil(id) {
+            if (!confirm("Bu metodu silmek istediğinize emin misiniz?")) return;
+            const res = await fetch(`/api/metotlar/${id}`, { method: 'DELETE' });
+            if (res.ok) metotlariYukle();
         }
 
         async function yardimciVerileriYukle() {
@@ -165,6 +193,7 @@
             if(res.ok) {
                 document.getElementById("success-msg").style.display = "block";
                 document.getElementById("metotForm").reset();
+                metotlariYukle();
                 setTimeout(() => document.getElementById("success-msg").style.display = "none", 3000);
             }
         };

@@ -269,6 +269,55 @@ app.get('/api/metot-yardimci-veriler', async (req, res) => {
 });
 
 
+// --- KALİBRASYON METOTLARI API ---
+
+// LİSTELE
+app.get('/api/metotlar', async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT km.*, 
+                COALESCE(
+                    (SELECT json_agg(json_build_object('id', t.id, 'talimat_kodu', t.talimat_kodu, 'talimat_adi', t.talimat_adi))
+                     FROM talimatlar t WHERE t.id = ANY(km.talimatlar)), '[]'
+                ) as talimat_detay,
+                COALESCE(
+                    (SELECT json_agg(json_build_object('id', rc.id, 'cihaz_adi', rc.cihaz_adi, 'seri_no', rc.seri_no))
+                     FROM referans_cihazlar rc WHERE rc.id = ANY(km.referanslar)), '[]'
+                ) as referans_detay
+            FROM kalibrasyon_metotlari km
+            ORDER BY km.id DESC
+        `);
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// KAYDET
+app.post('/api/metotlar', async (req, res) => {
+    try {
+        const { metot_adi, metot_kodu, talimatlar, referanslar } = req.body;
+        const result = await pool.query(
+            `INSERT INTO kalibrasyon_metotlari (metot_adi, metot_kodu, talimatlar, referanslar)
+             VALUES ($1, $2, $3, $4) RETURNING *`,
+            [metot_adi, metot_kodu, talimatlar.map(Number), referanslar.map(Number)]
+        );
+        res.json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// SİL
+app.delete('/api/metotlar/:id', async (req, res) => {
+    try {
+        await pool.query('DELETE FROM kalibrasyon_metotlari WHERE id=$1', [req.params.id]);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`🚀 Sunucu ${PORT} portunda başarıyla ayağa kalktı.`);
 });
