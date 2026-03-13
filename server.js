@@ -4,7 +4,7 @@ const { Pool } = require('pg');
 const path = require('path');
 const cors = require('cors');
 
-const app = express();
+const app = express(); // İŞTE HATAYA SEBEP OLAN EKSİK SATIR BUYDU!
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
@@ -480,6 +480,9 @@ app.delete('/api/metotlar/:id', async (req, res) => {
     }
 });
 
+app.listen(PORT, () => {
+    console.log(`🚀 Sunucu ${PORT} portunda başarıyla ayağa kalktı.`);
+});
 // --- MÜŞTERİ CİHAZLARI API ---
 
 app.get('/api/musteri-cihazlari-on-veriler', async (req, res) => {
@@ -567,13 +570,9 @@ app.post('/api/ayarlar', async (req, res) => {
 app.get('/api/is-emirleri-on-veriler', async (req, res) => {
     try {
         const musteriler = await pool.query('SELECT id, firma_adi, sube_adi FROM musteriler ORDER BY firma_adi');
-        // KATEGORİ HATASI GİDERİLDİ! Artık sadece id ve cihaz_adi çekiliyor:
-        const cihazKutuphanesi = await pool.query('SELECT id, cihaz_adi FROM cihaz_kutuphanesi ORDER BY cihaz_adi');
+        const cihazKutuphanesi = await pool.query('SELECT id, cihaz_adi, kategori FROM cihaz_kutuphanesi ORDER BY cihaz_adi');
         res.json({ musteriler: musteriler.rows, cihazlar: cihazKutuphanesi.rows });
-    } catch (err) { 
-        console.error("İş Emirleri API Hatası:", err.message);
-        res.status(500).json({ error: err.message }); 
-    }
+    } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.get('/api/is-emirleri', async (req, res) => {
@@ -634,114 +633,76 @@ app.delete('/api/is-emirleri/:id', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// --- YENİ EKLENEN OPERASYON API: TEKİL CİHAZ İŞLEM KAYDI ---
-app.put('/api/is-emirleri/:id/cihaz-islem', async (req, res) => {
+// --- DASHBOARD İSTATİSTİKLERİ ---
+app.get('/api/dashboard', async (req, res) => {
     try {
-        const { cihaz_index, personel, metot_id, sicaklik, nem, sertifika_asamasi } = req.body;
-        
-        // 1. İş emrini bul
-        const { rows } = await pool.query('SELECT cihazlar FROM is_emirleri WHERE id = $1', [req.params.id]);
-        if (rows.length === 0) return res.status(404).json({ error: "İş emri bulunamadı" });
-        
-        let cihazlar = rows[0].cihazlar;
-        if (typeof cihazlar === 'string') cihazlar = JSON.parse(cihazlar);
-
-        // 2. Sadece ilgili cihazın verilerini güncelle
-        cihazlar[cihaz_index] = {
-            ...cihazlar[cihaz_index],
-            islem_durumu: sertifika_asamasi,
-            kalibrasyon_verileri: { personel, metot_id, sicaklik, nem, islem_tarihi: new Date() }
-        };
-
-        // 3. Güncel listeyi kaydet
-        const result = await pool.query('UPDATE is_emirleri SET cihazlar = $1 WHERE id = $2 RETURNING *', [JSON.stringify(cihazlar), req.params.id]);
-        res.json(result.rows[0]);
-    } catch (err) { 
-        res.status(500).json({ error: err.message }); 
-    }
+        const [kabulEdilenler, hazırlananlar, tamamlananlar, buYil, musteriler, referanslar] = await Promise.all([
+            pool.query(`SELECT COUNT(*) FROM is_emirleri WHERE asama='kabul_edildi'`),
+            pool.query(`SELECT COUNT(*) FROM is_emirleri WHERE asama IN ('hazırlanıyor','tamamlandı','imzalandı')`),
+            pool.query(`SELECT COUNT(*) FROM is_emirleri WHERE asama='onaylandı' OR asama='sertifika_gönderildi'`),
+            pool.query(`SELECT COUNT(*) FROM is_emirleri WHERE EXTRACT(YEAR FROM olusturulma)=EXTRACT(YEAR FROM NOW()) AND asama='sertifika_gönderildi'`),
+            pool.query(`SELECT COUNT(*) FROM musteriler`),
+            pool.query(`
+                SELECT rc.cihaz_adi, rc.seri_no, rt.sonraki_kal_tarihi, rt.islem_tipi,
+                    (rt.sonraki_kal_tarihi - CURRENT_DATE) as kalan_gun
+                FROM referans_cihazlar rc
+                JOIN (
+                    SELECT DISTINCT ON (referans_id) referans_id, sonraki_kal_tarihi, islem_tipi
+                    FROM referans_takip ORDER BY referans_id, kal_tarihi DESC
+                ) rt ON rc.id = rt.referans_id
+                WHERE rt.sonraki_kal_tarihi <= CURRENT_DATE + INTERVAL '60 days'
+                ORDER BY rt.sonraki_kal_tarihi ASC
+                LIMIT 10`)
+        ]);
+        res.json({
+            kabul_edildi: parseInt(kabulEdilenler.rows[0].count),
+            kalibrasyonda: parseInt(hazırlananlar.rows[0].count),
+            onay_bekleyen: parseInt(tamamlananlar.rows[0].count),
+            bu_yil: parseInt(buYil.rows[0].count),
+            musteri_sayisi: parseInt(musteriler.rows[0].count),
+            yaklasan_aktiviteler: referanslar.rows
+        });
+    } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-
-// --- PERSONEL YÖNETİMİ API ---
-app.get('/api/personeller', async (req, res) => {
+// --- TAKVİM ---
+app.get('/api/takvim', async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM personeller ORDER BY id DESC');
+        const result = await pool.query(`
+            SELECT t.*, p.ad_soyad as atanan_adi
+            FROM takvim t
+            LEFT JOIN personeller p ON t.atanan_id = p.id
+            ORDER BY t.baslangic ASC`);
         res.json(result.rows);
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.post('/api/personeller', async (req, res) => {
+app.post('/api/takvim', async (req, res) => {
     try {
-        const { ad_soyad, kullanici_adi, sifre, roller, erisimler, varsayilan_onaylayici } = req.body;
-        
-        // Eğer bu kişi varsayılan onaylayıcı yapıldıysa, diğer herkesin varsayılanlığını kaldır
-        if (varsayilan_onaylayici) {
-            await pool.query('UPDATE personeller SET varsayilan_onaylayici = false');
-        }
-
-        const query = `
-            INSERT INTO personeller (ad_soyad, kullanici_adi, sifre, roller, erisimler, varsayilan_onaylayici) 
-            VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`;
-        const result = await pool.query(query, [ad_soyad, kullanici_adi, sifre, JSON.stringify(roller), JSON.stringify(erisimler), varsayilan_onaylayici]);
+        const { baslik, aciklama, baslangic, bitis, atanan_id, renk, tip } = req.body;
+        const result = await pool.query(
+            `INSERT INTO takvim (baslik, aciklama, baslangic, bitis, atanan_id, renk, tip, olusturan_id)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+            [baslik, aciklama||'', baslangic, bitis||baslangic, atanan_id||null, renk||'#1E40AF', tip||'genel', null]
+        );
         res.json(result.rows[0]);
-    } catch (err) { 
-        if (err.code === '23505') return res.status(400).json({ error: "Bu kullanıcı adı zaten kullanılıyor!" });
-        res.status(500).json({ error: err.message }); 
-    }
-});
-
-app.delete('/api/personeller/:id', async (req, res) => {
-    try {
-        await pool.query('DELETE FROM personeller WHERE id=$1', [req.params.id]);
-        res.json({ success: true });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Personel Güncelleme (PUT)
-app.put('/api/personeller/:id', async (req, res) => {
+app.put('/api/takvim/:id', async (req, res) => {
     try {
-        const { ad_soyad, kullanici_adi, sifre, roller, erisimler, varsayilan_onaylayici } = req.body;
-        
-        if (varsayilan_onaylayici) {
-            await pool.query('UPDATE personeller SET varsayilan_onaylayici = false');
-        }
-
-        const query = `
-            UPDATE personeller 
-            SET ad_soyad=$1, kullanici_adi=$2, sifre=$3, roller=$4, erisimler=$5, varsayilan_onaylayici=$6
-            WHERE id=$7 RETURNING *`;
-        const result = await pool.query(query, [ad_soyad, kullanici_adi, sifre, JSON.stringify(roller), JSON.stringify(erisimler), varsayilan_onaylayici, req.params.id]);
-        res.json(result.rows[0]);
-    } catch (err) { 
-        if (err.code === '23505') return res.status(400).json({ error: "Bu kullanıcı adı zaten kullanılıyor!" });
-        res.status(500).json({ error: err.message }); 
-    }
-});
-
-// --- GİRİŞ (LOGIN) API ---
-app.post('/api/login', async (req, res) => {
-    try {
-        const { kullanici_adi, sifre } = req.body;
-        
-        // Veritabanında bu kullanıcı adı ve şifreyle eşleşen biri var mı bakıyoruz
+        const { baslik, aciklama, baslangic, bitis, atanan_id, renk, tip } = req.body;
         const result = await pool.query(
-            'SELECT id, ad_soyad, kullanici_adi, roller, erisimler FROM personeller WHERE kullanici_adi = $1 AND sifre = $2',
-            [kullanici_adi, sifre]
+            `UPDATE takvim SET baslik=$1, aciklama=$2, baslangic=$3, bitis=$4, atanan_id=$5, renk=$6, tip=$7 WHERE id=$8 RETURNING *`,
+            [baslik, aciklama||'', baslangic, bitis||baslangic, atanan_id||null, renk||'#1E40AF', tip||'genel', req.params.id]
         );
-
-        if (result.rows.length > 0) {
-            // Kullanıcı bulundu! Şifre hariç bilgileri frontend'e gönder
-            res.json({ success: true, user: result.rows[0] });
-        } else {
-            // Kullanıcı bulunamadı veya şifre yanlış
-            res.status(401).json({ success: false, error: "Kullanıcı adı veya şifre hatalı!" });
-        }
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+        res.json(result.rows[0]);
+    } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-
-app.listen(PORT, () => {
-    console.log(`🚀 Sunucu ${PORT} portunda başarıyla ayağa kalktı.`);
+app.delete('/api/takvim/:id', async (req, res) => {
+    try {
+        await pool.query('DELETE FROM takvim WHERE id=$1', [req.params.id]);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
 });
