@@ -5,145 +5,99 @@
     <title>Referans Cihaz Yönetimi</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #1E40AF; --border: #e2e8f0; --bg: #f8fafc; --accent: #4338ca; --success: #10B981; }
+        :root { --primary: #1E40AF; --border: #e2e8f0; --bg: #f8fafc; --accent: #4338ca; --success: #10B981; --warning: #f59e0b; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); padding: 20px; color: #334155; }
         .card { background: #fff; padding: 25px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
         
-        /* Bildirim Paneli */
-        #success-msg { display: none; background: #dcfce7; color: #166534; padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: center; font-weight: 600; border: 1px solid #bbf7d0; animation: fadeIn 0.3s; }
-
+        .btn { padding: 10px 15px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; transition: 0.2s; }
+        .btn-primary { background: var(--primary); color: white; width: 100%; }
+        .btn-kal { background: var(--success); color: white; font-size: 0.75rem; }
+        .btn-ara { background: var(--warning); color: white; font-size: 0.75rem; }
+        
         .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 15px; }
         label { display: block; font-size: 0.8rem; font-weight: 600; color: #64748b; margin-bottom: 5px; }
-        input, select, textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; font-family: inherit; font-size: 0.9rem; }
-        input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1); }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; font-family: inherit; }
         
-        .btn { background: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; width: 100%; transition: 0.2s; }
-        .btn:hover { background: #1e3a8a; transform: translateY(-1px); }
-        .btn:disabled { background: #94a3b8; cursor: not-allowed; }
-
-        .table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 15px; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-        th { background: #f8fafc; text-align: left; padding: 12px; border-bottom: 2px solid var(--border); color: #64748b; }
-        td { padding: 12px; border-bottom: 1px solid var(--border); }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { background: #f8fafc; text-align: left; padding: 12px; border-bottom: 2px solid var(--border); color: #64748b; font-size: 0.85rem; }
+        td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
         
-        .code-badge { background: #e0e7ff; color: #4338ca; padding: 4px 8px; border-radius: 4px; font-weight: 700; font-family: monospace; }
-        #historySection { display: none; border-top: 4px solid var(--accent); background: #f0f7ff; }
-        .status-red { color: #dc2626; font-weight: bold; }
-        .status-green { color: #16a34a; font-weight: bold; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .history-row { background: #f8fafc; display: none; }
+        .history-container { padding: 15px; border: 1px dashed #cbd5e1; border-radius: 8px; margin: 10px; background: white; }
+        
+        .action-panel { display: none; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); background: #fff; border-left: 6px solid var(--primary); }
+        .status-badge { padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
     </style>
 </head>
 <body>
 
-    <div id="success-msg">✅ İşlem başarıyla gerçekleştirildi!</div>
+    <div id="success-msg" style="display:none; background:#dcfce7; color:#166534; padding:15px; border-radius:8px; margin-bottom:15px; text-align:center; font-weight:600;">✅ İşlem başarıyla kaydedildi!</div>
 
     <div class="card">
-        <h2 style="margin-top:0; color: var(--primary);">🛠️ Yeni Referans Cihaz Tanımla</h2>
+        <h2 style="margin-top:0; color: var(--primary);">🛠️ Referans Cihaz Tanımlama</h2>
         <form id="refForm" onsubmit="kaydetReferans(event)">
             <div class="form-grid">
-                <div>
-                    <label>Kategori</label>
-                    <select id="kategoriSelect" required><option value="">Yükleniyor...</option></select>
-                </div>
-                <div>
-                    <label>Cihaz Adı</label>
-                    <input type="text" id="cihaz_adi" required placeholder="Örn: Referans Manometre">
-                </div>
-                <div>
-                    <label>Marka</label>
-                    <input type="text" id="marka" placeholder="Örn: Wika">
-                </div>
-                <div>
-                    <label>Model</label>
-                    <input type="text" id="model" placeholder="Örn: 213.53">
-                </div>
-                <div>
-                    <label>Seri No</label>
-                    <input type="text" id="seri_no" required>
-                </div>
-                <div>
-                    <label>Envanter No</label>
-                    <input type="text" id="envanter_no">
-                </div>
-                <div style="grid-column: span 2;">
-                    <label>Ölçüm Aralığı</label>
-                    <input type="text" id="olcme_araligi" placeholder="Örn: 0-600 Bar">
-                </div>
+                <div><label>Kategori</label><select id="kategoriSelect" required><option value="">Yükleniyor...</option></select></div>
+                <div><label>Cihaz Adı</label><input type="text" id="cihaz_adi" required></div>
+                <div><label>Marka</label><input type="text" id="marka"></div>
+                <div><label>Model</label><input type="text" id="model"></div>
+                <div><label>Seri No</label><input type="text" id="seri_no" required></div>
+                <div><label>Ölçüm Aralığı</label><input type="text" id="olcme_araligi" placeholder="Örn: 0-100 bar"></div>
             </div>
             <div class="form-grid">
-                <div style="grid-column: span 2;">
-                    <label>Kalibrasyon Kriteri</label>
-                    <textarea id="kal_kriteri" rows="2" placeholder="Kabul kriterleri veya standart referansı..."></textarea>
-                </div>
-                <div style="grid-column: span 2;">
-                    <label>Ara Kontrol Kriteri</label>
-                    <textarea id="ara_kriteri" rows="2" placeholder="Ara kontrol sıklığı ve yöntemi..."></textarea>
-                </div>
+                <div style="grid-column: span 2;"><label>Kalibrasyon Kriteri</label><textarea id="kal_kriteri" rows="2"></textarea></div>
+                <div style="grid-column: span 2;"><label>Ara Kontrol Kriteri</label><textarea id="ara_kriteri" rows="2"></textarea></div>
             </div>
-            <button type="submit" id="refBtn" class="btn">🚀 Referansı Kaydet</button>
+            <button type="submit" class="btn btn-primary">🚀 Cihazı Envantere Kaydet</button>
+        </form>
+    </div>
+
+    <div id="panelKal" class="action-panel" style="border-color: var(--success);">
+        <h3 style="color:var(--success); margin-top:0;">📜 Yeni Kalibrasyon Kaydı</h3>
+        <p id="kalBaslik" style="font-weight:700; color:#1e293b;"></p>
+        <form onsubmit="kaydetDinamik(event, 'KAL')">
+            <input type="hidden" id="kal_ref_id">
+            <div class="form-grid">
+                <div><label>Sertifika No</label><input type="text" id="kal_sertifika" required></div>
+                <div><label>İzlenebilirlik</label><input type="text" id="izlenebilirlik"></div>
+                <div><label>Kal. Tarihi</label><input type="date" id="kal_tarihi" required></div>
+                <div><label>Gelecek Kal. Tarihi</label><input type="date" id="kal_sonraki" required></div>
+            </div>
+            <button type="submit" class="btn btn-kal" style="width:100%; font-size:1rem;">💾 Kalibrasyon Verisini Kaydet</button>
+        </form>
+    </div>
+
+    <div id="panelAra" class="action-panel" style="border-color: var(--warning);">
+        <h3 style="color:var(--warning); margin-top:0;">🔍 Yeni Ara Kontrol Kaydı</h3>
+        <p id="araBaslik" style="font-weight:700; color:#1e293b;"></p>
+        <form onsubmit="kaydetDinamik(event, 'ARA')">
+            <input type="hidden" id="ara_ref_id">
+            <div class="form-grid">
+                <div><label>Ara Kontrol No</label><input type="text" id="ara_no" required></div>
+                <div><label>Kontrol Tarihi</label><input type="date" id="ara_tarihi" required></div>
+                <div><label>Gelecek Kontrol Tarihi</label><input type="date" id="ara_sonraki" required></div>
+            </div>
+            <button type="submit" class="btn" style="width:100%; font-size:1rem; background:var(--warning); color:white;">💾 Ara Kontrol Verisini Kaydet</button>
         </form>
     </div>
 
     <div class="card">
-        <div class="table-header">
-            <h2 style="margin:0; color: var(--primary);">📚 Referans Envanteri</h2>
-            <input type="text" id="refAra" onkeyup="tabloAra()" placeholder="Seri no veya ad ara..." style="width:300px; padding:10px; border-radius:8px; border:1px solid var(--border);">
-        </div>
+        <h2 style="margin-top:0; color: var(--primary);">📚 Referans Listesi</h2>
         <table id="refTablo">
             <thead>
                 <tr>
                     <th>Seri No</th>
-                    <th>Cihaz Adı</th>
-                    <th>Marka/Model</th>
-                    <th>Gelecek Kal.</th>
-                    <th>İşlem</th>
+                    <th>Cihaz Bilgisi</th>
+                    <th>Ölçüm Aralığı</th>
+                    <th>İşlemler</th>
                 </tr>
             </thead>
             <tbody id="refListe"></tbody>
         </table>
     </div>
 
-    <div id="historySection" class="card">
-        <h3 id="selectedDeviceTitle" style="color: var(--accent); margin-top:0;">--</h3>
-        <form id="historyForm" onsubmit="kaydetTakip(event)">
-            <input type="hidden" id="selected_ref_id">
-            <div class="form-grid">
-                <div>
-                    <label>Sertifika No</label>
-                    <input type="text" id="sertifika_no" required>
-                </div>
-                <div>
-                    <label>İzlenebilirlik</label>
-                    <input type="text" id="izlenebilirlik">
-                </div>
-                <div>
-                    <label>Kal. Tarihi</label>
-                    <input type="date" id="kal_tarihi" required>
-                </div>
-                <div>
-                    <label>Sonraki Kal. Tarihi</label>
-                    <input type="date" id="sonraki_kal" required>
-                </div>
-                <div>
-                    <label>Ara Kontrol Tarihi</label>
-                    <input type="date" id="ara_tarihi">
-                </div>
-                <div>
-                    <label>Sonraki Ara Kontrol</label>
-                    <input type="date" id="sonraki_ara">
-                </div>
-            </div>
-            <button type="submit" id="takipBtn" class="btn" style="background:var(--accent);">💾 Dönem Verilerini Güncelle</button>
-        </form>
-    </div>
-
     <script>
-        function bildirimGoster() {
-            const msg = document.getElementById("success-msg");
-            msg.style.display = "block";
-            setTimeout(() => { msg.style.display = "none"; }, 3000);
-        }
-
+        // Sayfa Başlangıç
         async function sayfaYukle() {
             kategoriYukle();
             referansYukle();
@@ -162,92 +116,104 @@
             const data = await res.json();
             const tbody = document.getElementById("refListe");
             tbody.innerHTML = data.map(r => `
-                <tr>
-                    <td><b class="code-badge">${r.seri_no}</b></td>
-                    <td>${r.cihaz_adi}</td>
-                    <td>${r.marka || ''} ${r.model || ''}</td>
-                    <td class="${isLate(r.sonraki_kal_tarihi) ? 'status-red' : 'status-green'}">
-                        ${r.sonraki_kal_tarihi ? new Date(r.sonraki_kal_tarihi).toLocaleDateString('tr-TR') : 'Kayıt Yok'}
+                <tr onclick="tarihceGoster(${r.id})" style="cursor:pointer;">
+                    <td><b style="color:var(--accent)">${r.seri_no}</b></td>
+                    <td>${r.cihaz_adi} <br> <small style="color:#64748b">${r.marka} / ${r.model}</small></td>
+                    <td>${r.olcme_araligi || '-'}</td>
+                    <td>
+                        <button class="btn btn-kal" onclick="event.stopPropagation(); panelAc('KAL', ${r.id}, '${r.cihaz_adi} - ${r.seri_no}')">Kalibrasyon</button>
+                        <button class="btn btn-ara" onclick="event.stopPropagation(); panelAc('ARA', ${r.id}, '${r.cihaz_adi} - ${r.seri_no}')">Ara Kontrol</button>
                     </td>
-                    <td><button class="btn btn-sm btn-history" style="width:auto;" onclick="gecmisAc(${r.id}, '${r.cihaz_adi} - ${r.seri_no}')">🗓️ Takip</button></td>
+                </tr>
+                <tr id="tarihce-${r.id}" class="history-row">
+                    <td colspan="4">
+                        <div class="history-container" id="details-${r.id}">Yükleniyor...</div>
+                    </td>
                 </tr>
             `).join('');
         }
 
-        function isLate(date) {
-            if(!date) return false;
-            return new Date(date) < new Date();
+        function panelAc(tip, id, ad) {
+            document.getElementById("panelKal").style.display = "none";
+            document.getElementById("panelAra").style.display = "none";
+            if(tip === 'KAL') {
+                document.getElementById("panelKal").style.display = "block";
+                document.getElementById("kal_ref_id").value = id;
+                document.getElementById("kalBaslik").innerText = ad;
+            } else {
+                document.getElementById("panelAra").style.display = "block";
+                document.getElementById("ara_ref_id").value = id;
+                document.getElementById("araBaslik").innerText = ad;
+            }
+            window.scrollTo({top: 0, behavior: 'smooth'});
         }
 
-        function gecmisAc(id, title) {
-            document.getElementById("historySection").style.display = "block";
-            document.getElementById("selected_ref_id").value = id;
-            document.getElementById("selectedDeviceTitle").innerText = "Takip Verileri: " + title;
-            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        async function tarihceGoster(id) {
+            const row = document.getElementById(`tarihce-${id}`);
+            const detailDiv = document.getElementById(`details-${id}`);
+            if(row.style.display === "table-row") { row.style.display = "none"; return; }
+            row.style.display = "table-row";
+            
+            const res = await fetch(`/api/referans-tarihce/${id}`);
+            const data = await res.json();
+            
+            detailDiv.innerHTML = data.length > 0 ? `
+                <table style="background:white; border-radius:8px; border:1px solid #e2e8f0;">
+                    <tr style="font-size:0.75rem; color:#64748b;"><th>İşlem</th><th>No</th><th>Tarih</th><th>Gelecek Tarih</th></tr>
+                    ${data.map(d => `
+                        <tr>
+                            <td><span class="status-badge" style="background:${d.sertifika_no.startsWith('ARA') ? '#fef3c7' : '#dcfce7'}">${d.sertifika_no.startsWith('ARA') ? 'ARA KONTROL' : 'KALİBRASYON'}</span></td>
+                            <td>${d.sertifika_no}</td>
+                            <td>${new Date(d.kal_tarihi).toLocaleDateString('tr-TR')}</td>
+                            <td>${new Date(d.sonraki_kal_tarihi).toLocaleDateString('tr-TR')}</td>
+                        </tr>
+                    `).join('')}
+                </table>` : "Bu cihaza ait geçmiş kayıt bulunamadı.";
         }
 
         async function kaydetReferans(e) {
             e.preventDefault();
-            const btn = document.getElementById("refBtn");
-            btn.disabled = true; btn.innerText = "Kaydediliyor...";
-
             const payload = {
                 kategori_id: document.getElementById("kategoriSelect").value,
                 cihaz_adi: document.getElementById("cihaz_adi").value,
                 marka: document.getElementById("marka").value,
                 model: document.getElementById("model").value,
                 seri_no: document.getElementById("seri_no").value,
-                envanter_no: document.getElementById("envanter_no").value,
                 olcme_araligi: document.getElementById("olcme_araligi").value,
                 kalibrasyon_kriteri: document.getElementById("kal_kriteri").value,
                 ara_kontrol_kriteri: document.getElementById("ara_kriteri").value
             };
-
             const res = await fetch('/api/referans-cihazlar', {
                 method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(payload)
             });
-
             if(res.ok) { 
-                bildirimGoster();
-                document.getElementById("refForm").reset();
-                referansYukle(); 
+                document.getElementById("success-msg").style.display = "block";
+                setTimeout(() => location.reload(), 2000);
             }
-            btn.disabled = false; btn.innerText = "🚀 Referansı Kaydet";
         }
 
-        async function kaydetTakip(e) {
+        async function kaydetDinamik(e, tip) {
             e.preventDefault();
-            const btn = document.getElementById("takipBtn");
-            btn.disabled = true;
-
-            const payload = {
-                referans_id: document.getElementById("selected_ref_id").value,
-                sertifika_no: document.getElementById("sertifika_no").value,
+            const payload = tip === 'KAL' ? {
+                referans_id: document.getElementById("kal_ref_id").value,
+                sertifika_no: document.getElementById("kal_sertifika").value,
                 izlenebilirlik: document.getElementById("izlenebilirlik").value,
                 kal_tarihi: document.getElementById("kal_tarihi").value,
-                sonraki_kal_tarihi: document.getElementById("sonraki_kal").value,
-                ara_kontrol_tarihi: document.getElementById("ara_tarihi").value,
-                sonraki_ara_kontrol_tarihi: document.getElementById("sonraki_ara").value
+                sonraki_kal_tarihi: document.getElementById("kal_sonraki").value
+            } : {
+                referans_id: document.getElementById("ara_ref_id").value,
+                sertifika_no: document.getElementById("ara_no").value,
+                kal_tarihi: document.getElementById("ara_tarihi").value,
+                sonraki_kal_tarihi: document.getElementById("ara_sonraki").value
             };
             const res = await fetch('/api/referans-takip', {
                 method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(payload)
             });
-            if(res.ok) { 
-                bildirimGoster();
-                document.getElementById("historySection").style.display = "none";
-                referansYukle(); 
-            }
-            btn.disabled = false;
-        }
-
-        function tabloAra() {
-            let filter = document.getElementById("refAra").value.toUpperCase();
-            let rows = document.getElementById("refListe").getElementsByTagName("tr");
-            for (let row of rows) {
-                let text = row.innerText.toUpperCase();
-                row.style.display = text.includes(filter) ? "" : "none";
+            if(res.ok) {
+                document.getElementById("success-msg").style.display = "block";
+                setTimeout(() => location.reload(), 2000);
             }
         }
 
