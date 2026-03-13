@@ -541,3 +541,27 @@ app.delete('/api/musteri-cihazlari/:id', async (req, res) => {
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
+
+// --- AYARLAR ---
+app.get('/api/ayarlar', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT anahtar, deger FROM ayarlar');
+        const ayarlar = {};
+        result.rows.forEach(r => ayarlar[r.anahtar] = r.deger);
+        res.json(ayarlar);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/ayarlar', async (req, res) => {
+    try {
+        const ayarlar = req.body;
+        for (const [anahtar, deger] of Object.entries(ayarlar)) {
+            await pool.query(
+                `INSERT INTO ayarlar (anahtar, deger) VALUES ($1, $2)
+                 ON CONFLICT (anahtar) DO UPDATE SET deger = $2`,
+                [anahtar, deger]
+            );
+        }
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});

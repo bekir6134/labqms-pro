@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Sistem Ayarları</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #1E40AF; --border: #e2e8f0; --bg: #f8fafc; --success: #10B981; }
+        * { box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); padding: 24px; color: #334155; margin: 0; }
+
+        .card { background: #fff; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; overflow: hidden; }
+        .card-header { padding: 16px 24px; border-bottom: 1px solid var(--border); background: #f8fafc; display: flex; align-items: center; gap: 10px; }
+        .card-icon { width: 34px; height: 34px; border-radius: 8px; background: #dbeafe; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
+        .card-title { font-weight: 700; color: var(--primary); font-size: 0.95rem; }
+        .card-body { padding: 24px; }
+
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .full { grid-column: 1 / -1; }
+        label { display: block; font-size: 0.8rem; font-weight: 700; color: #64748b; margin-bottom: 6px; }
+        input, textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; font-family: inherit; font-size: 0.9rem; transition: 0.2s; }
+        input:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(30,64,175,0.1); }
+        textarea { resize: vertical; min-height: 80px; }
+        .hint { font-size: 0.75rem; color: #94a3b8; margin-top: 4px; }
+
+        /* LOGO UPLOAD */
+        .logo-upload-area { border: 2px dashed var(--border); border-radius: 10px; padding: 20px; text-align: center; cursor: pointer; transition: 0.2s; position: relative; }
+        .logo-upload-area:hover { border-color: var(--primary); background: #eff6ff; }
+        .logo-upload-area input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+        .logo-preview { max-height: 80px; max-width: 200px; object-fit: contain; border-radius: 6px; }
+        .logo-placeholder { color: #94a3b8; font-size: 0.85rem; }
+        .logo-placeholder .icon { font-size: 2rem; display: block; margin-bottom: 6px; }
+
+        /* KAYDET */
+        .btn-save { background: var(--primary); color: white; border: none; padding: 12px 28px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.95rem; transition: 0.2s; display: flex; align-items: center; gap: 8px; }
+        .btn-save:hover { background: #1e3a8a; }
+        .btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        /* ÖNIZLEME */
+        .preview-box { background: #0f172a; border-radius: 10px; padding: 16px 20px; display: flex; align-items: center; gap: 12px; }
+        .preview-logo { width: 36px; height: 36px; object-fit: contain; border-radius: 6px; display: none; }
+        .preview-text { color: white; }
+        .preview-title { font-size: 1.1rem; font-weight: 700; }
+        .preview-sub { font-size: 0.78rem; color: #60A5FA; margin-top: 2px; font-weight: 600; }
+
+        #toast { visibility: hidden; min-width: 260px; background-color: var(--success); color: #fff; text-align: center; border-radius: 8px; padding: 16px; position: fixed; z-index: 9999; right: 30px; top: 30px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        #toast.show { visibility: visible; }
+        #toast.error { background-color: #ef4444; }
+    </style>
+</head>
+<body>
+<div id="toast"></div>
+
+<!-- SİDEBAR ÖNİZLEME -->
+<div class="card">
+    <div class="card-header">
+        <div class="card-icon">👁️</div>
+        <div class="card-title">Sidebar Önizleme</div>
+    </div>
+    <div class="card-body">
+        <p style="color:#64748b; font-size:0.85rem; margin-top:0;">Ayarları kaydettikten sonra sol menü bu şekilde görünecek:</p>
+        <div class="preview-box">
+            <img class="preview-logo" id="previewLogoImg">
+            <div class="preview-text">
+                <div class="preview-title">🔬 LabQMS<span style="color:#60A5FA;">Pro</span></div>
+                <div class="preview-sub" id="previewLabAdi">Lab Adı Buraya Gelir</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- LAB BİLGİLERİ -->
+<div class="card">
+    <div class="card-header">
+        <div class="card-icon">🏢</div>
+        <div class="card-title">Laboratuvar Bilgileri</div>
+    </div>
+    <div class="card-body">
+        <div class="form-grid">
+            <div class="full">
+                <label>Laboratuvar Adı *</label>
+                <input type="text" id="lab_adi" placeholder="Örn: Ayer Kalibrasyon Lab." oninput="onizlemeGuncelle()">
+                <div class="hint">💡 Sol menüde "LabQMS Pro" yazısının altında görünecek</div>
+            </div>
+            <div>
+                <label>Akreditasyon No</label>
+                <input type="text" id="akreditasyon_no" placeholder="Örn: AB-0123-T">
+            </div>
+            <div>
+                <label>Vergi / TC No</label>
+                <input type="text" id="vergi_no" placeholder="Vergi numarası">
+            </div>
+            <div>
+                <label>Telefon</label>
+                <input type="text" id="telefon" placeholder="0312 000 00 00">
+            </div>
+            <div>
+                <label>E-posta</label>
+                <input type="email" id="email" placeholder="info@lab.com">
+            </div>
+            <div>
+                <label>Web Sitesi</label>
+                <input type="text" id="website" placeholder="www.lab.com">
+            </div>
+            <div class="full">
+                <label>Açık Adres</label>
+                <textarea id="adres" placeholder="Sokak, mahalle, ilçe, il..."></textarea>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- LOGO -->
+<div class="card">
+    <div class="card-header">
+        <div class="card-icon">🖼️</div>
+        <div class="card-title">Logo & Görsel Ayarlar</div>
+    </div>
+    <div class="card-body">
+        <div class="form-grid">
+            <div>
+                <label>Lab Logosu</label>
+                <div class="logo-upload-area" onclick="document.getElementById('labLogoInput').click()">
+                    <input type="file" id="labLogoInput" accept="image/*" onchange="logoOnizle('labLogoInput','labLogoPreview','previewLogoImg')">
+                    <div id="labLogoPreview">
+                        <div class="logo-placeholder"><span class="icon">🏷️</span>Tıklayarak logo yükleyin<br><small>PNG, JPG, SVG</small></div>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <label>Türkak / Akreditasyon Logosu</label>
+                <div class="logo-upload-area" onclick="document.getElementById('turkakLogoInput').click()">
+                    <input type="file" id="turkakLogoInput" accept="image/*" onchange="logoOnizle('turkakLogoInput','turkakLogoPreview',null)">
+                    <div id="turkakLogoPreview">
+                        <div class="logo-placeholder"><span class="icon">🏅</span>Akreditasyon logosu yükleyin<br><small>PNG, JPG, SVG</small></div>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <label>Mühür / İmza Görseli</label>
+                <div class="logo-upload-area" onclick="document.getElementById('muhurInput').click()">
+                    <input type="file" id="muhurInput" accept="image/*" onchange="logoOnizle('muhurInput','muhurPreview',null)">
+                    <div id="muhurPreview">
+                        <div class="logo-placeholder"><span class="icon">🔏</span>Mühür / imza görseli yükleyin<br><small>PNG, JPG, SVG</small></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- KAYDET -->
+<div style="display:flex; justify-content:flex-end;">
+    <button class="btn-save" id="saveBtn" onclick="kaydet()">💾 Ayarları Kaydet</button>
+</div>
+
+<script>
+    let logoBase64 = { lab: '', turkak: '', muhur: '' };
+
+    function showToast(msg, isError=false) {
+        const t = document.getElementById("toast");
+        t.textContent = msg; t.className = isError ? "show error" : "show";
+        setTimeout(()=>{ t.className=""; }, 3000);
+    }
+
+    function onizlemeGuncelle() {
+        const ad = document.getElementById("lab_adi").value || "Lab Adı Buraya Gelir";
+        document.getElementById("previewLabAdi").textContent = ad;
+    }
+
+    function logoOnizle(inputId, previewId, imgId) {
+        const file = document.getElementById(inputId).files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const base64 = e.target.result;
+            // Hangi logo
+            if (inputId === 'labLogoInput') logoBase64.lab = base64;
+            else if (inputId === 'turkakLogoInput') logoBase64.turkak = base64;
+            else if (inputId === 'muhurInput') logoBase64.muhur = base64;
+            // Önizleme güncelle
+            const previewDiv = document.getElementById(previewId);
+            previewDiv.innerHTML = `<img src="${base64}" class="logo-preview">`;
+            // Sidebar önizleme
+            if (imgId) {
+                const img = document.getElementById(imgId);
+                img.src = base64; img.style.display = "block";
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+
+    async function sayfaYukle() {
+        try {
+            const res = await fetch('/api/ayarlar');
+            const data = await res.json();
+            const set = (id, key) => { if (data[key]) document.getElementById(id).value = data[key]; };
+            set('lab_adi', 'lab_adi');
+            set('akreditasyon_no', 'akreditasyon_no');
+            set('vergi_no', 'vergi_no');
+            set('telefon', 'telefon');
+            set('email', 'email');
+            set('website', 'website');
+            set('adres', 'adres');
+            onizlemeGuncelle();
+
+            // Logolar
+            if (data.lab_logo) {
+                document.getElementById("labLogoPreview").innerHTML = `<img src="${data.lab_logo}" class="logo-preview">`;
+                const img = document.getElementById("previewLogoImg");
+                img.src = data.lab_logo; img.style.display = "block";
+                logoBase64.lab = data.lab_logo;
+            }
+            if (data.turkak_logo) {
+                document.getElementById("turkakLogoPreview").innerHTML = `<img src="${data.turkak_logo}" class="logo-preview">`;
+                logoBase64.turkak = data.turkak_logo;
+            }
+            if (data.muhur_logo) {
+                document.getElementById("muhurPreview").innerHTML = `<img src="${data.muhur_logo}" class="logo-preview">`;
+                logoBase64.muhur = data.muhur_logo;
+            }
+        } catch(e) { console.error(e); }
+    }
+
+    async function kaydet() {
+        const btn = document.getElementById("saveBtn");
+        btn.disabled = true; btn.textContent = "Kaydediliyor...";
+        const payload = {
+            lab_adi: document.getElementById("lab_adi").value,
+            akreditasyon_no: document.getElementById("akreditasyon_no").value,
+            vergi_no: document.getElementById("vergi_no").value,
+            telefon: document.getElementById("telefon").value,
+            email: document.getElementById("email").value,
+            website: document.getElementById("website").value,
+            adres: document.getElementById("adres").value,
+            lab_logo: logoBase64.lab,
+            turkak_logo: logoBase64.turkak,
+            muhur_logo: logoBase64.muhur
+        };
+        const res = await fetch('/api/ayarlar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+            showToast("✅ Ayarlar kaydedildi!");
+            // Üst frame'e lab adını bildir
+            if (window.parent && window.parent.labAdiGuncelle) {
+                window.parent.labAdiGuncelle(payload.lab_adi);
+            }
+        } else {
+            showToast("❌ Kayıt başarısız!", true);
+        }
+        btn.disabled = false; btn.textContent = "💾 Ayarları Kaydet";
+    }
+
+    window.onload = sayfaYukle;
+</script>
+</body>
+</html>
