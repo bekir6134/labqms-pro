@@ -37,17 +37,27 @@
         .search-box { width: 300px; }
         .search-box input { width: 100%; padding: 10px 10px 10px 35px; background: #fff url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%2364748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>') no-repeat 10px center; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; box-sizing: border-box; }
         .code-badge { background: #e0e7ff; color: #4338ca; padding: 4px 8px; border-radius: 4px; font-weight: 700; font-size: 0.8rem; font-family: monospace; }
-        #success-msg { display:none; background:#dcfce7; color:#166534; padding:12px; border-radius:8px; margin-bottom:15px; text-align:center; font-weight:600; border:1px solid #bbf7d0; }
+        #toast { visibility: hidden; min-width: 250px; background-color: var(--success); color: #fff; text-align: center; border-radius: 8px; padding: 16px; position: fixed; z-index: 3000; right: 30px; top: 30px; font-weight: 600; transition: 0.4s; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        #toast.show { visibility: visible; }
+        #toast.error { background-color: #ef4444; }
+        /* Accordion */
+        .accordion { background: #fff; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; margin-bottom: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .accordion-header { background: #fff; padding: 15px 25px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid transparent; }
+        .accordion-header.active { border-bottom-color: var(--border); background: #f1f5f9; }
+        .accordion-content { padding: 25px; display: none; }
     </style>
 </head>
 <body>
 
-
     <div class="main-content">
-        <div id="success-msg">✅ Metot başarıyla kaydedildi!</div>
+    <div id="toast">✅ İşlem Başarılı!</div>
 
-        <div class="card">
-            <h2>🧪 Yeni Metot Tanımla</h2>
+        <div class="accordion">
+            <div class="accordion-header" onclick="toggleAccordion()">
+                <h3 style="margin:0; color:var(--primary);">🧪 Yeni Metot Tanımla / Düzenleme</h3>
+                <span id="accIcon">▼</span>
+            </div>
+            <div class="accordion-content" id="accContent">
             <form id="metotForm">
                 <div class="form-grid">
                     <div><label>Metot Adı</label><input type="text" id="metot_adi" required></div>
@@ -81,6 +91,7 @@
                 <button type="submit" class="btn btn-primary">💾 Metodu Sisteme Kaydet</button>
                 <input type="hidden" id="duzenle_id" value="">
             </form>
+            </div>
         </div>
 
         <div class="card">
@@ -138,9 +149,31 @@
         async function metotSil(id) {
             if (!confirm("Bu metodu silmek istediğinize emin misiniz?")) return;
             const res = await fetch(`/api/metotlar/${id}`, { method: 'DELETE' });
-            if (res.ok) metotlariYukle();
+            if (res.ok) {
+                showToast("🗑️ Metot başarıyla silindi!");
+                metotlariYukle();
+            } else {
+                showToast("❌ Silme işlemi başarısız!", true);
+            }
         }
 
+        function toggleAccordion() {
+            const content = document.getElementById("accContent");
+            const header = document.querySelector(".accordion-header");
+            const icon = document.getElementById("accIcon");
+            if (content.style.display === "block") {
+                content.style.display = "none"; header.classList.remove("active"); icon.innerText = "▼";
+            } else {
+                content.style.display = "block"; header.classList.add("active"); icon.innerText = "▲";
+            }
+        }
+
+        function showToast(msg, isError = false) {
+            const t = document.getElementById("toast");
+            t.textContent = msg;
+            t.className = isError ? "show error" : "show";
+            setTimeout(() => { t.className = t.className.replace("show", "").trim(); }, 3000);
+        }
         function tabloAra() {
             const filter = document.getElementById("metotAra").value.toUpperCase();
             const rows = document.getElementById("metotListe").getElementsByTagName("tr");
@@ -156,6 +189,11 @@
             document.getElementById("metot_kodu").value = metot_kodu;
             document.getElementById("duzenle_id").value = id;
             document.querySelector(".btn-primary").textContent = "💾 Metodu Güncelle";
+            // Accordion'u aç
+            const content = document.getElementById("accContent");
+            const header = document.querySelector(".accordion-header");
+            content.style.display = "block"; header.classList.add("active");
+            document.getElementById("accIcon").innerText = "▲";
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
@@ -226,13 +264,11 @@
             });
 
             if(res.ok) {
-                document.getElementById("success-msg").textContent = duzenleId ? "✅ Metot başarıyla güncellendi!" : "✅ Metot başarıyla kaydedildi!";
-                document.getElementById("success-msg").style.display = "block";
+                showToast(duzenleId ? "✅ Metot başarıyla güncellendi!" : "✅ Metot başarıyla kaydedildi!");
                 document.getElementById("metotForm").reset();
                 document.getElementById("duzenle_id").value = "";
                 document.querySelector(".btn-primary").textContent = "💾 Metodu Sisteme Kaydet";
                 metotlariYukle();
-                setTimeout(() => document.getElementById("success-msg").style.display = "none", 3000);
             }
         };
 

@@ -213,6 +213,26 @@ app.post('/api/referans-cihazlar', async (req, res) => {
     }
 });
 
+app.put('/api/referans-cihazlar/:id', async (req, res) => {
+    try {
+        const { kategori_id, cihaz_adi, marka, model, seri_no, envanter_no, olcme_araligi, kalibrasyon_kriteri, ara_kontrol_kriteri } = req.body;
+        const query = `UPDATE referans_cihazlar SET kategori_id=$1, cihaz_adi=$2, marka=$3, model=$4, seri_no=$5, envanter_no=$6, olcme_araligi=$7, kalibrasyon_kriteri=$8, ara_kontrol_kriteri=$9 WHERE id=$10 RETURNING *`;
+        const result = await pool.query(query, [kategori_id, cihaz_adi, marka, model, seri_no, envanter_no, olcme_araligi, kalibrasyon_kriteri, ara_kontrol_kriteri, req.params.id]);
+        res.json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/referans-cihazlar/:id', async (req, res) => {
+    try {
+        await pool.query('DELETE FROM referans_cihazlar WHERE id=$1', [req.params.id]);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.post('/api/referans-takip-guncelle', async (req, res) => {
     try {
         const { id, sertifika_no, izlenebilirlik, kal_tarihi, sonraki_kal_tarihi } = req.body;
