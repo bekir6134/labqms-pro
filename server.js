@@ -42,17 +42,17 @@ app.get('/api/musteriler', async (req, res) => {
 // 2. KAYDET VEYA GÜNCELLE
 app.post('/api/musteriler', async (req, res) => {
     try {
-        const { id, firma_adi, yetkililer, telefonlar, sertifika_mailleri, fatura_mailleri, il, ilce, adres, vergi_dairesi, vergi_no } = req.body;
+        const { id, firma_adi, sube_adi, yetkililer, telefonlar, sertifika_mailleri, fatura_mailleri, il, ilce, adres, vergi_dairesi, vergi_no } = req.body;
         
         if (id) {
             // GÜNCELLEME
-            const query = `UPDATE musteriler SET firma_adi=$1, yetkililer=$2, telefonlar=$3, sertifika_mailleri=$4, fatura_mailleri=$5, il=$6, ilce=$7, adres=$8, vergi_dairesi=$9, vergi_no=$10 WHERE id=$11 RETURNING *`;
-            const result = await pool.query(query, [firma_adi, JSON.stringify(yetkililer), JSON.stringify(telefonlar), JSON.stringify(sertifika_mailleri), JSON.stringify(fatura_mailleri), il, ilce, adres, vergi_dairesi, vergi_no, id]);
+            const query = `UPDATE musteriler SET firma_adi=$1, sube_adi=$2, yetkililer=$3, telefonlar=$4, sertifika_mailleri=$5, fatura_mailleri=$6, il=$7, ilce=$8, adres=$9, vergi_dairesi=$10, vergi_no=$11 WHERE id=$12 RETURNING *`;
+            const result = await pool.query(query, [firma_adi, sube_adi||null, JSON.stringify(yetkililer), JSON.stringify(telefonlar), JSON.stringify(sertifika_mailleri), JSON.stringify(fatura_mailleri), il, ilce, adres, vergi_dairesi, vergi_no, id]);
             res.json(result.rows[0]);
         } else {
             // YENİ KAYIT
-            const query = `INSERT INTO musteriler (firma_adi, yetkililer, telefonlar, sertifika_mailleri, fatura_mailleri, il, ilce, adres, vergi_dairesi, vergi_no) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`;
-            const result = await pool.query(query, [firma_adi, JSON.stringify(yetkililer), JSON.stringify(telefonlar), JSON.stringify(sertifika_mailleri), JSON.stringify(fatura_mailleri), il, ilce, adres, vergi_dairesi, vergi_no]);
+            const query = `INSERT INTO musteriler (firma_adi, sube_adi, yetkililer, telefonlar, sertifika_mailleri, fatura_mailleri, il, ilce, adres, vergi_dairesi, vergi_no) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`;
+            const result = await pool.query(query, [firma_adi, sube_adi||null, JSON.stringify(yetkililer), JSON.stringify(telefonlar), JSON.stringify(sertifika_mailleri), JSON.stringify(fatura_mailleri), il, ilce, adres, vergi_dairesi, vergi_no]);
             res.json(result.rows[0]);
         }
     } catch (err) {
@@ -111,6 +111,13 @@ app.delete('/api/kategoriler/:id', async (req, res) => {
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
+});
+
+app.delete('/api/musteriler/:id', async (req, res) => {
+    try {
+        await pool.query('DELETE FROM musteriler WHERE id=$1', [req.params.id]);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // CİHAZ KÜTÜPHANESİ API YOLLARI
