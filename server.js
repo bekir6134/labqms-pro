@@ -4,7 +4,7 @@ const { Pool } = require('pg');
 const path = require('path');
 const cors = require('cors');
 
-const app = express(); // İŞTE HATAYA SEBEP OLAN EKSİK SATIR BUYDU!
+const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
@@ -480,9 +480,6 @@ app.delete('/api/metotlar/:id', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`🚀 Sunucu ${PORT} portunda başarıyla ayağa kalktı.`);
-});
 // --- MÜŞTERİ CİHAZLARI API ---
 
 app.get('/api/musteri-cihazlari-on-veriler', async (req, res) => {
@@ -570,8 +567,13 @@ app.post('/api/ayarlar', async (req, res) => {
 app.get('/api/is-emirleri-on-veriler', async (req, res) => {
     try {
         const musteriler = await pool.query('SELECT id, firma_adi, sube_adi FROM musteriler ORDER BY firma_adi');
-                res.json({ musteriler: musteriler.rows, cihazlar: cihazKutuphanesi.rows });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+        // KATEGORİ HATASI GİDERİLDİ! Artık sadece id ve cihaz_adi çekiliyor:
+        const cihazKutuphanesi = await pool.query('SELECT id, cihaz_adi FROM cihaz_kutuphanesi ORDER BY cihaz_adi');
+        res.json({ musteriler: musteriler.rows, cihazlar: cihazKutuphanesi.rows });
+    } catch (err) { 
+        console.error("İş Emirleri API Hatası:", err.message);
+        res.status(500).json({ error: err.message }); 
+    }
 });
 
 app.get('/api/is-emirleri', async (req, res) => {
@@ -630,4 +632,8 @@ app.delete('/api/is-emirleri/:id', async (req, res) => {
         await pool.query('DELETE FROM is_emirleri WHERE id=$1', [req.params.id]);
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.listen(PORT, () => {
+    console.log(`🚀 Sunucu ${PORT} portunda başarıyla ayağa kalktı.`);
 });
