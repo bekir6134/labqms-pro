@@ -15,7 +15,8 @@
         label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
         input, textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; box-sizing: border-box; font-size: 0.95rem; font-family: 'Inter', sans-serif; }
         input:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1); }
-        .btn-save { background-color: var(--primary); color: #fff; padding: 12px 20px; font-size: 1rem; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 15px; }
+        .btn-save { background-color: var(--primary); color: #fff; padding: 12px 20px; font-size: 1rem; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 15px; transition: 0.2s; }
+        .btn-save:hover { background-color: #1e3a8a; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9rem; }
         th { background-color: #f1f5f9; padding: 12px; text-align: left; border-bottom: 1px solid var(--border); color: var(--text-muted); }
         td { padding: 12px; border-bottom: 1px solid var(--border); }
@@ -26,38 +27,33 @@
 <body>
 
 <div class="module-container">
-    <div style="margin-bottom: 5px;"><a href="index.html" style="text-decoration:none; color:var(--primary); font-weight:bold;">⬅️ Ana Panele Dön</a></div>
     
     <div class="card">
         <h2 style="margin-top: 0; color: var(--primary);">🏢 Yeni Müşteri (Cari) Kartı Oluştur</h2>
-        <form onsubmit="event.preventDefault(); alert('Yeni Müşteri Sisteme Kaydedildi!');">
+        <form id="musteriForm" onsubmit="musteriKaydet(event)">
             <div class="form-grid">
                 <div class="full-width">
                     <label>Firma Resmi Ünvanı *</label>
-                    <input type="text" placeholder="Örn: XYZ Makine Sanayi ve Ticaret A.Ş." required>
+                    <input type="text" id="firma_adi" placeholder="Örn: XYZ Makine Sanayi ve Ticaret A.Ş." required>
                 </div>
                 <div>
                     <label>Yetkili Kişi</label>
-                    <input type="text" placeholder="Örn: Ahmet Yılmaz">
+                    <input type="text" id="yetkili_kisi" placeholder="Örn: Ahmet Yılmaz">
                 </div>
                 <div>
                     <label>Telefon Numarası</label>
-                    <input type="text" placeholder="05XX XXX XX XX">
+                    <input type="text" id="telefon" placeholder="05XX XXX XX XX">
                 </div>
                 <div>
-                    <label>E-Posta Adresi (Sertifika Gönderimi İçin)</label>
-                    <input type="email" placeholder="kalite@xyzmakine.com">
-                </div>
-                <div>
-                    <label>Vergi Dairesi ve VKN</label>
-                    <input type="text" placeholder="Örn: Maslak VD / 1234567890">
+                    <label>E-Posta Adresi</label>
+                    <input type="email" id="email" placeholder="kalite@xyzmakine.com">
                 </div>
                 <div class="full-width">
-                    <label>Firma Adresi (Sertifikada Basılacak)</label>
-                    <textarea rows="2" placeholder="Örn: Organize Sanayi Bölgesi 2. Cadde No:5"></textarea>
+                    <label>Firma Adresi</label>
+                    <textarea id="adres" rows="2" placeholder="Örn: Organize Sanayi Bölgesi 2. Cadde No:5"></textarea>
                 </div>
             </div>
-            <button type="submit" class="btn-save">+ Müşteriyi Kaydet</button>
+            <button type="submit" class="btn-save" id="kaydetBtn">+ Müşteriyi Kaydet</button>
         </form>
     </div>
 
@@ -74,41 +70,101 @@
                         <th>Telefon</th>
                         <th>E-Posta</th>
                         <th>Durum</th>
-                        <th>İşlem</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <tr>
-                        <td style="font-weight: 600;">XYZ Makine Sanayi A.Ş.</td>
-                        <td>Ahmet Yılmaz</td>
-                        <td>0532 123 45 67</td>
-                        <td>kalite@xyz.com</td>
-                        <td><span class="badge">Aktif</span></td>
-                        <td><button style="border:none; background:none; color:var(--primary); cursor:pointer; font-weight:bold;">Düzenle</button></td>
-                    </tr>
-                    <tr>
-                        <td style="font-weight: 600;">ABC Medikal Ürünleri Ltd. Şti.</td>
-                        <td>Ayşe Demir</td>
-                        <td>0212 987 65 43</td>
-                        <td>info@abcmedikal.com</td>
-                        <td><span class="badge">Aktif</span></td>
-                        <td><button style="border:none; background:none; color:var(--primary); cursor:pointer; font-weight:bold;">Düzenle</button></td>
-                    </tr>
-                </tbody>
+                <tbody id="musteriListesiGövdesi">
+                    </tbody>
             </table>
         </div>
     </div>
 </div>
 
 <script>
+    // 1. SAYFA AÇILDIĞINDA MÜŞTERİLERİ VERİTABANINDAN ÇEK (GET)
+    async function musterileriYukle() {
+        const tbody = document.getElementById('musteriListesiGövdesi');
+        tbody.innerHTML = '<tr><td colspan="5">Yükleniyor...</td></tr>';
+        
+        try {
+            const response = await fetch('/api/musteriler'); // Server.js'deki rotaya gidiyor
+            if (!response.ok) throw new Error('Veriler alınamadı');
+            
+            const musteriler = await response.json();
+            tbody.innerHTML = ''; // Yükleniyor yazısını temizle
+            
+            if(musteriler.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5">Henüz kayıtlı müşteri bulunmuyor.</td></tr>';
+                return;
+            }
+
+            // Gelen her bir müşteri için tabloya yeni bir satır ekle
+            musteriler.forEach(m => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="font-weight: 600;">${m.firma_adi}</td>
+                    <td>${m.yetkili_kisi || '-'}</td>
+                    <td>${m.telefon || '-'}</td>
+                    <td>${m.email || '-'}</td>
+                    <td><span class="badge">Aktif</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } catch (error) {
+            console.error(error);
+            tbody.innerHTML = '<tr><td colspan="5" style="color:red;">Veriler yüklenirken bir hata oluştu.</td></tr>';
+        }
+    }
+
+    // 2. YENİ MÜŞTERİYİ VERİTABANINA KAYDET (POST)
+    async function musteriKaydet(event) {
+        event.preventDefault(); // Sayfanın yenilenmesini engelle
+        const btn = document.getElementById('kaydetBtn');
+        btn.innerText = "Kaydediliyor...";
+        btn.disabled = true;
+
+        const yeniMusteri = {
+            firma_adi: document.getElementById('firma_adi').value,
+            yetkili_kisi: document.getElementById('yetkili_kisi').value,
+            telefon: document.getElementById('telefon').value,
+            email: document.getElementById('email').value,
+            adres: document.getElementById('adres').value
+        };
+
+        try {
+            const response = await fetch('/api/musteriler', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(yeniMusteri)
+            });
+
+            if (response.ok) {
+                alert("✅ Müşteri başarıyla kaydedildi!");
+                document.getElementById('musteriForm').reset(); // Formu temizle
+                musterileriYukle(); // Tabloyu anında güncelle
+            } else {
+                alert("❌ Kayıt sırasında bir hata oluştu.");
+            }
+        } catch (error) {
+            console.error(error);
+            alert("Sunucuya ulaşılamıyor.");
+        } finally {
+            btn.innerText = "+ Müşteriyi Kaydet";
+            btn.disabled = false;
+        }
+    }
+
+    // 3. TABLODA ARAMA YAPMA İŞLEMİ
     function musteriAra() {
         let input = document.getElementById("aramaKutusu").value.toLowerCase();
-        let rows = document.querySelectorAll("#musteriTablosu tbody tr");
+        let rows = document.querySelectorAll("#musteriListesiGövdesi tr");
         rows.forEach(row => {
             let text = row.innerText.toLowerCase();
             row.style.display = text.includes(input) ? "" : "none";
         });
     }
+
+    // Sayfa açılır açılmaz listeyi yükle
+    window.onload = musterileriYukle;
 </script>
 
 </body>
