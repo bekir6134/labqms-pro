@@ -213,12 +213,14 @@ app.post('/api/referans-cihazlar', async (req, res) => {
     }
 });
 
-// Kalibrasyon veya Ara Kontrol Kaydet (Dinamik Veriler)
-app.post('/api/referans-takip', async (req, res) => {
+app.post('/api/referans-takip-guncelle', async (req, res) => {
     try {
-        const { referans_id, islem_tipi, sertifika_no, izlenebilirlik, kal_tarihi, sonraki_kal_tarihi } = req.body;
-        const query = `INSERT INTO referans_takip (referans_id, islem_tipi, sertifika_no, izlenebilirlik, kal_tarihi, sonraki_kal_tarihi) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`;
-        const result = await pool.query(query, [referans_id, islem_tipi, sertifika_no, izlenebilirlik || '', kal_tarihi, sonraki_kal_tarihi]);
+        const { id, sertifika_no, izlenebilirlik, kal_tarihi, sonraki_kal_tarihi } = req.body;
+        const query = `
+            UPDATE referans_takip 
+            SET sertifika_no = $2, izlenebilirlik = $3, kal_tarihi = $4, sonraki_kal_tarihi = $5 
+            WHERE id = $1 RETURNING *`;
+        const result = await pool.query(query, [id, sertifika_no, izlenebilirlik, kal_tarihi, sonraki_kal_tarihi]);
         res.json(result.rows[0]);
     } catch (err) {
         res.status(500).json({ error: err.message });
