@@ -61,6 +61,49 @@ app.post('/api/musteriler', async (req, res) => {
     }
 });
 
+
+// --- KATEGORİ YÖNETİMİ API ---
+
+// 1. Tüm Kategorileri Getir
+app.get('/api/kategoriler', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM kategoriler ORDER BY kategori_adi ASC');
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// 2. Yeni Kategori Ekle
+app.post('/api/kategoriler', async (req, res) => {
+    try {
+        const { kategori_adi } = req.body;
+        const result = await pool.query(
+            'INSERT INTO kategoriler (kategori_adi) VALUES ($1) RETURNING *',
+            [kategori_adi]
+        );
+        res.json(result.rows[0]);
+    } catch (err) {
+        if (err.code === '23505') { // Benzersizlik hatası
+            return res.status(400).json({ error: "Bu kategori zaten mevcut." });
+        }
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// 3. Kategori Sil
+app.delete('/api/kategoriler/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        await pool.query('DELETE FROM kategoriler WHERE id = $1', [id]);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+
+
 app.listen(PORT, () => {
     console.log(`🚀 Sunucu ${PORT} portunda başarıyla ayağa kalktı.`);
 });

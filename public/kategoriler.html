@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>LabQMS Pro - Kategori Yönetimi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #1E40AF; --border: #e2e8f0; --bg: #f8fafc; --success: #10B981; --danger: #ef4444; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); padding: 20px; }
+        .container { max-width: 800px; margin: auto; }
+        .card { background: #fff; padding: 25px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .form-row { display: flex; gap: 10px; margin-bottom: 20px; }
+        input { flex: 1; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 1rem; }
+        .btn-add { background: var(--primary); color: white; border: none; border-radius: 8px; padding: 0 25px; cursor: pointer; font-weight: 600; }
+        .list-group { list-style: none; padding: 0; }
+        .list-item { background: #fff; padding: 15px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .btn-delete { color: var(--danger); background: none; border: 1px solid var(--danger); padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
+        .btn-delete:hover { background: var(--danger); color: white; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <h2 style="margin-top:0; color:var(--primary);">📁 Cihaz Kategorileri</h2>
+        <div class="form-row">
+            <input type="text" id="kategoriInput" placeholder="Yeni kategori adı yazın (Örn: Terazi, Kumpas...)">
+            <button class="btn-add" onclick="kategoriEkle()">➕ Ekle</button>
+        </div>
+        <ul id="kategoriListesi" class="list-group">
+            </ul>
+    </div>
+</div>
+
+<script>
+    async function listeYukle() {
+        const res = await fetch('/api/kategoriler');
+        const data = await res.json();
+        const liste = document.getElementById("kategoriListesi");
+        liste.innerHTML = "";
+        data.forEach(k => {
+            liste.innerHTML += `
+                <li class="list-item">
+                    <strong>${k.kategori_adi}</strong>
+                    <button class="btn-delete" onclick="sil(${k.id})">Sil</button>
+                </li>`;
+        });
+    }
+
+    async function kategoriEkle() {
+        const ad = document.getElementById("kategoriInput").value;
+        if(!ad) return alert("Lütfen isim yazın!");
+
+        const res = await fetch('/api/kategoriler', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ kategori_adi: ad })
+        });
+
+        if(res.ok) {
+            document.getElementById("kategoriInput").value = "";
+            listeYukle();
+        } else {
+            const err = await res.json();
+            alert(err.error);
+        }
+    }
+
+    async function sil(id) {
+        if(!confirm("Bu kategoriyi silmek istediğinize emin misiniz?")) return;
+        const res = await fetch(`/api/kategoriler/${id}`, { method: 'DELETE' });
+        if(res.ok) listeYukle();
+    }
+
+    window.onload = listeYukle;
+</script>
+</body>
+</html>
