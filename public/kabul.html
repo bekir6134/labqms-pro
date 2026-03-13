@@ -24,17 +24,31 @@
         .g3 { grid-template-columns:1fr 1fr 1fr; }
         .full { grid-column:1/-1; }
         label { display:block; font-size:0.8rem; font-weight:700; color:#64748b; margin-bottom:5px; }
-        input, select, textarea { width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:8px; outline:none; font-family:inherit; font-size:0.9rem; transition:0.2s; }
+        input, select, textarea { width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:8px; outline:none; font-family:inherit; font-size:0.9rem; transition:0.2s; background:#fff; color:var(--text); }
         input:focus, select:focus, textarea:focus { border-color:var(--primary-light); box-shadow:0 0 0 3px rgba(59,130,246,0.12); }
         textarea { resize:vertical; min-height:70px; }
+
+        /* FİRMA ARAMA */
+        .firma-arama-wrapper { position:relative; }
+        .firma-sonuclar { display:none; position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid var(--border); border-top:none; border-radius:0 0 8px 8px; max-height:220px; overflow-y:auto; z-index:500; box-shadow:0 6px 16px rgba(0,0,0,0.12); }
+        .firma-sonuc-item { padding:10px 14px; cursor:pointer; border-bottom:1px solid #f1f5f9; font-size:0.88rem; }
+        .firma-sonuc-item:hover, .firma-sonuc-item:active { background:#eff6ff; }
+        .firma-secili { display:none; margin-top:6px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:6px; padding:7px 12px; font-size:0.85rem; color:#1e40af; font-weight:600; justify-content:space-between; align-items:center; }
+        .firma-secili.goster { display:flex; }
+        .firma-temizle { background:none; border:none; cursor:pointer; color:#64748b; font-size:1rem; padding:0; line-height:1; }
 
         /* CİHAZ TABLOSU */
         .cihaz-table { width:100%; border-collapse:collapse; margin-top:12px; }
         .cihaz-table thead { background:var(--primary); }
         .cihaz-table th { padding:10px 12px; color:rgba(255,255,255,0.9); font-size:0.78rem; font-weight:600; text-align:left; }
         .cihaz-table td { padding:8px 10px; border-bottom:1px solid var(--border); vertical-align:middle; }
-        .cihaz-table tbody tr:hover { background:#f8fafc; }
         .cihaz-table input, .cihaz-table select { padding:7px 9px; font-size:0.85rem; }
+
+        /* CİHAZ COMBO */
+        .cihaz-combo-wrapper { position:relative; }
+        .cihaz-combo-list { display:none; position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid var(--border); border-top:none; border-radius:0 0 8px 8px; max-height:180px; overflow-y:auto; z-index:300; box-shadow:0 4px 12px rgba(0,0,0,0.1); }
+        .cihaz-combo-item { padding:8px 12px; cursor:pointer; border-bottom:1px solid #f1f5f9; font-size:0.83rem; }
+        .cihaz-combo-item:hover { background:#f1f5f9; }
 
         .btn-add-row { background:#f0fdf4; color:#166534; border:1px dashed #4ade80; padding:10px; border-radius:8px; cursor:pointer; font-weight:600; font-size:0.85rem; width:100%; margin-top:10px; transition:0.2s; }
         .btn-add-row:hover { background:#dcfce7; }
@@ -45,14 +59,12 @@
         .btn-save:hover { transform:translateY(-1px); }
         .btn-save:disabled { opacity:0.6; cursor:not-allowed; transform:none; }
 
-        /* LİSTE */
-        .table-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px; }
-        .search-box input { padding:10px 10px 10px 35px; background:#fff url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%2364748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>') no-repeat 10px center; border:1px solid var(--border); border-radius:8px; width:260px; }
         table { width:100%; border-collapse:collapse; }
         th { background:#f8fafc; padding:11px 12px; text-align:left; color:#64748b; font-size:0.8rem; border-bottom:2px solid var(--border); }
         td { padding:11px 12px; border-bottom:1px solid var(--border); font-size:0.88rem; vertical-align:middle; }
+        tr:last-child td { border-bottom:none; }
 
-        .asama-badge { padding:3px 10px; border-radius:12px; font-size:0.72rem; font-weight:700; white-space:nowrap; }
+        .asama-badge { padding:3px 10px; border-radius:12px; font-size:0.72rem; font-weight:700; }
         .asama-kabul_edildi { background:#f1f5f9; color:#475569; }
         .asama-hazırlanıyor { background:#fef9c3; color:#854d0e; }
         .asama-tamamlandı { background:#dbeafe; color:#1e40af; }
@@ -63,14 +75,10 @@
         .btn-edit { background:#e0e7ff; color:#4338ca; border:none; padding:5px 10px; border-radius:6px; cursor:pointer; font-size:0.78rem; font-weight:600; margin-right:4px; }
         .btn-del { background:#fee2e2; color:#dc2626; border:none; padding:5px 10px; border-radius:6px; cursor:pointer; font-size:0.78rem; font-weight:600; }
         .empty-row td { text-align:center; color:#94a3b8; padding:30px; }
+        .ie-no { color:var(--primary); font-weight:700; }
 
-        .ie-no { color:var(--primary); font-weight:700; font-size:0.9rem; }
-
-        /* COMBO */
-        .combo-wrapper { position:relative; }
-        .combo-dropdown { display:none; position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid var(--border); border-top:none; border-radius:0 0 8px 8px; max-height:180px; overflow-y:auto; z-index:200; box-shadow:0 4px 12px rgba(0,0,0,0.1); }
-        .combo-item { padding:8px 12px; cursor:pointer; border-bottom:1px solid #f1f5f9; font-size:0.85rem; }
-        .combo-item:hover { background:#f1f5f9; }
+        .table-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; }
+        .search-box input { padding:10px 10px 10px 35px; background:#fff url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%2364748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>') no-repeat 10px center; border:1px solid var(--border); border-radius:8px; width:260px; }
 
         #toast { visibility:hidden; min-width:260px; background-color:var(--success); color:#fff; text-align:center; border-radius:8px; padding:16px; position:fixed; z-index:9999; right:30px; top:30px; font-weight:600; box-shadow:0 4px 12px rgba(0,0,0,0.15); }
         #toast.show { visibility:visible; }
@@ -88,22 +96,18 @@
     </div>
     <div class="accordion-content" id="accContent">
         <input type="hidden" id="duzenle_id">
+        <input type="hidden" id="secili_musteri_id">
 
         <div class="form-grid g3" style="margin-bottom:16px;">
             <div>
                 <label>Firma *</label>
-                <div class="combo-wrapper">
-                    <input type="text" id="firmaArama" placeholder="Firma adı ile arayın..."
-                        autocomplete="off"
-                        oninput="firmaComboFiltrele()"
-                        onfocus="firmaComboFiltrele()"
-                        onblur="setTimeout(()=>document.getElementById('firmaComboList').style.display='none',200)">
-                    <div class="combo-dropdown" id="firmaComboList"></div>
+                <div class="firma-arama-wrapper">
+                    <input type="text" id="firmaAramaInput" placeholder="Firma adı yazın..." autocomplete="off">
+                    <div class="firma-sonuclar" id="firmaSonuclar"></div>
                 </div>
-                <input type="hidden" id="musteri_id">
-                <div id="seciliFirma" style="display:none; margin-top:6px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:6px; padding:6px 12px; font-size:0.83rem; color:#1e40af; font-weight:600; align-items:center; justify-content:space-between;">
-                    <span id="seciliFirmaAdi"></span>
-                    <button onclick="firmaSifirla()" style="background:none;border:none;cursor:pointer;color:#64748b;font-size:0.85rem;">✕</button>
+                <div class="firma-secili" id="firmaSeciliBadge">
+                    <span id="firmaSeciliAdi"></span>
+                    <button class="firma-temizle" onclick="firmaSifirla()">✕</button>
                 </div>
             </div>
             <div>
@@ -126,12 +130,12 @@
             <table class="cihaz-table">
                 <thead>
                     <tr>
-                        <th style="width:35%;">Cihaz Adı</th>
+                        <th style="width:32%;">Cihaz Adı</th>
                         <th style="width:18%;">Marka / Model</th>
-                        <th style="width:15%;">Seri No</th>
+                        <th style="width:14%;">Seri No</th>
                         <th style="width:15%;">Fiziksel Durum</th>
-                        <th style="width:12%;">Aksesuar</th>
-                        <th style="width:5%;"></th>
+                        <th style="width:14%;">Aksesuar</th>
+                        <th style="width:7%;"></th>
                     </tr>
                 </thead>
                 <tbody id="cihazBody"></tbody>
@@ -175,97 +179,141 @@
 </div>
 
 <script>
-    let musteriler = [], firmaCihazlari = [], tumKayitlar = [];
     const ASAMA_LABEL = {
         kabul_edildi:'Kabul Edildi', 'hazırlanıyor':'Hazırlanıyor',
         'tamamlandı':'Tamamlandı', imzalandı:'İmzalandı',
         'onaylandı':'Onaylandı', sertifika_gönderildi:'Sertifika Gönderildi'
     };
 
+    let musteriler = [];
+    let firmaCihazlari = [];
+    let tumKayitlar = [];
+
+    // ── TOAST ──
     function showToast(msg, err=false) {
-        const t=document.getElementById("toast"); t.textContent=msg;
-        t.className=err?"show error":"show"; setTimeout(()=>t.className="",3000);
+        const t = document.getElementById("toast");
+        t.textContent = msg;
+        t.className = err ? "show error" : "show";
+        setTimeout(() => t.className = "", 3000);
     }
+
+    // ── ACCORDION ──
     function toggleAcc() {
-        const c=document.getElementById("accContent"), h=document.querySelector(".accordion-header"), i=document.getElementById("accIcon");
-        if(c.style.display==="block"){c.style.display="none";h.classList.remove("active");i.innerText="▼";}
-        else{c.style.display="block";h.classList.add("active");i.innerText="▲";}
+        const c = document.getElementById("accContent");
+        const h = document.querySelector(".accordion-header");
+        const i = document.getElementById("accIcon");
+        if (c.style.display === "block") {
+            c.style.display = "none"; h.classList.remove("active"); i.innerText = "▼";
+        } else {
+            c.style.display = "block"; h.classList.add("active"); i.innerText = "▲";
+        }
     }
-    function accAc(){document.getElementById("accContent").style.display="block";document.querySelector(".accordion-header").classList.add("active");document.getElementById("accIcon").innerText="▲";}
-
-    async function yukle() {
-        const res=await fetch('/api/is-emirleri-on-veriler');
-        const d=await res.json(); musteriler=d.musteriler;
-        document.getElementById("kabul_tarihi").valueAsDate=new Date();
-        satirEkle();
-        listele();
+    function accAc() {
+        document.getElementById("accContent").style.display = "block";
+        document.querySelector(".accordion-header").classList.add("active");
+        document.getElementById("accIcon").innerText = "▲";
     }
 
-    function firmaComboFiltrele() {
-        const val = document.getElementById("firmaArama").value.toUpperCase().trim();
-        const list = document.getElementById("firmaComboList");
-        if(!musteriler || !musteriler.length){ list.style.display="none"; return; }
-        const filtered = val ? musteriler.filter(m =>
-            m.firma_adi.toUpperCase().includes(val) ||
-            (m.sube_adi||'').toUpperCase().includes(val)
-        ) : musteriler;
-        if(!filtered.length){ list.innerHTML='<div class="combo-item" style="color:#94a3b8;">Sonuç bulunamadı</div>'; list.style.display="block"; return; }
-        list.innerHTML = filtered.slice(0,20).map(m =>
-            `<div class="combo-item" onmousedown="firmaSec(${m.id},decodeURIComponent('${encodeURIComponent(m.firma_adi+(m.sube_adi?" / "+m.sube_adi:""))}'))">
-                <strong>${m.firma_adi}</strong>${m.sube_adi?` <span style="color:#94a3b8;font-size:0.78rem;">/ ${m.sube_adi}</span>`:""}
-            </div>`
-        ).join("");
-        list.style.display = "block";
+    // ── FİRMA ARAMA ──
+    function firmaAramaKur() {
+        const input = document.getElementById("firmaAramaInput");
+        const sonuclar = document.getElementById("firmaSonuclar");
+
+        input.addEventListener("input", function() {
+            const val = this.value.trim().toUpperCase();
+            if (!musteriler.length) { sonuclar.style.display = "none"; return; }
+            const filtered = val
+                ? musteriler.filter(m => m.firma_adi.toUpperCase().includes(val) || (m.sube_adi||"").toUpperCase().includes(val))
+                : musteriler;
+            renderFirmaSonuclar(filtered, sonuclar);
+        });
+
+        input.addEventListener("focus", function() {
+            const val = this.value.trim().toUpperCase();
+            const filtered = val
+                ? musteriler.filter(m => m.firma_adi.toUpperCase().includes(val) || (m.sube_adi||"").toUpperCase().includes(val))
+                : musteriler;
+            renderFirmaSonuclar(filtered, sonuclar);
+        });
+
+        document.addEventListener("click", function(e) {
+            if (!input.contains(e.target) && !sonuclar.contains(e.target)) {
+                sonuclar.style.display = "none";
+            }
+        });
+    }
+
+    function renderFirmaSonuclar(liste, container) {
+        if (!liste.length) {
+            container.innerHTML = '<div class="firma-sonuc-item" style="color:#94a3b8;">Sonuç bulunamadı</div>';
+            container.style.display = "block";
+            return;
+        }
+        container.innerHTML = liste.slice(0, 30).map(m => {
+            const ad = m.firma_adi + (m.sube_adi ? " / " + m.sube_adi : "");
+            return `<div class="firma-sonuc-item" data-id="${m.id}" data-ad="${ad.replace(/"/g,'&quot;')}">
+                <strong>${m.firma_adi}</strong>${m.sube_adi ? ` <span style="color:#94a3b8;font-size:0.8rem;">/ ${m.sube_adi}</span>` : ""}
+            </div>`;
+        }).join("");
+        container.style.display = "block";
+
+        container.querySelectorAll(".firma-sonuc-item[data-id]").forEach(el => {
+            el.addEventListener("mousedown", function(e) {
+                e.preventDefault();
+                firmaSec(this.dataset.id, this.dataset.ad);
+            });
+        });
     }
 
     async function firmaSec(id, ad) {
-        document.getElementById("musteri_id").value = id;
-        document.getElementById("firmaArama").value = "";
-        document.getElementById("firmaComboList").style.display = "none";
-        const badge = document.getElementById("seciliFirma");
-        document.getElementById("seciliFirmaAdi").textContent = ad;
-        badge.style.display = "flex";
-        // cihazları çek
+        document.getElementById("secili_musteri_id").value = id;
+        document.getElementById("firmaAramaInput").value = "";
+        document.getElementById("firmaSonuclar").style.display = "none";
+        document.getElementById("firmaSeciliAdi").textContent = ad;
+        document.getElementById("firmaSeciliBadge").classList.add("goster");
+        // Firmaya ait cihazları çek
         firmaCihazlari = [];
-        const res = await fetch(`/api/musteri-cihazlari-firma/${id}`);
-        firmaCihazlari = await res.json();
+        try {
+            const res = await fetch("/api/musteri-cihazlari-firma/" + id);
+            firmaCihazlari = await res.json();
+        } catch(e) {}
     }
 
     function firmaSifirla() {
-        document.getElementById("musteri_id").value = "";
-        document.getElementById("firmaArama").value = "";
-        document.getElementById("seciliFirma").style.display = "none";
+        document.getElementById("secili_musteri_id").value = "";
+        document.getElementById("firmaAramaInput").value = "";
+        document.getElementById("firmaSeciliBadge").classList.remove("goster");
+        document.getElementById("firmaSeciliAdi").textContent = "";
         firmaCihazlari = [];
     }
 
-    async function firmaSecildi() {
-        // düzenleme modunda kullanılır
-        const id = document.getElementById("musteri_id").value;
-        if(!id) return;
-        firmaCihazlari = [];
-        const res = await fetch(`/api/musteri-cihazlari-firma/${id}`);
-        firmaCihazlari = await res.json();
+    // ── YÜKLEME ──
+    async function yukle() {
+        const res = await fetch("/api/is-emirleri-on-veriler");
+        const d = await res.json();
+        musteriler = d.musteriler || [];
+        document.getElementById("kabul_tarihi").valueAsDate = new Date();
+        satirEkle();
+        listele();
+        firmaAramaKur();
     }
 
-    function satirEkle(c={}) {
-        const tbody=document.getElementById("cihazBody");
-        const idx=tbody.rows.length;
-        const tr=document.createElement("tr");
-        tr.innerHTML=`
+    // ── CİHAZ SATIRI ──
+    function satirEkle(c = {}) {
+        const tbody = document.getElementById("cihazBody");
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
             <td>
-                <div class="combo-wrapper">
-                    <input type="text" placeholder="Cihaz adı..." value="${c.cihaz_adi||''}" autocomplete="off"
-                        oninput="comboFiltrele(this)" onfocus="comboFiltrele(this)"
-                        onblur="setTimeout(()=>this.nextElementSibling.style.display='none',200)"
-                        class="cihaz-adi-input">
-                    <div class="combo-dropdown"></div>
+                <div class="cihaz-combo-wrapper">
+                    <input type="text" class="cihaz-adi-input" placeholder="Cihaz adı..." value="${c.cihaz_adi||''}" autocomplete="off">
+                    <div class="cihaz-combo-list"></div>
                 </div>
             </td>
             <td><input type="text" placeholder="Marka / Model" value="${c.marka_model||''}"></td>
             <td><input type="text" placeholder="Seri No" value="${c.seri_no||''}"></td>
             <td>
                 <select>
-                    <option ${c.durum==='Sağlam'?'selected':''}>Sağlam</option>
+                    <option ${c.durum==='Sağlam'||!c.durum?'selected':''}>Sağlam</option>
                     <option ${c.durum==='Çizik'?'selected':''}>Çizik</option>
                     <option ${c.durum==='Hasarlı'?'selected':''}>Hasarlı</option>
                     <option ${c.durum==='Eksik Parça'?'selected':''}>Eksik Parça</option>
@@ -274,139 +322,163 @@
             <td><input type="text" placeholder="Kablo, kutu..." value="${c.aksesuar||''}"></td>
             <td><button class="btn-del-row" onclick="this.closest('tr').remove()">✕</button></td>`;
         tbody.appendChild(tr);
+
+        // Cihaz combo event
+        const cihazInput = tr.querySelector(".cihaz-adi-input");
+        const cihazList = tr.querySelector(".cihaz-combo-list");
+        cihazInput.addEventListener("input", () => cihazComboGoster(cihazInput, cihazList));
+        cihazInput.addEventListener("focus", () => cihazComboGoster(cihazInput, cihazList));
+        document.addEventListener("click", function(e) {
+            if (!cihazInput.contains(e.target) && !cihazList.contains(e.target)) {
+                cihazList.style.display = "none";
+            }
+        });
     }
 
-    function comboFiltrele(input) {
-        const val=input.value.toUpperCase();
-        const dropdown=input.nextElementSibling;
-        const kaynak=firmaCihazlari.length>0?firmaCihazlari:[];
-        const filtered=val?kaynak.filter(c=>c.cihaz_adi.toUpperCase().includes(val)):kaynak;
-        if(!filtered.length){dropdown.style.display="none";return;}
-        dropdown.innerHTML=filtered.map(c=>`
-            <div class="combo-item" onmousedown="cihazSec(this,'${c.cihaz_adi.replace(/'/g,"\\'")}','${(c.marka||'').replace(/'/g,"\\'")}','${(c.seri_no||'').replace(/'/g,"\\'")}')">
-                <strong>${c.cihaz_adi}</strong> ${c.marka?'· '+c.marka:''} ${c.seri_no?'<span style="color:#94a3b8;">S/N:'+c.seri_no+'</span>':''}
-            </div>`).join('');
-        dropdown.style.display="block";
-    }
-
-    function cihazSec(el, ad, marka, seri) {
-        const tr=el.closest('tr');
-        tr.querySelector('.cihaz-adi-input').value=ad;
-        tr.querySelectorAll('td')[1].querySelector('input').value=marka;
-        tr.querySelectorAll('td')[2].querySelector('input').value=seri;
-        el.parentElement.style.display="none";
+    function cihazComboGoster(input, listEl) {
+        const val = input.value.trim().toUpperCase();
+        if (!firmaCihazlari.length) { listEl.style.display = "none"; return; }
+        const filtered = val ? firmaCihazlari.filter(c => c.cihaz_adi.toUpperCase().includes(val)) : firmaCihazlari;
+        if (!filtered.length) { listEl.style.display = "none"; return; }
+        listEl.innerHTML = filtered.map(c =>
+            `<div class="cihaz-combo-item">
+                <strong>${c.cihaz_adi}</strong>${c.marka ? " · " + c.marka : ""}
+                ${c.seri_no ? `<span style="color:#94a3b8;"> S/N:${c.seri_no}</span>` : ""}
+            </div>`
+        ).join("");
+        listEl.style.display = "block";
+        listEl.querySelectorAll(".cihaz-combo-item").forEach((el, idx) => {
+            el.addEventListener("mousedown", function(e) {
+                e.preventDefault();
+                const c = filtered[idx];
+                input.value = c.cihaz_adi;
+                const tr = input.closest("tr");
+                tr.querySelectorAll("td")[1].querySelector("input").value = [c.marka, c.model].filter(Boolean).join(" / ");
+                tr.querySelectorAll("td")[2].querySelector("input").value = c.seri_no || "";
+                listEl.style.display = "none";
+            });
+        });
     }
 
     function cihazlariTopla() {
-        const rows=[...document.getElementById("cihazBody").rows];
-        return rows.map(r=>({
-            cihaz_adi: r.querySelectorAll('td')[0].querySelector('input').value.trim(),
-            marka_model: r.querySelectorAll('td')[1].querySelector('input').value.trim(),
-            seri_no: r.querySelectorAll('td')[2].querySelector('input').value.trim(),
-            durum: r.querySelectorAll('td')[3].querySelector('select').value,
-            aksesuar: r.querySelectorAll('td')[4].querySelector('input').value.trim()
-        })).filter(c=>c.cihaz_adi);
+        return [...document.getElementById("cihazBody").rows].map(r => ({
+            cihaz_adi: r.querySelectorAll("td")[0].querySelector("input").value.trim(),
+            marka_model: r.querySelectorAll("td")[1].querySelector("input").value.trim(),
+            seri_no: r.querySelectorAll("td")[2].querySelector("input").value.trim(),
+            durum: r.querySelectorAll("td")[3].querySelector("select").value,
+            aksesuar: r.querySelectorAll("td")[4].querySelector("input").value.trim()
+        })).filter(c => c.cihaz_adi);
     }
 
+    // ── KAYDET ──
     async function kaydet() {
-        const musteriId=document.getElementById("musteri_id").value;
-        const kabulTarihi=document.getElementById("kabul_tarihi").value;
-        const cihazlar=cihazlariTopla();
-        if(!musteriId) return showToast("❌ Firma seçin!",true);
-        if(!kabulTarihi) return showToast("❌ Kabul tarihi girin!",true);
-        if(!cihazlar.length) return showToast("❌ En az bir cihaz ekleyin!",true);
-        const duzenleId=document.getElementById("duzenle_id").value;
-        const payload={
-            musteri_id:musteriId, kabul_tarihi:kabulTarihi,
-            teslim_tarihi:document.getElementById("teslim_tarihi").value||null,
-            cihazlar, notlar:document.getElementById("notlar").value,
-            asama: duzenleId?(tumKayitlar.find(x=>x.id==duzenleId)?.asama||'kabul_edildi'):'kabul_edildi'
+        const musteriId = document.getElementById("secili_musteri_id").value;
+        const kabulTarihi = document.getElementById("kabul_tarihi").value;
+        const cihazlar = cihazlariTopla();
+        if (!musteriId) return showToast("❌ Firma seçin!", true);
+        if (!kabulTarihi) return showToast("❌ Kabul tarihi girin!", true);
+        if (!cihazlar.length) return showToast("❌ En az bir cihaz ekleyin!", true);
+
+        const duzenleId = document.getElementById("duzenle_id").value;
+        const payload = {
+            musteri_id: musteriId,
+            kabul_tarihi: kabulTarihi,
+            teslim_tarihi: document.getElementById("teslim_tarihi").value || null,
+            cihazlar,
+            notlar: document.getElementById("notlar").value,
+            asama: duzenleId ? (tumKayitlar.find(x => x.id == duzenleId)?.asama || "kabul_edildi") : "kabul_edildi"
         };
-        const btn=document.getElementById("kaydetBtn");
-        btn.disabled=true; btn.textContent="Kaydediliyor...";
-        const url=duzenleId?`/api/is-emirleri/${duzenleId}`:'/api/is-emirleri';
-        const method=duzenleId?'PUT':'POST';
-        const res=await fetch(url,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-        if(res.ok){showToast(duzenleId?"✅ Güncellendi!":"✅ Kabul fişi oluşturuldu!");formTemizle();listele();}
-        else showToast("❌ Kayıt başarısız!",true);
-        btn.disabled=false; btn.textContent="💾 Kabul Fişini Kaydet";
+
+        const btn = document.getElementById("kaydetBtn");
+        btn.disabled = true; btn.textContent = "Kaydediliyor...";
+        const url = duzenleId ? `/api/is-emirleri/${duzenleId}` : "/api/is-emirleri";
+        const method = duzenleId ? "PUT" : "POST";
+        const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+        if (res.ok) { showToast(duzenleId ? "✅ Güncellendi!" : "✅ Kabul fişi oluşturuldu!"); formTemizle(); listele(); }
+        else showToast("❌ Kayıt başarısız!", true);
+        btn.disabled = false; btn.textContent = "💾 Kabul Fişini Kaydet";
     }
 
+    // ── LİSTE ──
     async function listele() {
-        const res=await fetch('/api/is-emirleri');
-        tumKayitlar=await res.json();
+        const res = await fetch("/api/is-emirleri");
+        tumKayitlar = await res.json();
         renderListe(tumKayitlar);
     }
 
     function renderListe(data) {
-        const tbody=document.getElementById("liste");
-        if(!data.length){tbody.innerHTML='<tr class="empty-row"><td colspan="7">Henüz kabul fişi yok.</td></tr>';return;}
-        tbody.innerHTML=data.map(r=>{
-            const cihazlar=Array.isArray(r.cihazlar)?r.cihazlar:JSON.parse(r.cihazlar||'[]');
-            const kabul=r.kabul_tarihi?new Date(r.kabul_tarihi).toLocaleDateString('tr-TR'):'-';
-            const teslim=r.teslim_tarihi?new Date(r.teslim_tarihi).toLocaleDateString('tr-TR'):'-';
-            const asama=r.asama||'kabul_edildi';
+        const tbody = document.getElementById("liste");
+        if (!data.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Henüz kabul fişi yok.</td></tr>'; return; }
+        tbody.innerHTML = data.map(r => {
+            const cihazlar = Array.isArray(r.cihazlar) ? r.cihazlar : JSON.parse(r.cihazlar || "[]");
+            const kabul = r.kabul_tarihi ? new Date(r.kabul_tarihi).toLocaleDateString("tr-TR") : "-";
+            const teslim = r.teslim_tarihi ? new Date(r.teslim_tarihi).toLocaleDateString("tr-TR") : "-";
+            const asama = r.asama || "kabul_edildi";
             return `<tr>
-                <td class="ie-no">${r.ie_no||'-'}</td>
-                <td>${r.firma_adi}${r.sube_adi?` <span style="color:#94a3b8;font-size:0.78rem;">/ ${r.sube_adi}</span>`:''}</td>
-                <td>${kabul}</td>
-                <td>${teslim}</td>
+                <td class="ie-no">${r.ie_no || "-"}</td>
+                <td>${r.firma_adi}${r.sube_adi ? ` <span style="color:#94a3b8;font-size:0.78rem;">/ ${r.sube_adi}</span>` : ""}</td>
+                <td>${kabul}</td><td>${teslim}</td>
                 <td><span style="background:#eff6ff;color:var(--primary);padding:2px 8px;border-radius:10px;font-size:0.75rem;font-weight:700;">${cihazlar.length} cihaz</span></td>
-                <td><span class="asama-badge asama-${asama}">${ASAMA_LABEL[asama]||asama}</span></td>
+                <td><span class="asama-badge asama-${asama}">${ASAMA_LABEL[asama] || asama}</span></td>
                 <td>
                     <button class="btn-edit" onclick="duzenle(${r.id})">✏️ Düzenle</button>
                     <button class="btn-del" onclick="sil(${r.id})">🗑️ Sil</button>
                 </td>
             </tr>`;
-        }).join('');
+        }).join("");
     }
 
+    // ── DÜZENLE ──
     function duzenle(id) {
-        const r=tumKayitlar.find(x=>x.id===id); if(!r) return;
-        document.getElementById("duzenle_id").value=r.id;
-        document.getElementById("musteri_id").value=r.musteri_id;
-        document.getElementById("seciliFirmaAdi").textContent=r.firma_adi+(r.sube_adi?" / "+r.sube_adi:"");
-        document.getElementById("seciliFirma").style.display="flex";
-        document.getElementById("firmaArama").value="";
-        document.getElementById("kabul_tarihi").value=r.kabul_tarihi?.substring(0,10)||'';
-        document.getElementById("teslim_tarihi").value=r.teslim_tarihi?.substring(0,10)||'';
-        document.getElementById("notlar").value=r.notlar||'';
-        const cihazlar=Array.isArray(r.cihazlar)?r.cihazlar:JSON.parse(r.cihazlar||'[]');
-        document.getElementById("cihazBody").innerHTML='';
-        cihazlar.forEach(c=>satirEkle(c));
-        if(!cihazlar.length) satirEkle();
-        document.getElementById("kaydetBtn").textContent="💾 Güncelle";
-        firmaSecildi(); accAc();
-        window.scrollTo({top:0,behavior:'smooth'});
+        const r = tumKayitlar.find(x => x.id === id); if (!r) return;
+        document.getElementById("duzenle_id").value = r.id;
+        document.getElementById("secili_musteri_id").value = r.musteri_id;
+        document.getElementById("firmaSeciliAdi").textContent = r.firma_adi + (r.sube_adi ? " / " + r.sube_adi : "");
+        document.getElementById("firmaSeciliBadge").classList.add("goster");
+        document.getElementById("firmaAramaInput").value = "";
+        document.getElementById("kabul_tarihi").value = r.kabul_tarihi?.substring(0, 10) || "";
+        document.getElementById("teslim_tarihi").value = r.teslim_tarihi?.substring(0, 10) || "";
+        document.getElementById("notlar").value = r.notlar || "";
+        const cihazlar = Array.isArray(r.cihazlar) ? r.cihazlar : JSON.parse(r.cihazlar || "[]");
+        document.getElementById("cihazBody").innerHTML = "";
+        cihazlar.forEach(c => satirEkle(c));
+        if (!cihazlar.length) satirEkle();
+        document.getElementById("kaydetBtn").textContent = "💾 Güncelle";
+        // Firma cihazlarını çek
+        fetch("/api/musteri-cihazlari-firma/" + r.musteri_id).then(res => res.json()).then(d => firmaCihazlari = d);
+        accAc();
+        window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
+    // ── SİL ──
     async function sil(id) {
-        if(!confirm("Bu kabul fişini silmek istediğinize emin misiniz?")) return;
-        const res=await fetch(`/api/is-emirleri/${id}`,{method:'DELETE'});
-        if(res.ok){showToast("🗑️ Silindi!");listele();}
-        else showToast("❌ Silinemedi!",true);
+        if (!confirm("Bu kabul fişini silmek istediğinize emin misiniz?")) return;
+        const res = await fetch(`/api/is-emirleri/${id}`, { method: "DELETE" });
+        if (res.ok) { showToast("🗑️ Silindi!"); listele(); }
+        else showToast("❌ Silinemedi!", true);
     }
 
+    // ── FORM TEMİZLE ──
     function formTemizle() {
-        document.getElementById("duzenle_id").value='';
-        document.getElementById("musteri_id").value='';
-        document.getElementById("firmaArama").value='';
-        document.getElementById("seciliFirma").style.display="none";
-        document.getElementById("kabul_tarihi").valueAsDate=new Date();
-        document.getElementById("teslim_tarihi").value='';
-        document.getElementById("notlar").value='';
-        document.getElementById("cihazBody").innerHTML='';
+        document.getElementById("duzenle_id").value = "";
+        firmaSifirla();
+        document.getElementById("kabul_tarihi").valueAsDate = new Date();
+        document.getElementById("teslim_tarihi").value = "";
+        document.getElementById("notlar").value = "";
+        document.getElementById("cihazBody").innerHTML = "";
         satirEkle();
-        document.getElementById("kaydetBtn").textContent="💾 Kabul Fişini Kaydet";
-        firmaCihazlari=[];
+        document.getElementById("kaydetBtn").textContent = "💾 Kabul Fişini Kaydet";
     }
 
+    // ── ARAMA ──
     function ara() {
-        const f=document.getElementById("araInput").value.toUpperCase();
-        renderListe(f?tumKayitlar.filter(r=>(r.ie_no||'').toUpperCase().includes(f)||(r.firma_adi||'').toUpperCase().includes(f)):tumKayitlar);
+        const f = document.getElementById("araInput").value.toUpperCase();
+        renderListe(f ? tumKayitlar.filter(r =>
+            (r.ie_no || "").toUpperCase().includes(f) || (r.firma_adi || "").toUpperCase().includes(f)
+        ) : tumKayitlar);
     }
 
-    window.onload=yukle;
+    window.onload = yukle;
 </script>
 </body>
 </html>
