@@ -6,26 +6,35 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root { --primary:#1E40AF; --border:#e2e8f0; --bg:#f8fafc; --success:#10B981; --warning:#f59e0b; }
-        /* Body flex ve margin özellikleri temizlendi, sadece padding bırakıldı */
         body { font-family:'Inter',sans-serif; background:var(--bg); margin:0; padding:24px; color:#334155; }
         
-        .header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+        .header { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; }
         h2 { margin:0; color:var(--primary); font-size: 1.5rem; }
 
-        /* FİLTRE BAR TASARIMI */
+        /* YENİ: GELİŞMİŞ ARAMA VE TARİH FİLTRESİ */
+        .advanced-filters { display:flex; gap:15px; margin-bottom: 20px; align-items:flex-end; background:#fff; padding:15px; border-radius:12px; border:1px solid var(--border); box-shadow:0 4px 6px rgba(0,0,0,0.02); }
+        .filter-group { flex:1; }
+        .filter-group.date-group { flex:0 0 150px; }
+        .filter-label { display:block; font-size:0.8rem; color:#64748b; margin-bottom:5px; font-weight:600; }
+        .filter-input { width:100%; padding:10px; border-radius:8px; border:1px solid var(--border); font-family:inherit; box-sizing:border-box; outline:none; transition:0.2s; }
+        .filter-input:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(30,64,175,0.1); }
+        .btn-clear { padding:10px 15px; border-radius:8px; border:1px solid var(--border); background:#f8fafc; cursor:pointer; font-weight:600; color:#64748b; transition:0.2s; height: 39px; }
+        .btn-clear:hover { background:#e2e8f0; color:#334155; }
+
+        /* AŞAMA BUTONLARI */
         .filter-bar { display:flex; gap:10px; margin-bottom:20px; overflow-x:auto; padding-bottom:5px; }
         .filter-btn { padding:8px 16px; border:1px solid var(--border); background:#fff; border-radius:20px; cursor:pointer; font-size:0.85rem; font-weight:600; color:#64748b; transition:0.2s; white-space:nowrap; }
         .filter-btn:hover { border-color:#cbd5e1; background:#f1f5f9; }
         .filter-btn.active { background:var(--primary); color:white; border-color:var(--primary); }
 
-        .card { background:#fff; padding:20px; border-radius:12px; border:1px solid var(--border); box-shadow:0 4px 6px rgba(0,0,0,0.05); }
+        .card { background:#fff; padding:20px; border-radius:12px; border:1px solid var(--border); box-shadow:0 4px 6px rgba(0,0,0,0.05); overflow-x:auto; }
         
-        table { width:100%; border-collapse:collapse; }
+        table { width:100%; border-collapse:collapse; min-width:800px; }
         th { background:#f8fafc; text-align:left; padding:12px; border-bottom:2px solid var(--border); color:#64748b; font-size:0.85rem; }
         td { padding:12px; border-bottom:1px solid var(--border); font-size:0.9rem; vertical-align:middle; }
         
         /* AŞAMA RENKLERİ */
-        .badge { padding:5px 12px; border-radius:12px; font-size:0.75rem; font-weight:700; }
+        .badge { padding:5px 12px; border-radius:12px; font-size:0.75rem; font-weight:700; white-space:nowrap; }
         .b-kabul { background:#f1f5f9; color:#475569; } 
         .b-hazirlaniyor { background:#fef9c3; color:#854d0e; } 
         .b-tamamlandi { background:#dbeafe; color:#1e40af; } 
@@ -33,7 +42,7 @@
         .b-onaylandi { background:#d1fae5; color:#065f46; } 
         .b-sertifika { background:#dcfce7; color:#166534; } 
 
-        .btn-islem { background:#f8fafc; color:var(--primary); border:1px solid #bfdbfe; padding:8px 14px; border-radius:6px; cursor:pointer; font-weight:600; font-size:0.8rem; transition:0.2s; }
+        .btn-islem { background:#f8fafc; color:var(--primary); border:1px solid #bfdbfe; padding:8px 14px; border-radius:6px; cursor:pointer; font-weight:600; font-size:0.8rem; transition:0.2s; white-space:nowrap; }
         .btn-islem:hover { background:var(--primary); color:white; }
 
         /* MODAL TASARIMI */
@@ -41,14 +50,11 @@
         .modal { background:#fff; width:500px; border-radius:12px; padding:25px; box-shadow:0 10px 25px rgba(0,0,0,0.2); }
         .modal-header { font-size:1.2rem; font-weight:700; color:var(--primary); margin-bottom:15px; border-bottom:1px solid var(--border); padding-bottom:10px; }
         .form-group { margin-bottom:15px; }
-        label { display:block; font-size:0.85rem; font-weight:600; color:#64748b; margin-bottom:5px; }
-        input, select { width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; box-sizing:border-box; font-family:inherit; }
+        .cihaz-info { background:#f8fafc; padding:12px; border-radius:8px; margin-bottom:15px; font-size:0.85rem; border:1px dashed #cbd5e1; line-height:1.5; }
         
         .btn-group { display:flex; gap:10px; margin-top:20px; }
         .btn-save { flex:1; background:var(--success); color:white; border:none; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer; }
         .btn-cancel { flex:1; background:#f1f5f9; color:#475569; border:none; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer; }
-        
-        .cihaz-info { background:#f8fafc; padding:10px; border-radius:8px; margin-bottom:15px; font-size:0.85rem; border:1px dashed #cbd5e1; }
     </style>
 </head>
 <body>
@@ -57,14 +63,32 @@
         <h2>🔬 Laboratuvar İş Listesi</h2>
     </div>
 
+    <div class="advanced-filters">
+        <div class="filter-group">
+            <label class="filter-label">Hızlı Arama</label>
+            <input type="text" id="aramaKutusu" class="filter-input" oninput="uygulaFiltreler()" placeholder="🔍 İş Emri, Firma, Seri No veya Envanter No ara...">
+        </div>
+        <div class="filter-group date-group">
+            <label class="filter-label">Başlangıç Tarihi</label>
+            <input type="date" id="tarihBas" class="filter-input" onchange="uygulaFiltreler()">
+        </div>
+        <div class="filter-group date-group">
+            <label class="filter-label">Bitiş Tarihi</label>
+            <input type="date" id="tarihBit" class="filter-input" onchange="uygulaFiltreler()">
+        </div>
+        <div>
+            <button class="btn-clear" onclick="filtreleriTemizle()">Temizle</button>
+        </div>
+    </div>
+
     <div class="filter-bar" id="filtreBar">
-        <button class="filter-btn active" onclick="filtrele('Tümü')">Tümü</button>
-        <button class="filter-btn" onclick="filtrele('Kabul Edildi')">📥 Kabul Edildi</button>
-        <button class="filter-btn" onclick="filtrele('Hazırlanıyor')">⚙️ Hazırlanıyor</button>
-        <button class="filter-btn" onclick="filtrele('Tamamlandı')">✅ Tamamlandı</button>
-        <button class="filter-btn" onclick="filtrele('İmzalandı')">✍️ İmzalandı</button>
-        <button class="filter-btn" onclick="filtrele('Onaylandı')">🏅 Onaylandı</button>
-        <button class="filter-btn" onclick="filtrele('Sertifika Gönderildi')">📧 Sertifika Gönderildi</button>
+        <button class="filter-btn active" onclick="asamaSec(event, 'Tümü')">Tümü</button>
+        <button class="filter-btn" onclick="asamaSec(event, 'Kabul Edildi')">📥 Kabul Edildi</button>
+        <button class="filter-btn" onclick="asamaSec(event, 'Hazırlanıyor')">⚙️ Hazırlanıyor</button>
+        <button class="filter-btn" onclick="asamaSec(event, 'Tamamlandı')">✅ Tamamlandı</button>
+        <button class="filter-btn" onclick="asamaSec(event, 'İmzalandı')">✍️ İmzalandı</button>
+        <button class="filter-btn" onclick="asamaSec(event, 'Onaylandı')">🏅 Onaylandı</button>
+        <button class="filter-btn" onclick="asamaSec(event, 'Sertifika Gönderildi')">📧 Sertifika Gönderildi</button>
     </div>
 
     <div class="card">
@@ -75,12 +99,13 @@
                     <th>Firma Adı</th>
                     <th>Cihaz Bilgisi</th>
                     <th>S/N</th>
+                    <th>Envanter No</th>
                     <th>Aşama</th>
                     <th>İşlem</th>
                 </tr>
             </thead>
             <tbody id="cihazListesi">
-                <tr><td colspan="6" style="text-align:center;">Veriler yükleniyor...</td></tr>
+                <tr><td colspan="7" style="text-align:center; padding:20px;">Veriler yükleniyor...</td></tr>
             </tbody>
         </table>
     </div>
@@ -95,31 +120,31 @@
             <input type="hidden" id="cihaz_index">
 
             <div class="form-group">
-                <label>İşlemi Yapan Personel</label>
-                <input type="text" id="personel" placeholder="Ad Soyad giriniz..." required>
+                <label class="filter-label">İşlemi Yapan Personel</label>
+                <input type="text" id="personel" class="filter-input" placeholder="Ad Soyad giriniz..." required>
             </div>
 
             <div class="form-group">
-                <label>Kullanılacak Kalibrasyon Metodu</label>
-                <select id="metot_id" required>
+                <label class="filter-label">Kullanılacak Kalibrasyon Metodu</label>
+                <select id="metot_id" class="filter-input" required>
                     <option value="">Seçiniz...</option>
                 </select>
             </div>
 
             <div style="display:flex; gap:10px;">
                 <div class="form-group" style="flex:1;">
-                    <label>Sıcaklık (°C)</label>
-                    <input type="number" step="0.1" id="sicaklik" placeholder="Örn: 22.5" required>
+                    <label class="filter-label">Sıcaklık (°C)</label>
+                    <input type="number" step="0.1" id="sicaklik" class="filter-input" placeholder="Örn: 22.5" required>
                 </div>
                 <div class="form-group" style="flex:1;">
-                    <label>Nem (%RH)</label>
-                    <input type="number" step="1" id="nem" placeholder="Örn: 45" required>
+                    <label class="filter-label">Nem (%RH)</label>
+                    <input type="number" step="1" id="nem" class="filter-input" placeholder="Örn: 45" required>
                 </div>
             </div>
 
             <div class="form-group" style="margin-top:10px;">
-                <label style="color:var(--primary);">Cihazın Yeni Aşaması (Sonraki Adım)</label>
-                <select id="sertifika_asamasi" required style="border-color:var(--primary); background:#eff6ff; font-weight:600;">
+                <label style="color:var(--primary); font-size:0.85rem; font-weight:600; display:block; margin-bottom:5px;">Cihazın Yeni Aşaması (Sonraki Adım)</label>
+                <select id="sertifika_asamasi" class="filter-input" required style="border-color:var(--primary); background:#eff6ff; font-weight:600;">
                     <option value="Kabul Edildi">📥 Kabul Edildi</option>
                     <option value="Hazırlanıyor">⚙️ Hazırlanıyor</option>
                     <option value="Tamamlandı">✅ Tamamlandı</option>
@@ -139,6 +164,7 @@
     <script>
         let metotlar = [];
         let tumCihazlar = [];
+        let seciliAsama = 'Tümü';
 
         async function sayfaYukle() {
             await metotlariCek();
@@ -171,6 +197,7 @@
                                 ie_id: ie.id,
                                 ie_no: ie.ie_no,
                                 firma_adi: ie.firma_adi,
+                                kabul_tarihi: ie.kabul_tarihi, // Tarih filtresi için
                                 index: index,
                                 ...c
                             });
@@ -178,21 +205,79 @@
                     }
                 });
 
-                tabloyaCiz(tumCihazlar);
+                uygulaFiltreler();
 
             } catch (err) { console.error("Hata:", err); }
         }
 
-        function filtrele(asama) {
+        // AŞAMA BUTONUNA TIKLANDIĞINDA
+        function asamaSec(event, asama) {
+            seciliAsama = asama;
             document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
             event.target.classList.add('active');
+            uygulaFiltreler();
+        }
 
-            if (asama === 'Tümü') {
-                tabloyaCiz(tumCihazlar);
-            } else {
-                const filtrelenmis = tumCihazlar.filter(c => (c.islem_durumu || 'Kabul Edildi') === asama || (c.islem_durumu === 'Sertifika Mail Gönderildi' && asama === 'Sertifika Gönderildi'));
-                tabloyaCiz(filtrelenmis);
-            }
+        // TÜM FİLTRELERİ (AŞAMA + ARAMA + TARİH) AYNI ANDA UYGULAYAN ANA FONKSİYON
+        function uygulaFiltreler() {
+            const aramaMetni = document.getElementById("aramaKutusu").value.toLocaleUpperCase('tr-TR');
+            const basTarih = document.getElementById("tarihBas").value;
+            const bitTarih = document.getElementById("tarihBit").value;
+
+            const filtrelenmis = tumCihazlar.filter(c => {
+                
+                // 1. Aşama Kontrolü
+                const durum = c.islem_durumu || "Kabul Edildi";
+                let asamaUygun = false;
+                if (seciliAsama === 'Tümü') asamaUygun = true;
+                else if (seciliAsama === 'Sertifika Gönderildi' && durum === 'Sertifika Mail Gönderildi') asamaUygun = true;
+                else if (durum === seciliAsama) asamaUygun = true;
+
+                // 2. Metin Arama Kontrolü (İş Emri, Firma, S/N, Envanter No)
+                const aramaUygun = !aramaMetni || 
+                    (c.ie_no || "").toLocaleUpperCase('tr-TR').includes(aramaMetni) ||
+                    (c.firma_adi || "").toLocaleUpperCase('tr-TR').includes(aramaMetni) ||
+                    (c.seri_no || "").toLocaleUpperCase('tr-TR').includes(aramaMetni) ||
+                    (c.envanter_no || "").toLocaleUpperCase('tr-TR').includes(aramaMetni);
+
+                // 3. Tarih Aralığı Kontrolü (İş emrinin kabul tarihine göre)
+                let tarihUygun = true;
+                if(c.kabul_tarihi && (basTarih || bitTarih)) {
+                    const k_tarih = new Date(c.kabul_tarihi);
+                    k_tarih.setHours(0,0,0,0);
+                    
+                    if(basTarih) {
+                        const b_tarih = new Date(basTarih);
+                        b_tarih.setHours(0,0,0,0);
+                        if(k_tarih < b_tarih) tarihUygun = false;
+                    }
+                    if(bitTarih) {
+                        const bit_tarih = new Date(bitTarih);
+                        bit_tarih.setHours(23,59,59,999);
+                        if(k_tarih > bit_tarih) tarihUygun = false;
+                    }
+                } else if (!c.kabul_tarihi && (basTarih || bitTarih)) {
+                    tarihUygun = false; // Tarihi olmayanlar filtreye takılsın
+                }
+
+                return asamaUygun && aramaUygun && tarihUygun;
+            });
+
+            tabloyaCiz(filtrelenmis);
+        }
+
+        // FİLTRELERİ SIFIRLAMA BUTONU
+        function filtreleriTemizle() {
+            document.getElementById("aramaKutusu").value = "";
+            document.getElementById("tarihBas").value = "";
+            document.getElementById("tarihBit").value = "";
+            
+            // Tümü sekmesine dön
+            seciliAsama = 'Tümü';
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector('.filter-btn').classList.add('active');
+            
+            uygulaFiltreler();
         }
 
         function tabloyaCiz(liste) {
@@ -200,7 +285,7 @@
             tbody.innerHTML = "";
 
             if(liste.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:30px; color:#94a3b8;">Bu aşamada bekleyen cihaz bulunmuyor.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px; color:#94a3b8;">Belirtilen kriterlere uygun cihaz bulunamadı.</td></tr>`;
                 return;
             }
 
@@ -220,6 +305,7 @@
                     <td>${c.firma_adi}</td>
                     <td><b>${c.cihaz_adi}</b><br><small style="color:#64748b">${c.marka_model || '-'}</small></td>
                     <td>${c.seri_no || '-'}</td>
+                    <td><b>${c.envanter_no || '-'}</b></td>
                     <td><span class="badge ${badgeClass}">${durum}</span></td>
                     <td>
                         <button class="btn-islem" onclick='modalAc(${c.ie_id}, ${c.index}, ${JSON.stringify(c).replace(/'/g, "&apos;")})'>
@@ -236,9 +322,12 @@
             document.getElementById("cihaz_index").value = index;
             
             document.getElementById("modalCihazInfo").innerHTML = `
-                <b>Cihaz:</b> ${cihaz.cihaz_adi} (${cihaz.marka_model || 'Markasız'}) <br>
-                <b>Seri No:</b> ${cihaz.seri_no || '-'} <br>
-                <b>Mevcut Aşama:</b> <span style="color:var(--primary); font-weight:bold;">${cihaz.islem_durumu || 'Kabul Edildi'}</span>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                    <div><b>Cihaz:</b> ${cihaz.cihaz_adi} (${cihaz.marka_model || 'Markasız'})</div>
+                    <div><b>Seri No:</b> ${cihaz.seri_no || '-'}</div>
+                    <div><b>Envanter No:</b> ${cihaz.envanter_no || '-'}</div>
+                    <div><b>Mevcut Aşama:</b> <span style="color:var(--primary); font-weight:bold;">${cihaz.islem_durumu || 'Kabul Edildi'}</span></div>
+                </div>
             `;
 
             if(cihaz.kalibrasyon_verileri) {
@@ -281,9 +370,7 @@
 
                 if(res.ok) {
                     modalKapat();
-                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                    document.querySelector('.filter-btn').classList.add('active');
-                    cihazlariListele(); 
+                    cihazlariListele(); // Güncel veriyi çek ve filtreleri koruyarak ekrana bas
                 } else { alert("Kaydedilirken bir hata oluştu."); }
             } catch(e) { console.error(e); }
         }
