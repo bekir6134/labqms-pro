@@ -92,9 +92,19 @@
         <div class="form-grid g3" style="margin-bottom:16px;">
             <div>
                 <label>Firma *</label>
-                <select id="musteri_id" onchange="firmaSecildi()">
-                    <option value="">-- Firma Seçin --</option>
-                </select>
+                <div class="combo-wrapper">
+                    <input type="text" id="firmaArama" placeholder="Firma adı ile arayın..."
+                        autocomplete="off"
+                        oninput="firmaComboFiltrele()"
+                        onfocus="firmaComboFiltrele()"
+                        onblur="setTimeout(()=>document.getElementById('firmaComboList').style.display='none',200)">
+                    <div class="combo-dropdown" id="firmaComboList"></div>
+                </div>
+                <input type="hidden" id="musteri_id">
+                <div id="seciliFirma" style="display:none; margin-top:6px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:6px; padding:6px 12px; font-size:0.83rem; color:#1e40af; font-weight:600; display:flex; align-items:center; justify-content:space-between;">
+                    <span id="seciliFirmaAdi"></span>
+                    <button onclick="firmaSifirla()" style="background:none;border:none;cursor:pointer;color:#64748b;font-size:0.85rem;">✕</button>
+                </div>
             </div>
             <div>
                 <label>Kabul Tarihi *</label>
@@ -186,19 +196,54 @@
     async function yukle() {
         const res=await fetch('/api/is-emirleri-on-veriler');
         const d=await res.json(); musteriler=d.musteriler;
-        const sel=document.getElementById("musteri_id");
-        sel.innerHTML='<option value="">-- Firma Seçin --</option>'+musteriler.map(m=>`<option value="${m.id}">${m.firma_adi}${m.sube_adi?' / '+m.sube_adi:''}</option>`).join('');
         document.getElementById("kabul_tarihi").valueAsDate=new Date();
         satirEkle();
         listele();
     }
 
+    function firmaComboFiltrele() {
+        const val = document.getElementById("firmaArama").value.toUpperCase().trim();
+        const list = document.getElementById("firmaComboList");
+        const filtered = val ? musteriler.filter(m =>
+            m.firma_adi.toUpperCase().includes(val) ||
+            (m.sube_adi||'').toUpperCase().includes(val)
+        ) : musteriler;
+        if(!filtered.length){ list.style.display="none"; return; }
+        list.innerHTML = filtered.map(m => `
+            <div class="combo-item" onmousedown="firmaSec(${m.id},'${(m.firma_adi+(m.sube_adi?' / '+m.sube_adi:'')).replace(/'/g,"\'")}')">
+                <strong>${m.firma_adi}</strong>${m.sube_adi?` <span style="color:#94a3b8;font-size:0.78rem;">/ ${m.sube_adi}</span>`:''}
+            </div>`).join('');
+        list.style.display = "block";
+    }
+
+    async function firmaSec(id, ad) {
+        document.getElementById("musteri_id").value = id;
+        document.getElementById("firmaArama").value = "";
+        document.getElementById("firmaComboList").style.display = "none";
+        // seçili firma badge
+        const badge = document.getElementById("seciliFirma");
+        document.getElementById("seciliFirmaAdi").textContent = ad;
+        badge.style.display = "flex";
+        // cihazları çek
+        firmaCihazlari = [];
+        const res = await fetch(`/api/musteri-cihazlari-firma/${id}`);
+        firmaCihazlari = await res.json();
+    }
+
+    function firmaSifirla() {
+        document.getElementById("musteri_id").value = "";
+        document.getElementById("firmaArama").value = "";
+        document.getElementById("seciliFirma").style.display = "none";
+        firmaCihazlari = [];
+    }
+
     async function firmaSecildi() {
-        const id=document.getElementById("musteri_id").value;
-        firmaCihazlari=[];
+        // düzenleme modunda kullanılır
+        const id = document.getElementById("musteri_id").value;
         if(!id) return;
-        const res=await fetch(`/api/musteri-cihazlari-firma/${id}`);
-        firmaCihazlari=await res.json();
+        firmaCihazlari = [];
+        const res = await fetch(`/api/musteri-cihazlari-firma/${id}`);
+        firmaCihazlari = await res.json();
     }
 
     function satirEkle(c={}) {
@@ -319,6 +364,9 @@
         const r=tumKayitlar.find(x=>x.id===id); if(!r) return;
         document.getElementById("duzenle_id").value=r.id;
         document.getElementById("musteri_id").value=r.musteri_id;
+        document.getElementById("seciliFirmaAdi").textContent=r.firma_adi+(r.sube_adi?" / "+r.sube_adi:"");
+        document.getElementById("seciliFirma").style.display="flex";
+        document.getElementById("firmaArama").value="";
         document.getElementById("kabul_tarihi").value=r.kabul_tarihi?.substring(0,10)||'';
         document.getElementById("teslim_tarihi").value=r.teslim_tarihi?.substring(0,10)||'';
         document.getElementById("notlar").value=r.notlar||'';
@@ -341,6 +389,8 @@
     function formTemizle() {
         document.getElementById("duzenle_id").value='';
         document.getElementById("musteri_id").value='';
+        document.getElementById("firmaArama").value='';
+        document.getElementById("seciliFirma").style.display="none";
         document.getElementById("kabul_tarihi").valueAsDate=new Date();
         document.getElementById("teslim_tarihi").value='';
         document.getElementById("notlar").value='';
