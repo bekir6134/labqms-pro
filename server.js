@@ -230,38 +230,46 @@ app.post('/api/referans-cihazlar', async (req, res) => {
     }
 });
 
-// Referans Takip Verisi Kaydet (Kalibrasyon veya Ara Kontrol)
 app.post('/api/referans-takip', async (req, res) => {
     try {
         const { 
-            referans_id, sertifika_no, izlenebilirlik, 
-            kal_tarihi, sonraki_kal_tarihi, 
-            ara_kontrol_tarihi, sonraki_ara_kontrol_tarihi 
+            referans_id, 
+            islem_tipi, 
+            sertifika_no, 
+            izlenebilirlik, 
+            kal_tarihi, 
+            sonraki_kal_tarihi 
         } = req.body;
 
-        // SQL sorgusunda eksik sütun veya tablo adı hatası 404/500 dönebilir
+        // VERİ KONTROLÜ: Eğer referans_id gelmiyorsa hata döndür
+        if (!referans_id) {
+            return res.status(400).json({ error: "Referans ID bulunamadı." });
+        }
+
         const query = `
             INSERT INTO referans_takip (
-                referans_id, sertifika_no, izlenebilirlik, 
-                kal_tarihi, sonraki_kal_tarihi, 
-                ara_kontrol_tarihi, sonraki_ara_kontrol_tarihi
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`;
+                referans_id, 
+                islem_tipi, 
+                sertifika_no, 
+                izlenebilirlik, 
+                kal_tarihi, 
+                sonraki_kal_tarihi
+            ) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`;
 
         const values = [
             referans_id, 
+            islem_tipi, 
             sertifika_no, 
-            izlenebilirlik || null, 
-            kal_tarihi || ara_kontrol_tarihi, // Ortak tarih alanı
-            sonraki_kal_tarihi || sonraki_ara_kontrol_tarihi, 
-            ara_kontrol_tarihi || null, 
-            sonraki_ara_kontrol_tarihi || null
+            izlenebilirlik || '', // Boş gelirse hata vermemesi için
+            kal_tarihi, 
+            sonraki_kal_tarihi
         ];
 
         const result = await pool.query(query, values);
         res.status(200).json(result.rows[0]);
     } catch (err) {
-        console.error("API Hatası:", err.message);
-        res.status(500).send("Sunucu Hatası: " + err.message);
+        console.error("DETAYLI HATA:", err); // Sunucu terminalinde hatayı görebilmek için
+        res.status(500).json({ error: err.message });
     }
 });
 
