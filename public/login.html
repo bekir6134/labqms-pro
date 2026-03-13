@@ -1,17 +1,18 @@
 <!DOCTYPE html>
+<html lang="tr">
+<head>
 
-<script>
+    <meta charset="UTF-8"> <script>
     // GÜVENLİK KONTROLÜ: Kullanıcı giriş yapmış mı?
     const aktifKullanici = localStorage.getItem("labqms_user");
     if (!aktifKullanici) {
         // Eğer giriş yapmamışsa, anında login sayfasına şutla!
         window.location.href = "login.html";
     }
-</script>
+    </script>
 
-<html lang="tr">
-<head>
-    <meta charset="UTF-8">
+    
+    <title>Sistem Ayarları</title>
     <title>Giriş Yap - LabQMS Pro</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
