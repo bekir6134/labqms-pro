@@ -480,9 +480,7 @@ app.delete('/api/metotlar/:id', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`🚀 Sunucu ${PORT} portunda başarıyla ayağa kalktı.`);
-});
+
 // --- MÜŞTERİ CİHAZLARI API ---
 
 app.get('/api/musteri-cihazlari-on-veriler', async (req, res) => {
@@ -714,4 +712,74 @@ app.delete('/api/takvim/:id', async (req, res) => {
         await pool.query('DELETE FROM takvim WHERE id=$1', [req.params.id]);
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// --- PERSONEL YÖNETİMİ ---
+app.get('/api/personeller', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM personeller ORDER BY id DESC');
+        res.json(result.rows);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/personeller', async (req, res) => {
+    try {
+        const { ad_soyad, kullanici_adi, sifre, roller, erisimler, varsayilan_onaylayici } = req.body;
+        if (varsayilan_onaylayici) {
+            await pool.query('UPDATE personeller SET varsayilan_onaylayici = false');
+        }
+        const result = await pool.query(
+            `INSERT INTO personeller (ad_soyad, kullanici_adi, sifre, roller, erisimler, varsayilan_onaylayici)
+             VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+            [ad_soyad, kullanici_adi, sifre, JSON.stringify(roller), JSON.stringify(erisimler), varsayilan_onaylayici]
+        );
+        res.json(result.rows[0]);
+    } catch (err) {
+        if (err.code === '23505') return res.status(400).json({ error: "Bu kullanıcı adı zaten kullanılıyor!" });
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.put('/api/personeller/:id', async (req, res) => {
+    try {
+        const { ad_soyad, kullanici_adi, sifre, roller, erisimler, varsayilan_onaylayici } = req.body;
+        if (varsayilan_onaylayici) {
+            await pool.query('UPDATE personeller SET varsayilan_onaylayici = false');
+        }
+        const result = await pool.query(
+            `UPDATE personeller SET ad_soyad=$1, kullanici_adi=$2, sifre=$3, roller=$4, erisimler=$5, varsayilan_onaylayici=$6 WHERE id=$7 RETURNING *`,
+            [ad_soyad, kullanici_adi, sifre, JSON.stringify(roller), JSON.stringify(erisimler), varsayilan_onaylayici, req.params.id]
+        );
+        res.json(result.rows[0]);
+    } catch (err) {
+        if (err.code === '23505') return res.status(400).json({ error: "Bu kullanıcı adı zaten kullanılıyor!" });
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/personeller/:id', async (req, res) => {
+    try {
+        await pool.query('DELETE FROM personeller WHERE id=$1', [req.params.id]);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// --- GİRİŞ (LOGIN) ---
+app.post('/api/login', async (req, res) => {
+    try {
+        const { kullanici_adi, sifre } = req.body;
+        const result = await pool.query(
+            'SELECT id, ad_soyad, kullanici_adi, roller, erisimler FROM personeller WHERE kullanici_adi=$1 AND sifre=$2',
+            [kullanici_adi, sifre]
+        );
+        if (result.rows.length > 0) {
+            res.json({ success: true, user: result.rows[0] });
+        } else {
+            res.status(401).json({ success: false, error: "Kullanıcı adı veya şifre hatalı!" });
+        }
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.listen(PORT, () => {
+    console.log(`🚀 Sunucu ${PORT} portunda başarıyla ayağa kalktı.`);
 });
