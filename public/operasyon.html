@@ -5,16 +5,12 @@
     <title>Laboratuvar Operasyon Merkezi</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root { --primary:#1E40AF; --sidebar:#1e293b; --border:#e2e8f0; --bg:#f8fafc; --success:#10B981; --warning:#f59e0b; }
-        body { font-family:'Inter',sans-serif; background:var(--bg); margin:0; display:flex; color:#334155; }
+        :root { --primary:#1E40AF; --border:#e2e8f0; --bg:#f8fafc; --success:#10B981; --warning:#f59e0b; }
+        /* Body flex ve margin özellikleri temizlendi, sadece padding bırakıldı */
+        body { font-family:'Inter',sans-serif; background:var(--bg); margin:0; padding:24px; color:#334155; }
         
-        .sidebar { width:250px; background:var(--sidebar); color:white; height:100vh; position:fixed; padding:20px; box-sizing:border-box; }
-        .nav-link { display:block; color:#cbd5e1; text-decoration:none; padding:12px; border-radius:8px; margin-bottom:5px; transition:0.3s; font-size:0.9rem; }
-        .nav-link:hover, .nav-link.active { background:#334155; color:white; }
-
-        .main-content { margin-left:250px; flex:1; padding:30px; }
         .header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
-        h2 { margin:0; color:var(--primary); }
+        h2 { margin:0; color:var(--primary); font-size: 1.5rem; }
 
         /* FİLTRE BAR TASARIMI */
         .filter-bar { display:flex; gap:10px; margin-bottom:20px; overflow-x:auto; padding-bottom:5px; }
@@ -28,14 +24,14 @@
         th { background:#f8fafc; text-align:left; padding:12px; border-bottom:2px solid var(--border); color:#64748b; font-size:0.85rem; }
         td { padding:12px; border-bottom:1px solid var(--border); font-size:0.9rem; vertical-align:middle; }
         
-        /* AŞAMA RENKLERİ (Senin İstediğin İsimlere Göre) */
+        /* AŞAMA RENKLERİ */
         .badge { padding:5px 12px; border-radius:12px; font-size:0.75rem; font-weight:700; }
-        .b-kabul { background:#f1f5f9; color:#475569; } /* Kabul Edildi */
-        .b-hazirlaniyor { background:#fef9c3; color:#854d0e; } /* Hazırlanıyor */
-        .b-tamamlandi { background:#dbeafe; color:#1e40af; } /* Tamamlandı */
-        .b-imzalandi { background:#ede9fe; color:#6d28d9; } /* İmzalandı */
-        .b-onaylandi { background:#d1fae5; color:#065f46; } /* Onaylandı */
-        .b-sertifika { background:#dcfce7; color:#166534; } /* Sertifika Gönderildi */
+        .b-kabul { background:#f1f5f9; color:#475569; } 
+        .b-hazirlaniyor { background:#fef9c3; color:#854d0e; } 
+        .b-tamamlandi { background:#dbeafe; color:#1e40af; } 
+        .b-imzalandi { background:#ede9fe; color:#6d28d9; } 
+        .b-onaylandi { background:#d1fae5; color:#065f46; } 
+        .b-sertifika { background:#dcfce7; color:#166534; } 
 
         .btn-islem { background:#f8fafc; color:var(--primary); border:1px solid #bfdbfe; padding:8px 14px; border-radius:6px; cursor:pointer; font-weight:600; font-size:0.8rem; transition:0.2s; }
         .btn-islem:hover { background:var(--primary); color:white; }
@@ -57,48 +53,36 @@
 </head>
 <body>
 
-    <div class="sidebar">
-        <h2 style="color: white; text-align: center; margin-bottom: 30px;">LabQMS Pro</h2>
-        <nav>
-            <a href="dashboard.html" class="nav-link">🏠 Dashboard</a>
-            <a href="kabul.html" class="nav-link">📥 Cihaz Kabul</a>
-            <a href="operasyon.html" class="nav-link active">🔬 Operasyon</a>
-            <a href="metotlar.html" class="nav-link">🧪 Metotlar</a>
-        </nav>
+    <div class="header">
+        <h2>🔬 Laboratuvar İş Listesi</h2>
     </div>
 
-    <div class="main-content">
-        <div class="header">
-            <h2>🔬 Laboratuvar İş Listesi</h2>
-        </div>
+    <div class="filter-bar" id="filtreBar">
+        <button class="filter-btn active" onclick="filtrele('Tümü')">Tümü</button>
+        <button class="filter-btn" onclick="filtrele('Kabul Edildi')">📥 Kabul Edildi</button>
+        <button class="filter-btn" onclick="filtrele('Hazırlanıyor')">⚙️ Hazırlanıyor</button>
+        <button class="filter-btn" onclick="filtrele('Tamamlandı')">✅ Tamamlandı</button>
+        <button class="filter-btn" onclick="filtrele('İmzalandı')">✍️ İmzalandı</button>
+        <button class="filter-btn" onclick="filtrele('Onaylandı')">🏅 Onaylandı</button>
+        <button class="filter-btn" onclick="filtrele('Sertifika Gönderildi')">📧 Sertifika Gönderildi</button>
+    </div>
 
-        <div class="filter-bar" id="filtreBar">
-            <button class="filter-btn active" onclick="filtrele('Tümü')">Tümü</button>
-            <button class="filter-btn" onclick="filtrele('Kabul Edildi')">📥 Kabul Edildi</button>
-            <button class="filter-btn" onclick="filtrele('Hazırlanıyor')">⚙️ Hazırlanıyor</button>
-            <button class="filter-btn" onclick="filtrele('Tamamlandı')">✅ Tamamlandı</button>
-            <button class="filter-btn" onclick="filtrele('İmzalandı')">✍️ İmzalandı</button>
-            <button class="filter-btn" onclick="filtrele('Onaylandı')">🏅 Onaylandı</button>
-            <button class="filter-btn" onclick="filtrele('Sertifika Gönderildi')">📧 Sertifika Gönderildi</button>
-        </div>
-
-        <div class="card">
-            <table>
-                <thead>
-                    <tr>
-                        <th>İş Emri</th>
-                        <th>Firma Adı</th>
-                        <th>Cihaz Bilgisi</th>
-                        <th>S/N</th>
-                        <th>Aşama</th>
-                        <th>İşlem</th>
-                    </tr>
-                </thead>
-                <tbody id="cihazListesi">
-                    <tr><td colspan="6" style="text-align:center;">Veriler yükleniyor...</td></tr>
-                </tbody>
-            </table>
-        </div>
+    <div class="card">
+        <table>
+            <thead>
+                <tr>
+                    <th>İş Emri</th>
+                    <th>Firma Adı</th>
+                    <th>Cihaz Bilgisi</th>
+                    <th>S/N</th>
+                    <th>Aşama</th>
+                    <th>İşlem</th>
+                </tr>
+            </thead>
+            <tbody id="cihazListesi">
+                <tr><td colspan="6" style="text-align:center;">Veriler yükleniyor...</td></tr>
+            </tbody>
+        </table>
     </div>
 
     <div class="modal-overlay" id="islemModal">
@@ -154,7 +138,7 @@
 
     <script>
         let metotlar = [];
-        let tumCihazlar = []; // Filtreleme için tüm cihazları hafızada tutacağız
+        let tumCihazlar = [];
 
         async function sayfaYukle() {
             await metotlariCek();
@@ -177,9 +161,8 @@
                 const res = await fetch('/api/is-emirleri');
                 const isEmirleri = await res.json();
                 
-                tumCihazlar = []; // Diziyi sıfırla
+                tumCihazlar = [];
                 
-                // İş emirlerindeki cihazları düz bir listeye çevir
                 isEmirleri.forEach(ie => {
                     const cihazlar = typeof ie.cihazlar === 'string' ? JSON.parse(ie.cihazlar) : ie.cihazlar;
                     if(cihazlar && cihazlar.length > 0) {
@@ -200,9 +183,7 @@
             } catch (err) { console.error("Hata:", err); }
         }
 
-        // Filtreleme Fonksiyonu
         function filtrele(asama) {
-            // Buton aktiflik durumunu ayarla
             document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
             event.target.classList.add('active');
 
@@ -287,7 +268,6 @@
                 sertifika_asamasi: document.getElementById("sertifika_asamasi").value
             };
 
-            // Eğer aşama sadece değişiyorsa ama veri girilmediyse uyarı ver
             if(payload.sertifika_asamasi !== "Kabul Edildi" && (!payload.personel || !payload.metot_id)) {
                 return alert("Aşama değiştirmek için Personel, Metot ve Çevre Şartlarını doldurmalısınız!");
             }
@@ -301,7 +281,6 @@
 
                 if(res.ok) {
                     modalKapat();
-                    // "Tümü" filtresine dön ve listeyi yenile
                     document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
                     document.querySelector('.filter-btn').classList.add('active');
                     cihazlariListele(); 
