@@ -101,7 +101,7 @@
                     <div class="combo-dropdown" id="firmaComboList"></div>
                 </div>
                 <input type="hidden" id="musteri_id">
-                <div id="seciliFirma" style="display:none; margin-top:6px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:6px; padding:6px 12px; font-size:0.83rem; color:#1e40af; font-weight:600; display:flex; align-items:center; justify-content:space-between;">
+                <div id="seciliFirma" style="display:none; margin-top:6px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:6px; padding:6px 12px; font-size:0.83rem; color:#1e40af; font-weight:600; align-items:center; justify-content:space-between;">
                     <span id="seciliFirmaAdi"></span>
                     <button onclick="firmaSifirla()" style="background:none;border:none;cursor:pointer;color:#64748b;font-size:0.85rem;">✕</button>
                 </div>
@@ -204,15 +204,17 @@
     function firmaComboFiltrele() {
         const val = document.getElementById("firmaArama").value.toUpperCase().trim();
         const list = document.getElementById("firmaComboList");
+        if(!musteriler || !musteriler.length){ list.style.display="none"; return; }
         const filtered = val ? musteriler.filter(m =>
             m.firma_adi.toUpperCase().includes(val) ||
             (m.sube_adi||'').toUpperCase().includes(val)
         ) : musteriler;
-        if(!filtered.length){ list.style.display="none"; return; }
-        list.innerHTML = filtered.map(m => `
-            <div class="combo-item" onmousedown="firmaSec(${m.id},'${(m.firma_adi+(m.sube_adi?' / '+m.sube_adi:'')).replace(/'/g,"\'")}')">
-                <strong>${m.firma_adi}</strong>${m.sube_adi?` <span style="color:#94a3b8;font-size:0.78rem;">/ ${m.sube_adi}</span>`:''}
-            </div>`).join('');
+        if(!filtered.length){ list.innerHTML='<div class="combo-item" style="color:#94a3b8;">Sonuç bulunamadı</div>'; list.style.display="block"; return; }
+        list.innerHTML = filtered.slice(0,20).map(m =>
+            `<div class="combo-item" onmousedown="firmaSec(${m.id},decodeURIComponent('${encodeURIComponent(m.firma_adi+(m.sube_adi?" / "+m.sube_adi:""))}'))">
+                <strong>${m.firma_adi}</strong>${m.sube_adi?` <span style="color:#94a3b8;font-size:0.78rem;">/ ${m.sube_adi}</span>`:""}
+            </div>`
+        ).join("");
         list.style.display = "block";
     }
 
@@ -220,7 +222,6 @@
         document.getElementById("musteri_id").value = id;
         document.getElementById("firmaArama").value = "";
         document.getElementById("firmaComboList").style.display = "none";
-        // seçili firma badge
         const badge = document.getElementById("seciliFirma");
         document.getElementById("seciliFirmaAdi").textContent = ad;
         badge.style.display = "flex";
