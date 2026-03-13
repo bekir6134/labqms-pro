@@ -16,20 +16,29 @@
         .header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
         h2 { margin:0; color:var(--primary); }
 
+        /* FİLTRE BAR TASARIMI */
+        .filter-bar { display:flex; gap:10px; margin-bottom:20px; overflow-x:auto; padding-bottom:5px; }
+        .filter-btn { padding:8px 16px; border:1px solid var(--border); background:#fff; border-radius:20px; cursor:pointer; font-size:0.85rem; font-weight:600; color:#64748b; transition:0.2s; white-space:nowrap; }
+        .filter-btn:hover { border-color:#cbd5e1; background:#f1f5f9; }
+        .filter-btn.active { background:var(--primary); color:white; border-color:var(--primary); }
+
         .card { background:#fff; padding:20px; border-radius:12px; border:1px solid var(--border); box-shadow:0 4px 6px rgba(0,0,0,0.05); }
         
         table { width:100%; border-collapse:collapse; }
         th { background:#f8fafc; text-align:left; padding:12px; border-bottom:2px solid var(--border); color:#64748b; font-size:0.85rem; }
         td { padding:12px; border-bottom:1px solid var(--border); font-size:0.9rem; vertical-align:middle; }
         
-        .badge { padding:4px 10px; border-radius:12px; font-size:0.75rem; font-weight:700; }
-        .b-bekliyor { background:#fee2e2; color:#dc2626; }
-        .b-islemde { background:#fef3c7; color:#d97706; }
-        .b-hazir { background:#dcfce7; color:#166534; }
-        .b-onay { background:#e0e7ff; color:#4338ca; }
+        /* AŞAMA RENKLERİ (Senin İstediğin İsimlere Göre) */
+        .badge { padding:5px 12px; border-radius:12px; font-size:0.75rem; font-weight:700; }
+        .b-kabul { background:#f1f5f9; color:#475569; } /* Kabul Edildi */
+        .b-hazirlaniyor { background:#fef9c3; color:#854d0e; } /* Hazırlanıyor */
+        .b-tamamlandi { background:#dbeafe; color:#1e40af; } /* Tamamlandı */
+        .b-imzalandi { background:#ede9fe; color:#6d28d9; } /* İmzalandı */
+        .b-onaylandi { background:#d1fae5; color:#065f46; } /* Onaylandı */
+        .b-sertifika { background:#dcfce7; color:#166534; } /* Sertifika Gönderildi */
 
-        .btn-islem { background:var(--primary); color:white; border:none; padding:8px 14px; border-radius:6px; cursor:pointer; font-weight:600; font-size:0.8rem; transition:0.2s; }
-        .btn-islem:hover { background:#1e3a8a; }
+        .btn-islem { background:#f8fafc; color:var(--primary); border:1px solid #bfdbfe; padding:8px 14px; border-radius:6px; cursor:pointer; font-weight:600; font-size:0.8rem; transition:0.2s; }
+        .btn-islem:hover { background:var(--primary); color:white; }
 
         /* MODAL TASARIMI */
         .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center; }
@@ -60,7 +69,17 @@
 
     <div class="main-content">
         <div class="header">
-            <h2>🔬 Laboratuvar İş Listesi (Cihaz Bazlı)</h2>
+            <h2>🔬 Laboratuvar İş Listesi</h2>
+        </div>
+
+        <div class="filter-bar" id="filtreBar">
+            <button class="filter-btn active" onclick="filtrele('Tümü')">Tümü</button>
+            <button class="filter-btn" onclick="filtrele('Kabul Edildi')">📥 Kabul Edildi</button>
+            <button class="filter-btn" onclick="filtrele('Hazırlanıyor')">⚙️ Hazırlanıyor</button>
+            <button class="filter-btn" onclick="filtrele('Tamamlandı')">✅ Tamamlandı</button>
+            <button class="filter-btn" onclick="filtrele('İmzalandı')">✍️ İmzalandı</button>
+            <button class="filter-btn" onclick="filtrele('Onaylandı')">🏅 Onaylandı</button>
+            <button class="filter-btn" onclick="filtrele('Sertifika Gönderildi')">📧 Sertifika Gönderildi</button>
         </div>
 
         <div class="card">
@@ -86,8 +105,7 @@
         <div class="modal">
             <div class="modal-header">⚙️ Kalibrasyon Veri Girişi</div>
             
-            <div class="cihaz-info" id="modalCihazInfo">
-                </div>
+            <div class="cihaz-info" id="modalCihazInfo"></div>
 
             <input type="hidden" id="is_emri_id">
             <input type="hidden" id="cihaz_index">
@@ -116,12 +134,14 @@
             </div>
 
             <div class="form-group" style="margin-top:10px;">
-                <label style="color:var(--primary);">Sertifika Aşaması (Sonraki Adım)</label>
-                <select id="sertifika_asamasi" required style="border-color:var(--primary); background:#eff6ff;">
-                    <option value="Veri Girişi Bekliyor">📝 Veri Girişi Bekliyor</option>
-                    <option value="Taslak Hazırlandı">📄 Taslak Hazırlandı</option>
-                    <option value="Onaya Gönderildi">⏳ Onaya Gönderildi</option>
-                    <option value="Sertifika Onaylandı">✅ Sertifika Onaylandı</option>
+                <label style="color:var(--primary);">Cihazın Yeni Aşaması (Sonraki Adım)</label>
+                <select id="sertifika_asamasi" required style="border-color:var(--primary); background:#eff6ff; font-weight:600;">
+                    <option value="Kabul Edildi">📥 Kabul Edildi</option>
+                    <option value="Hazırlanıyor">⚙️ Hazırlanıyor</option>
+                    <option value="Tamamlandı">✅ Tamamlandı</option>
+                    <option value="İmzalandı">✍️ İmzalandı</option>
+                    <option value="Onaylandı">🏅 Onaylandı</option>
+                    <option value="Sertifika Gönderildi">📧 Sertifika Mail Gönderildi</option>
                 </select>
             </div>
 
@@ -134,6 +154,7 @@
 
     <script>
         let metotlar = [];
+        let tumCihazlar = []; // Filtreleme için tüm cihazları hafızada tutacağız
 
         async function sayfaYukle() {
             await metotlariCek();
@@ -156,50 +177,77 @@
                 const res = await fetch('/api/is-emirleri');
                 const isEmirleri = await res.json();
                 
-                const tbody = document.getElementById("cihazListesi");
-                tbody.innerHTML = "";
-
-                let cihazBulundu = false;
-
-                // İş emirlerini dön, içindeki cihazları düz (flat) bir liste haline getir
+                tumCihazlar = []; // Diziyi sıfırla
+                
+                // İş emirlerindeki cihazları düz bir listeye çevir
                 isEmirleri.forEach(ie => {
                     const cihazlar = typeof ie.cihazlar === 'string' ? JSON.parse(ie.cihazlar) : ie.cihazlar;
-                    
                     if(cihazlar && cihazlar.length > 0) {
                         cihazlar.forEach((c, index) => {
-                            cihazBulundu = true;
-                            // Durum belirleme (Eğer atanmamışsa 'İşlem Bekliyor' varsay)
-                            const durum = c.islem_durumu || "İşlem Bekliyor";
-                            let badgeClass = "b-bekliyor";
-                            if(durum.includes("Veri")) badgeClass = "b-islemde";
-                            else if(durum.includes("Onay")) badgeClass = "b-onay";
-                            else if(durum.includes("Onaylandı")) badgeClass = "b-hazir";
-
-                            const tr = document.createElement("tr");
-                            tr.innerHTML = `
-                                <td><b>${ie.ie_no}</b></td>
-                                <td>${ie.firma_adi}</td>
-                                <td><b>${c.cihaz_adi}</b><br><small style="color:#64748b">${c.marka_model || '-'}</small></td>
-                                <td>${c.seri_no || '-'}</td>
-                                <td><span class="badge ${badgeClass}">${durum}</span></td>
-                                <td>
-                                    <button class="btn-islem" onclick='modalAc(${ie.id}, ${index}, ${JSON.stringify(c).replace(/'/g, "&apos;")})'>
-                                        🔬 İşlem Yap
-                                    </button>
-                                </td>
-                            `;
-                            tbody.appendChild(tr);
+                            tumCihazlar.push({
+                                ie_id: ie.id,
+                                ie_no: ie.ie_no,
+                                firma_adi: ie.firma_adi,
+                                index: index,
+                                ...c
+                            });
                         });
                     }
                 });
 
-                if(!cihazBulundu) {
-                    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:30px; color:#94a3b8;">Bekleyen cihaz bulunmuyor.</td></tr>`;
-                }
+                tabloyaCiz(tumCihazlar);
 
-            } catch (err) {
-                console.error("Hata:", err);
+            } catch (err) { console.error("Hata:", err); }
+        }
+
+        // Filtreleme Fonksiyonu
+        function filtrele(asama) {
+            // Buton aktiflik durumunu ayarla
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            if (asama === 'Tümü') {
+                tabloyaCiz(tumCihazlar);
+            } else {
+                const filtrelenmis = tumCihazlar.filter(c => (c.islem_durumu || 'Kabul Edildi') === asama || (c.islem_durumu === 'Sertifika Mail Gönderildi' && asama === 'Sertifika Gönderildi'));
+                tabloyaCiz(filtrelenmis);
             }
+        }
+
+        function tabloyaCiz(liste) {
+            const tbody = document.getElementById("cihazListesi");
+            tbody.innerHTML = "";
+
+            if(liste.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:30px; color:#94a3b8;">Bu aşamada bekleyen cihaz bulunmuyor.</td></tr>`;
+                return;
+            }
+
+            liste.forEach(c => {
+                const durum = c.islem_durumu || "Kabul Edildi";
+                let badgeClass = "b-kabul";
+                
+                if(durum === "Hazırlanıyor") badgeClass = "b-hazirlaniyor";
+                else if(durum === "Tamamlandı") badgeClass = "b-tamamlandi";
+                else if(durum === "İmzalandı") badgeClass = "b-imzalandi";
+                else if(durum === "Onaylandı") badgeClass = "b-onaylandi";
+                else if(durum.includes("Sertifika")) badgeClass = "b-sertifika";
+
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td><b style="color:var(--primary)">${c.ie_no}</b></td>
+                    <td>${c.firma_adi}</td>
+                    <td><b>${c.cihaz_adi}</b><br><small style="color:#64748b">${c.marka_model || '-'}</small></td>
+                    <td>${c.seri_no || '-'}</td>
+                    <td><span class="badge ${badgeClass}">${durum}</span></td>
+                    <td>
+                        <button class="btn-islem" onclick='modalAc(${c.ie_id}, ${c.index}, ${JSON.stringify(c).replace(/'/g, "&apos;")})'>
+                            ⚙️ İşlem / Aşama
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
         }
 
         function modalAc(ie_id, index, cihaz) {
@@ -208,30 +256,25 @@
             
             document.getElementById("modalCihazInfo").innerHTML = `
                 <b>Cihaz:</b> ${cihaz.cihaz_adi} (${cihaz.marka_model || 'Markasız'}) <br>
-                <b>Seri No:</b> ${cihaz.seri_no || '-'}
+                <b>Seri No:</b> ${cihaz.seri_no || '-'} <br>
+                <b>Mevcut Aşama:</b> <span style="color:var(--primary); font-weight:bold;">${cihaz.islem_durumu || 'Kabul Edildi'}</span>
             `;
 
-            // Varsa eski verileri doldur
             if(cihaz.kalibrasyon_verileri) {
                 document.getElementById("personel").value = cihaz.kalibrasyon_verileri.personel || '';
                 document.getElementById("metot_id").value = cihaz.kalibrasyon_verileri.metot_id || '';
                 document.getElementById("sicaklik").value = cihaz.kalibrasyon_verileri.sicaklik || '';
                 document.getElementById("nem").value = cihaz.kalibrasyon_verileri.nem || '';
             } else {
-                // Formu temizle
-                document.getElementById("personel").value = '';
-                document.getElementById("metot_id").value = '';
-                document.getElementById("sicaklik").value = '';
-                document.getElementById("nem").value = '';
+                document.getElementById("personel").value = ''; document.getElementById("metot_id").value = '';
+                document.getElementById("sicaklik").value = ''; document.getElementById("nem").value = '';
             }
 
-            document.getElementById("sertifika_asamasi").value = cihaz.islem_durumu || "Veri Girişi Bekliyor";
+            document.getElementById("sertifika_asamasi").value = cihaz.islem_durumu || "Kabul Edildi";
             document.getElementById("islemModal").style.display = "flex";
         }
 
-        function modalKapat() {
-            document.getElementById("islemModal").style.display = "none";
-        }
+        function modalKapat() { document.getElementById("islemModal").style.display = "none"; }
 
         async function islemKaydet() {
             const ie_id = document.getElementById("is_emri_id").value;
@@ -244,8 +287,9 @@
                 sertifika_asamasi: document.getElementById("sertifika_asamasi").value
             };
 
-            if(!payload.personel || !payload.metot_id || !payload.sicaklik || !payload.nem) {
-                return alert("Lütfen tüm alanları doldurun!");
+            // Eğer aşama sadece değişiyorsa ama veri girilmediyse uyarı ver
+            if(payload.sertifika_asamasi !== "Kabul Edildi" && (!payload.personel || !payload.metot_id)) {
+                return alert("Aşama değiştirmek için Personel, Metot ve Çevre Şartlarını doldurmalısınız!");
             }
 
             try {
@@ -257,10 +301,11 @@
 
                 if(res.ok) {
                     modalKapat();
-                    cihazlariListele(); // Tabloyu yenile
-                } else {
-                    alert("Kaydedilirken bir hata oluştu.");
-                }
+                    // "Tümü" filtresine dön ve listeyi yenile
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    document.querySelector('.filter-btn').classList.add('active');
+                    cihazlariListele(); 
+                } else { alert("Kaydedilirken bir hata oluştu."); }
             } catch(e) { console.error(e); }
         }
 
