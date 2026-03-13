@@ -9,31 +9,24 @@
         body { font-family: 'Inter', sans-serif; background: var(--bg); padding: 20px; color: #334155; }
         .card { background: #fff; padding: 25px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
         
-        /* Bildirim Paneli */
         #success-msg { display:none; background:#dcfce7; color:#166534; padding:15px; border-radius:8px; margin-bottom:15px; text-align:center; font-weight:600; border:1px solid #bbf7d0; animation: fadeIn 0.3s; }
 
-        /* Butonlar */
         .btn { padding: 10px 15px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; transition: 0.2s; }
         .btn-primary { background: var(--primary); color: white; width: 100%; }
         .btn-kal { background: var(--success); color: white; font-size: 0.75rem; margin-right: 5px; }
         .btn-ara { background: var(--warning); color: white; font-size: 0.75rem; }
-        .btn:disabled { background: #94a3b8; cursor: not-allowed; }
-
-        /* Form Düzeni */
+        
         .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 15px; }
         label { display: block; font-size: 0.8rem; font-weight: 600; color: #64748b; margin-bottom: 5px; }
         input, select, textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; font-family: inherit; font-size: 0.9rem; }
         
-        /* Tablo */
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th { background: #f8fafc; text-align: left; padding: 12px; border-bottom: 2px solid var(--border); color: #64748b; font-size: 0.85rem; }
         td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
         
-        /* Tarihçe / Detay Satırı */
         .history-row { background: #f8fafc; display: none; }
         .history-container { padding: 15px; border: 1px dashed #cbd5e1; border-radius: 8px; margin: 10px; background: white; }
         
-        /* İşlem Panelleri */
         .action-panel { display: none; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); background: #fff; border-left: 6px solid var(--primary); animation: slideDown 0.3s; }
         .status-badge { padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; }
 
@@ -115,35 +108,31 @@
         }
 
         async function kategoriYukle() {
-            try {
-                const res = await fetch('/api/kategoriler');
-                const data = await res.json();
-                const sel = document.getElementById("kategoriSelect");
-                sel.innerHTML = '<option value="">Seçin...</option>' + 
-                    data.map(k => `<option value="${k.id}">${k.kategori_adi}</option>`).join('');
-            } catch(e) { console.error("Kategoriler yüklenemedi."); }
+            const res = await fetch('/api/kategoriler');
+            const data = await res.json();
+            const sel = document.getElementById("kategoriSelect");
+            sel.innerHTML = '<option value="">Seçin...</option>' + 
+                data.map(k => `<option value="${k.id}">${k.kategori_adi}</option>`).join('');
         }
 
         async function referansYukle() {
-            try {
-                const res = await fetch('/api/referans-cihazlar');
-                const data = await res.json();
-                const tbody = document.getElementById("refListe");
-                tbody.innerHTML = data.map(r => `
-                    <tr onclick="tarihceGoster(${r.id})" style="cursor:pointer;" title="Tarihçeyi gör">
-                        <td><b style="color:var(--accent)">${r.seri_no}</b></td>
-                        <td>${r.cihaz_adi} <br> <small style="color:#64748b">${r.marka || ''} / ${r.model || ''}</small></td>
-                        <td>${r.olcme_araligi || '-'}</td>
-                        <td>
-                            <button class="btn btn-kal" onclick="event.stopPropagation(); panelAc('KAL', ${r.id}, '${r.cihaz_adi}')">Kalibrasyon</button>
-                            <button class="btn btn-ara" onclick="event.stopPropagation(); panelAc('ARA', ${r.id}, '${r.cihaz_adi}')">Ara Kontrol</button>
-                        </td>
-                    </tr>
-                    <tr id="tarihce-${r.id}" class="history-row">
-                        <td colspan="4"><div class="history-container" id="details-${r.id}">Yükleniyor...</div></td>
-                    </tr>
-                `).join('');
-            } catch(e) { console.error("Referanslar yüklenemedi."); }
+            const res = await fetch('/api/referans-cihazlar');
+            const data = await res.json();
+            const tbody = document.getElementById("refListe");
+            tbody.innerHTML = data.map(r => `
+                <tr onclick="tarihceGoster(${r.id})" style="cursor:pointer;">
+                    <td><b style="color:var(--accent)">${r.seri_no}</b></td>
+                    <td>${r.cihaz_adi} <br> <small style="color:#64748b">${r.marka || ''} / ${r.model || ''}</small></td>
+                    <td>${r.olcme_araligi || '-'}</td>
+                    <td>
+                        <button class="btn btn-kal" onclick="event.stopPropagation(); panelAc('KAL', ${r.id}, '${r.cihaz_adi}')">Kalibrasyon</button>
+                        <button class="btn btn-ara" onclick="event.stopPropagation(); panelAc('ARA', ${r.id}, '${r.cihaz_adi}')">Ara Kontrol</button>
+                    </td>
+                </tr>
+                <tr id="tarihce-${r.id}" class="history-row">
+                    <td colspan="4"><div class="history-container" id="details-${r.id}">Yükleniyor...</div></td>
+                </tr>
+            `).join('');
         }
 
         function panelAc(tip, id, ad) {
@@ -164,25 +153,43 @@
         async function tarihceGoster(id) {
             const row = document.getElementById(`tarihce-${id}`);
             const detailDiv = document.getElementById(`details-${id}`);
-            if(row.style.display === "table-row") { row.style.display = "none"; return; }
+            
+            if(row.style.display === "table-row") {
+                row.style.display = "none";
+                return;
+            }
+            
             row.style.display = "table-row";
+            detailDiv.innerHTML = "Yükleniyor...";
             
             try {
                 const res = await fetch(`/api/referans-tarihce/${id}`);
                 const data = await res.json();
-                detailDiv.innerHTML = data.length > 0 ? `
-                    <table>
-                        <tr style="font-size:0.75rem; color:#64748b;"><th>İşlem</th><th>No</th><th>Tarih</th><th>Gelecek Tarih</th></tr>
-                        ${data.map(d => `
-                            <tr>
-                                <td><span class="status-badge" style="background:${d.islem_tipi === 'KALİBRASYON' ? '#dcfce7' : '#fef3c7'}">${d.islem_tipi}</span></td>
-                                <td>${d.sertifika_no}</td>
-                                <td>${new Date(d.kal_tarihi).toLocaleDateString('tr-TR')}</td>
-                                <td>${new Date(d.sonraki_kal_tarihi).toLocaleDateString('tr-TR')}</td>
+                
+                if (data.length > 0) {
+                    detailDiv.innerHTML = `
+                        <table style="border:1px solid #e2e8f0; background:white;">
+                            <tr style="font-size:0.75rem; background:#f8fafc;">
+                                <th>İşlem Tipi</th>
+                                <th>No</th>
+                                <th>İşlem Tarihi</th>
+                                <th>Gelecek Tarih</th>
                             </tr>
-                        `).join('')}
-                    </table>` : "Geçmiş kaydı bulunamadı.";
-            } catch(e) { detailDiv.innerText = "Veri çekilemedi."; }
+                            ${data.map(d => `
+                                <tr>
+                                    <td><span class="status-badge" style="background:${d.islem_tipi === 'KALİBRASYON' ? '#dcfce7' : '#fef3c7'}">${d.islem_tipi}</span></td>
+                                    <td>${d.sertifika_no}</td>
+                                    <td>${new Date(d.kal_tarihi).toLocaleDateString('tr-TR')}</td>
+                                    <td>${new Date(d.sonraki_kal_tarihi).toLocaleDateString('tr-TR')}</td>
+                                </tr>
+                            `).join('')}
+                        </table>`;
+                } else {
+                    detailDiv.innerHTML = "Geçmiş kaydı bulunamadı.";
+                }
+            } catch(e) {
+                detailDiv.innerHTML = "<span style='color:red'>Veri çekilemedi.</span>";
+            }
         }
 
         async function kaydetReferans(e) {
@@ -199,17 +206,15 @@
                 kalibrasyon_kriteri: document.getElementById("kal_kriteri").value,
                 ara_kontrol_kriteri: document.getElementById("ara_kriteri").value
             };
-            try {
-                const res = await fetch('/api/referans-cihazlar', {
-                    method: 'POST', headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(payload)
-                });
-                if(res.ok) { 
-                    bildirimGoster();
-                    document.getElementById("refForm").reset();
-                    referansYukle();
-                }
-            } catch(e) { alert("Bağlantı hatası."); }
+            const res = await fetch('/api/referans-cihazlar', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            if(res.ok) { 
+                bildirimGoster();
+                document.getElementById("refForm").reset();
+                referansYukle();
+            }
             btn.disabled = false;
         }
 
@@ -227,21 +232,17 @@
                 sonraki_kal_tarihi: tip === 'KAL' ? document.getElementById("kal_sonraki").value : document.getElementById("ara_sonraki").value
             };
 
-            try {
-                const res = await fetch('/api/referans-takip', {
-                    method: 'POST', headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(payload)
-                });
-                if(res.ok) {
-                    bildirimGoster();
-                    document.getElementById("panelKal").style.display = "none";
-                    document.getElementById("panelAra").style.display = "none";
-                    referansYukle();
-                } else {
-                    const err = await res.json();
-                    alert("Hata: " + err.error);
-                }
-            } catch(e) { alert("Sunucu hatası."); }
+            const res = await fetch('/api/referans-takip', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+
+            if(res.ok) {
+                bildirimGoster();
+                document.getElementById("panelKal").style.display = "none";
+                document.getElementById("panelAra").style.display = "none";
+                referansYukle();
+            }
             btn.disabled = false;
         }
 

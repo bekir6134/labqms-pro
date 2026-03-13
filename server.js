@@ -180,9 +180,9 @@ app.post('/api/talimatlar', async (req, res) => {
     }
 });
 
-// --- REFERANS CİHAZLAR API BAŞLANGIÇ ---
+// --- REFERANS CİHAZLAR API GRUBU ---
 
-// 1. Tüm referans cihazları listele (Son takip verileriyle birlikte)
+// Tüm cihazları listele (Son işlem bilgisiyle beraber)
 app.get('/api/referans-cihazlar', async (req, res) => {
     try {
         const query = `
@@ -197,82 +197,45 @@ app.get('/api/referans-cihazlar', async (req, res) => {
         const result = await pool.query(query);
         res.json(result.rows);
     } catch (err) {
-        console.error(err.message);
         res.status(500).json({ error: err.message });
     }
 });
 
-// 2. Yeni referans cihaz kaydet (Sabit Veriler)
+// Yeni Referans Cihaz Kaydet (Sabit Veriler)
 app.post('/api/referans-cihazlar', async (req, res) => {
     try {
-        const { 
-            kategori_id, cihaz_adi, marka, model, 
-            seri_no, envanter_no, olcme_araligi, 
-            kalibrasyon_kriteri, ara_kontrol_kriteri 
-        } = req.body;
-
-        const query = `
-            INSERT INTO referans_cihazlar (
-                kategori_id, cihaz_adi, marka, model, 
-                seri_no, envanter_no, olcme_araligi, 
-                kalibrasyon_kriteri, ara_kontrol_kriteri
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`;
-
-        const result = await pool.query(query, [
-            kategori_id, cihaz_adi, marka, model, 
-            seri_no, envanter_no, olcme_araligi, 
-            kalibrasyon_kriteri, ara_kontrol_kriteri
-        ]);
+        const { kategori_id, cihaz_adi, marka, model, seri_no, envanter_no, olcme_araligi, kalibrasyon_kriteri, ara_kontrol_kriteri } = req.body;
+        const query = `INSERT INTO referans_cihazlar (kategori_id, cihaz_adi, marka, model, seri_no, envanter_no, olcme_araligi, kalibrasyon_kriteri, ara_kontrol_kriteri) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`;
+        const result = await pool.query(query, [kategori_id, cihaz_adi, marka, model, seri_no, envanter_no, olcme_araligi, kalibrasyon_kriteri, ara_kontrol_kriteri]);
         res.json(result.rows[0]);
     } catch (err) {
-        console.error(err.message);
         res.status(500).json({ error: err.message });
     }
 });
 
+// Kalibrasyon veya Ara Kontrol Kaydet (Dinamik Veriler)
 app.post('/api/referans-takip', async (req, res) => {
     try {
-        const { 
-            referans_id, 
-            islem_tipi, 
-            sertifika_no, 
-            izlenebilirlik, 
-            kal_tarihi, 
-            sonraki_kal_tarihi 
-        } = req.body;
-
-        // VERİ KONTROLÜ: Eğer referans_id gelmiyorsa hata döndür
-        if (!referans_id) {
-            return res.status(400).json({ error: "Referans ID bulunamadı." });
-        }
-
-        const query = `
-            INSERT INTO referans_takip (
-                referans_id, 
-                islem_tipi, 
-                sertifika_no, 
-                izlenebilirlik, 
-                kal_tarihi, 
-                sonraki_kal_tarihi
-            ) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`;
-
-        const values = [
-            referans_id, 
-            islem_tipi, 
-            sertifika_no, 
-            izlenebilirlik || '', // Boş gelirse hata vermemesi için
-            kal_tarihi, 
-            sonraki_kal_tarihi
-        ];
-
-        const result = await pool.query(query, values);
-        res.status(200).json(result.rows[0]);
+        const { referans_id, islem_tipi, sertifika_no, izlenebilirlik, kal_tarihi, sonraki_kal_tarihi } = req.body;
+        const query = `INSERT INTO referans_takip (referans_id, islem_tipi, sertifika_no, izlenebilirlik, kal_tarihi, sonraki_kal_tarihi) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`;
+        const result = await pool.query(query, [referans_id, islem_tipi, sertifika_no, izlenebilirlik || '', kal_tarihi, sonraki_kal_tarihi]);
+        res.json(result.rows[0]);
     } catch (err) {
-        console.error("DETAYLI HATA:", err); // Sunucu terminalinde hatayı görebilmek için
         res.status(500).json({ error: err.message });
     }
 });
 
+// Cihazın Tüm Tarihçesini Getir (Tıklayınca açılan kısım için KRİTİK)
+app.get('/api/referans-tarihce/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const query = `SELECT islem_tipi, sertifika_no, kal_tarihi, sonraki_kal_tarihi FROM referans_takip WHERE referans_id = $1 ORDER BY kal_tarihi DESC`;
+        const result = await pool.query(query, [id]);
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 
 app.listen(PORT, () => {
     console.log(`🚀 Sunucu ${PORT} portunda başarıyla ayağa kalktı.`);
