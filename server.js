@@ -662,6 +662,41 @@ app.put('/api/is-emirleri/:id/cihaz-islem', async (req, res) => {
 });
 
 
+// --- PERSONEL YÖNETİMİ API ---
+app.get('/api/personeller', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM personeller ORDER BY id DESC');
+        res.json(result.rows);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/personeller', async (req, res) => {
+    try {
+        const { ad_soyad, kullanici_adi, sifre, roller, erisimler, varsayilan_onaylayici } = req.body;
+        
+        // Eğer bu kişi varsayılan onaylayıcı yapıldıysa, diğer herkesin varsayılanlığını kaldır
+        if (varsayilan_onaylayici) {
+            await pool.query('UPDATE personeller SET varsayilan_onaylayici = false');
+        }
+
+        const query = `
+            INSERT INTO personeller (ad_soyad, kullanici_adi, sifre, roller, erisimler, varsayilan_onaylayici) 
+            VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`;
+        const result = await pool.query(query, [ad_soyad, kullanici_adi, sifre, JSON.stringify(roller), JSON.stringify(erisimler), varsayilan_onaylayici]);
+        res.json(result.rows[0]);
+    } catch (err) { 
+        if (err.code === '23505') return res.status(400).json({ error: "Bu kullanıcı adı zaten kullanılıyor!" });
+        res.status(500).json({ error: err.message }); 
+    }
+});
+
+app.delete('/api/personeller/:id', async (req, res) => {
+    try {
+        await pool.query('DELETE FROM personeller WHERE id=$1', [req.params.id]);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 app.listen(PORT, () => {
     console.log(`🚀 Sunucu ${PORT} portunda başarıyla ayağa kalktı.`);
 });
