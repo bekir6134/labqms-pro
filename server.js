@@ -697,6 +697,28 @@ app.delete('/api/personeller/:id', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// Personel Güncelleme (PUT)
+app.put('/api/personeller/:id', async (req, res) => {
+    try {
+        const { ad_soyad, kullanici_adi, sifre, roller, erisimler, varsayilan_onaylayici } = req.body;
+        
+        if (varsayilan_onaylayici) {
+            await pool.query('UPDATE personeller SET varsayilan_onaylayici = false');
+        }
+
+        const query = `
+            UPDATE personeller 
+            SET ad_soyad=$1, kullanici_adi=$2, sifre=$3, roller=$4, erisimler=$5, varsayilan_onaylayici=$6
+            WHERE id=$7 RETURNING *`;
+        const result = await pool.query(query, [ad_soyad, kullanici_adi, sifre, JSON.stringify(roller), JSON.stringify(erisimler), varsayilan_onaylayici, req.params.id]);
+        res.json(result.rows[0]);
+    } catch (err) { 
+        if (err.code === '23505') return res.status(400).json({ error: "Bu kullanıcı adı zaten kullanılıyor!" });
+        res.status(500).json({ error: err.message }); 
+    }
+});
+
+
 app.listen(PORT, () => {
     console.log(`🚀 Sunucu ${PORT} portunda başarıyla ayağa kalktı.`);
 });
