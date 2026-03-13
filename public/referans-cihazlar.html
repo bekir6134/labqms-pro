@@ -9,31 +9,36 @@
         body { font-family: 'Inter', sans-serif; background: var(--bg); padding: 20px; color: #334155; }
         .card { background: #fff; padding: 25px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
         
+        /* Bildirim Paneli */
+        #success-msg { display:none; background:#dcfce7; color:#166534; padding:15px; border-radius:8px; margin-bottom:15px; text-align:center; font-weight:600; border:1px solid #bbf7d0; animation: fadeIn 0.3s; }
+
         /* Butonlar */
         .btn { padding: 10px 15px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; transition: 0.2s; }
         .btn-primary { background: var(--primary); color: white; width: 100%; }
-        .btn-kal { background: var(--success); color: white; font-size: 0.75rem; }
+        .btn-kal { background: var(--success); color: white; font-size: 0.75rem; margin-right: 5px; }
         .btn-ara { background: var(--warning); color: white; font-size: 0.75rem; }
-        
-        /* Formlar */
+        .btn:disabled { background: #94a3b8; cursor: not-allowed; }
+
+        /* Form Düzeni */
         .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 15px; }
         label { display: block; font-size: 0.8rem; font-weight: 600; color: #64748b; margin-bottom: 5px; }
-        input, select, textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; font-family: inherit; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; font-family: inherit; font-size: 0.9rem; }
         
         /* Tablo */
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th { background: #f8fafc; text-align: left; padding: 12px; border-bottom: 2px solid var(--border); color: #64748b; font-size: 0.85rem; }
         td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
         
-        /* Tarihçe Satırı */
+        /* Tarihçe / Detay Satırı */
         .history-row { background: #f8fafc; display: none; }
         .history-container { padding: 15px; border: 1px dashed #cbd5e1; border-radius: 8px; margin: 10px; background: white; }
         
         /* İşlem Panelleri */
-        .action-panel { display: none; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); background: #fff; border-left: 6px solid var(--primary); }
-        .status-badge { padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
-        
-        #success-msg { display:none; background:#dcfce7; color:#166534; padding:15px; border-radius:8px; margin-bottom:15px; text-align:center; font-weight:600; border:1px solid #bbf7d0; }
+        .action-panel { display: none; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); background: #fff; border-left: 6px solid var(--primary); animation: slideDown 0.3s; }
+        .status-badge { padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
@@ -55,13 +60,13 @@
                 <div style="grid-column: span 2;"><label>Kalibrasyon Kriteri</label><textarea id="kal_kriteri" rows="2"></textarea></div>
                 <div style="grid-column: span 2;"><label>Ara Kontrol Kriteri</label><textarea id="ara_kriteri" rows="2"></textarea></div>
             </div>
-            <button type="submit" id="refSubmitBtn" class="btn btn-primary">🚀 Cihazı Envantere Kaydet</button>
+            <button type="submit" id="refBtn" class="btn btn-primary">🚀 Cihazı Envantere Kaydet</button>
         </form>
     </div>
 
     <div id="panelKal" class="action-panel" style="border-color: var(--success);">
         <h3 style="color:var(--success); margin-top:0;">📜 Yeni Kalibrasyon Kaydı</h3>
-        <p id="kalBaslik" style="font-weight:700; color:#1e293b;"></p>
+        <p id="kalBaslik" style="font-weight:700;"></p>
         <form onsubmit="kaydetDinamik(event, 'KAL')">
             <input type="hidden" id="kal_ref_id">
             <div class="form-grid">
@@ -76,7 +81,7 @@
 
     <div id="panelAra" class="action-panel" style="border-color: var(--warning);">
         <h3 style="color:var(--warning); margin-top:0;">🔍 Yeni Ara Kontrol Kaydı</h3>
-        <p id="araBaslik" style="font-weight:700; color:#1e293b;"></p>
+        <p id="araBaslik" style="font-weight:700;"></p>
         <form onsubmit="kaydetDinamik(event, 'ARA')">
             <input type="hidden" id="ara_ref_id">
             <div class="form-grid">
@@ -110,33 +115,35 @@
         }
 
         async function kategoriYukle() {
-            const res = await fetch('/api/kategoriler');
-            const data = await res.json();
-            const sel = document.getElementById("kategoriSelect");
-            sel.innerHTML = '<option value="">Seçin...</option>' + 
-                data.map(k => `<option value="${k.id}">${k.kategori_adi}</option>`).join('');
+            try {
+                const res = await fetch('/api/kategoriler');
+                const data = await res.json();
+                const sel = document.getElementById("kategoriSelect");
+                sel.innerHTML = '<option value="">Seçin...</option>' + 
+                    data.map(k => `<option value="${k.id}">${k.kategori_adi}</option>`).join('');
+            } catch(e) { console.error("Kategoriler yüklenemedi."); }
         }
 
         async function referansYukle() {
-            const res = await fetch('/api/referans-cihazlar');
-            const data = await res.json();
-            const tbody = document.getElementById("refListe");
-            tbody.innerHTML = data.map(r => `
-                <tr onclick="tarihceGoster(${r.id})" style="cursor:pointer;">
-                    <td><b style="color:var(--accent)">${r.seri_no}</b></td>
-                    <td>${r.cihaz_adi} <br> <small style="color:#64748b">${r.marka} / ${r.model}</small></td>
-                    <td>${r.olcme_araligi || '-'}</td>
-                    <td>
-                        <button class="btn btn-kal" onclick="event.stopPropagation(); panelAc('KAL', ${r.id}, '${r.cihaz_adi} - ${r.seri_no}')">Kalibrasyon</button>
-                        <button class="btn btn-ara" onclick="event.stopPropagation(); panelAc('ARA', ${r.id}, '${r.cihaz_adi} - ${r.seri_no}')">Ara Kontrol</button>
-                    </td>
-                </tr>
-                <tr id="tarihce-${r.id}" class="history-row">
-                    <td colspan="4">
-                        <div class="history-container" id="details-${r.id}">Yükleniyor...</div>
-                    </td>
-                </tr>
-            `).join('');
+            try {
+                const res = await fetch('/api/referans-cihazlar');
+                const data = await res.json();
+                const tbody = document.getElementById("refListe");
+                tbody.innerHTML = data.map(r => `
+                    <tr onclick="tarihceGoster(${r.id})" style="cursor:pointer;" title="Tarihçeyi gör">
+                        <td><b style="color:var(--accent)">${r.seri_no}</b></td>
+                        <td>${r.cihaz_adi} <br> <small style="color:#64748b">${r.marka || ''} / ${r.model || ''}</small></td>
+                        <td>${r.olcme_araligi || '-'}</td>
+                        <td>
+                            <button class="btn btn-kal" onclick="event.stopPropagation(); panelAc('KAL', ${r.id}, '${r.cihaz_adi}')">Kalibrasyon</button>
+                            <button class="btn btn-ara" onclick="event.stopPropagation(); panelAc('ARA', ${r.id}, '${r.cihaz_adi}')">Ara Kontrol</button>
+                        </td>
+                    </tr>
+                    <tr id="tarihce-${r.id}" class="history-row">
+                        <td colspan="4"><div class="history-container" id="details-${r.id}">Yükleniyor...</div></td>
+                    </tr>
+                `).join('');
+            } catch(e) { console.error("Referanslar yüklenemedi."); }
         }
 
         function panelAc(tip, id, ad) {
@@ -164,23 +171,23 @@
                 const res = await fetch(`/api/referans-tarihce/${id}`);
                 const data = await res.json();
                 detailDiv.innerHTML = data.length > 0 ? `
-                    <table style="background:white; border-radius:8px; border:1px solid #e2e8f0;">
+                    <table>
                         <tr style="font-size:0.75rem; color:#64748b;"><th>İşlem</th><th>No</th><th>Tarih</th><th>Gelecek Tarih</th></tr>
                         ${data.map(d => `
                             <tr>
-                                <td><span class="status-badge" style="background:${d.sertifika_no.includes('ARA') ? '#fef3c7' : '#dcfce7'}">${d.sertifika_no.includes('ARA') ? 'ARA KONTROL' : 'KALİBRASYON'}</span></td>
+                                <td><span class="status-badge" style="background:${d.islem_tipi === 'KALİBRASYON' ? '#dcfce7' : '#fef3c7'}">${d.islem_tipi}</span></td>
                                 <td>${d.sertifika_no}</td>
                                 <td>${new Date(d.kal_tarihi).toLocaleDateString('tr-TR')}</td>
                                 <td>${new Date(d.sonraki_kal_tarihi).toLocaleDateString('tr-TR')}</td>
                             </tr>
                         `).join('')}
                     </table>` : "Geçmiş kaydı bulunamadı.";
-            } catch(e) { detailDiv.innerText = "Veri yüklenemedi."; }
+            } catch(e) { detailDiv.innerText = "Veri çekilemedi."; }
         }
 
         async function kaydetReferans(e) {
             e.preventDefault();
-            const btn = document.getElementById("refSubmitBtn");
+            const btn = document.getElementById("refBtn");
             btn.disabled = true;
             const payload = {
                 kategori_id: document.getElementById("kategoriSelect").value,
@@ -192,14 +199,17 @@
                 kalibrasyon_kriteri: document.getElementById("kal_kriteri").value,
                 ara_kontrol_kriteri: document.getElementById("ara_kriteri").value
             };
-            const res = await fetch('/api/referans-cihazlar', {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(payload)
-            });
-            if(res.ok) { 
-                document.getElementById("success-msg").style.display = "block";
-                setTimeout(() => location.reload(), 2000);
-            }
+            try {
+                const res = await fetch('/api/referans-cihazlar', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                if(res.ok) { 
+                    bildirimGoster();
+                    document.getElementById("refForm").reset();
+                    referansYukle();
+                }
+            } catch(e) { alert("Bağlantı hatası."); }
             btn.disabled = false;
         }
 
@@ -208,17 +218,13 @@
             const btn = tip === 'KAL' ? document.getElementById("kalSubmitBtn") : document.getElementById("araSubmitBtn");
             btn.disabled = true;
 
-            const payload = tip === 'KAL' ? {
-                referans_id: document.getElementById("kal_ref_id").value,
-                sertifika_no: document.getElementById("kal_sertifika").value,
-                izlenebilirlik: document.getElementById("izlenebilirlik").value,
-                kal_tarihi: document.getElementById("kal_tarihi").value,
-                sonraki_kal_tarihi: document.getElementById("kal_sonraki").value
-            } : {
-                referans_id: document.getElementById("ara_ref_id").value,
-                sertifika_no: document.getElementById("ara_no").value,
-                kal_tarihi: document.getElementById("ara_tarihi").value, // Ortak field kullanıyoruz
-                sonraki_kal_tarihi: document.getElementById("ara_sonraki").value
+            const payload = {
+                referans_id: tip === 'KAL' ? document.getElementById("kal_ref_id").value : document.getElementById("ara_ref_id").value,
+                islem_tipi: tip === 'KAL' ? 'KALİBRASYON' : 'ARA_KONTROL',
+                sertifika_no: tip === 'KAL' ? document.getElementById("kal_sertifika").value : document.getElementById("ara_no").value,
+                izlenebilirlik: tip === 'KAL' ? document.getElementById("izlenebilirlik").value : '',
+                kal_tarihi: tip === 'KAL' ? document.getElementById("kal_tarihi").value : document.getElementById("ara_tarihi").value,
+                sonraki_kal_tarihi: tip === 'KAL' ? document.getElementById("kal_sonraki").value : document.getElementById("ara_sonraki").value
             };
 
             try {
@@ -226,20 +232,23 @@
                     method: 'POST', headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify(payload)
                 });
-                
-                // Eğer hata HTML (Unexpected token <) geliyorsa burası yakalayacak
                 if(res.ok) {
-                    document.getElementById("success-msg").style.display = "block";
-                    setTimeout(() => location.reload(), 2000);
+                    bildirimGoster();
+                    document.getElementById("panelKal").style.display = "none";
+                    document.getElementById("panelAra").style.display = "none";
+                    referansYukle();
                 } else {
-                    const errorData = await res.json();
-                    alert("Hata: " + errorData.error);
+                    const err = await res.json();
+                    alert("Hata: " + err.error);
                 }
-            } catch(err) {
-                alert("Sunucuyla iletişim kurulamadı. Lütfen API yolunu ve SQL tablosunu kontrol edin.");
-            } finally {
-                btn.disabled = false;
-            }
+            } catch(e) { alert("Sunucu hatası."); }
+            btn.disabled = false;
+        }
+
+        function bildirimGoster() {
+            const msg = document.getElementById("success-msg");
+            msg.style.display = "block";
+            setTimeout(() => { msg.style.display = "none"; }, 3000);
         }
 
         window.onload = sayfaYukle;
