@@ -156,6 +156,30 @@ app.get('/api/teklif-on-veriler', async (req, res) => {
 });
 
 
+// --- TALİMATLAR (PROSEDÜR) API ---
+
+app.get('/api/talimatlar', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM talimatlar ORDER BY talimat_kodu ASC');
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/talimatlar', async (req, res) => {
+    try {
+        const { talimat_adi, talimat_kodu, olcme_araligi } = req.body;
+        const result = await pool.query(
+            'INSERT INTO talimatlar (talimat_adi, talimat_kodu, olcme_araligi) VALUES ($1, $2, $3) RETURNING *',
+            [talimat_adi, talimat_kodu, olcme_araligi]
+        );
+        res.json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`🚀 Sunucu ${PORT} portunda başarıyla ayağa kalktı.`);
 });

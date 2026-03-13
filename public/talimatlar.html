@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>LabQMS Pro - Kalibrasyon Talimatları</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #1E40AF; --border: #e2e8f0; --bg: #f8fafc; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); padding: 20px; }
+        .card { background: #fff; padding: 25px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .input-group { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 10px; margin-bottom: 20px; }
+        input { padding: 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; }
+        .btn { background: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { background: #f1f5f9; padding: 12px; text-align: left; color: #64748b; border-bottom: 2px solid var(--border); }
+        td { padding: 12px; border-bottom: 1px solid var(--border); }
+        .code-badge { background: #e0e7ff; color: #4338ca; padding: 4px 8px; border-radius: 4px; font-weight: 700; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2 style="color: var(--primary); margin-top:0;">📜 Kalibrasyon Talimat Listesi</h2>
+        
+        <div class="input-group">
+            <input type="text" id="t_ad" placeholder="Talimat Adı (Örn: Terazi Kalibrasyon Talimatı)">
+            <input type="text" id="t_kod" placeholder="Talimat Kodu (Örn: TL-05)">
+            <input type="text" id="t_aralik" placeholder="Ölçme Aralığı (Örn: 0-200g)">
+            <button class="btn" onclick="kaydet()">➕ Ekle</button>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Kod</th>
+                    <th>Talimat Adı</th>
+                    <th>Ölçme Aralığı</th>
+                    <th>Yayın Tarihi</th>
+                </tr>
+            </thead>
+            <tbody id="talimatListesi"></tbody>
+        </table>
+    </div>
+
+    <script>
+        async function listele() {
+            const res = await fetch('/api/talimatlar');
+            const data = await res.json();
+            const tbody = document.getElementById("talimatListesi");
+            tbody.innerHTML = data.map(t => `
+                <tr>
+                    <td><span class="code-badge">${t.talimat_kodu}</span></td>
+                    <td><strong>${t.talimat_adi}</strong></td>
+                    <td>${t.olcme_araligi}</td>
+                    <td>${new Date(t.yayin_tarihi).toLocaleDateString()}</td>
+                </tr>
+            `).join('');
+        }
+
+        async function kaydet() {
+            const payload = {
+                talimat_adi: document.getElementById("t_ad").value,
+                talimat_kodu: document.getElementById("t_kod").value,
+                olcme_araligi: document.getElementById("t_aralik").value
+            };
+            
+            if(!payload.talimat_adi || !payload.talimat_kodu) return alert("Ad ve Kod zorunludur!");
+
+            const res = await fetch('/api/talimatlar', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+
+            if(res.ok) {
+                document.querySelectorAll('input').forEach(i => i.value = "");
+                listele();
+            }
+        }
+        window.onload = listele;
+    </script>
+</body>
+</html>
