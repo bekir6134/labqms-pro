@@ -22,14 +22,17 @@
         .card { background: #fff; padding: 25px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 10px; }
         .search-box { width: 250px; }
-        .search-box input { padding: 10px 10px 10px 35px; background: #fff url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%2364748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>') no-repeat 10px center; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; }
+        .search-box input { padding: 10px 10px 10px 35px; background: #fff url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%2364748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>') no-repeat 10px center; border: 1px solid var(--border); border-radius: 8px; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
         th { background: #f1f5f9; padding: 12px; text-align: left; color: #64748b; font-weight: 600; border-bottom: 2px solid var(--border); }
         td { padding: 12px; border-bottom: 1px solid var(--border); }
         .price { color: var(--success); font-weight: bold; }
         .badge { background: #e0e7ff; color: #4338ca; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+        .btn-edit { background: #e0e7ff; color: #4338ca; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 600; margin-right: 4px; }
+        .btn-del { background: #fee2e2; color: #dc2626; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 600; }
         #toast { visibility: hidden; min-width: 250px; background-color: var(--success); color: #fff; text-align: center; border-radius: 8px; padding: 16px; position: fixed; z-index: 3000; right: 30px; top: 30px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
         #toast.show { visibility: visible; }
+        #toast.error { background-color: #ef4444; }
     </style>
 </head>
 <body>
@@ -43,6 +46,7 @@
         </div>
         <div class="accordion-content" id="accContent">
             <form id="cihazForm" onsubmit="cihazKaydet(event)">
+                <input type="hidden" id="duzenle_id" value="">
                 <div class="form-grid">
                     <div class="full"><label>Cihaz Adı / Tanımı</label><input type="text" id="cihaz_adi" placeholder="Örn: Dış Çap Mikrometresi" required></div>
                     <div><label>Kategori</label><select id="kategoriSelect" required><option value="">Yükleniyor...</option></select></div>
@@ -72,8 +76,8 @@
             <h2 style="margin:0; color:var(--primary);">📚 Kayıtlı Cihazlar</h2>
             <div class="search-box"><input type="text" id="cihazAra" onkeyup="tabloAra()" placeholder="Cihaz veya kategori ara..."></div>
         </div>
-        <table id="kutuphaneTablo">
-            <thead><tr><th>Cihaz Tipi</th><th>Kategori</th><th>Periyot</th><th>Fiyat</th></tr></thead>
+        <table>
+            <thead><tr><th>Cihaz Tipi</th><th>Kategori</th><th>Periyot</th><th>Fiyat</th><th>İşlemler</th></tr></thead>
             <tbody id="cihazListe"></tbody>
         </table>
     </div>
@@ -90,40 +94,94 @@
             content.style.display = "block"; header.classList.add("active"); icon.innerText = "▲";
         }
     }
-    function showToast(msg) {
-        const t = document.getElementById("toast"); t.textContent = msg; t.className = "show";
+
+    function showToast(msg, isError = false) {
+        const t = document.getElementById("toast");
+        t.textContent = msg;
+        t.className = isError ? "show error" : "show";
         setTimeout(() => { t.className = ""; }, 3000);
     }
+
     async function kategorileriGetir() {
         const res = await fetch('/api/kategoriler');
         const kategoriler = await res.json();
         const select = document.getElementById("kategoriSelect");
         select.innerHTML = '<option value="">-- Kategori Seçin --</option>' + kategoriler.map(k => `<option value="${k.id}">${k.kategori_adi}</option>`).join('');
     }
+
     async function kutüphaneYukle() {
         const res = await fetch('/api/cihaz-kutuphanesi');
         const cihazlar = await res.json();
-        const tbody = document.getElementById("cihazListe");
-        tbody.innerHTML = cihazlar.length === 0
-            ? '<tr><td colspan="4" style="text-align:center;">Kütüphane boş.</td></tr>'
-            : cihazlar.map(c => `<tr><td><strong>${c.cihaz_adi}</strong></td><td><span class="badge">${c.kategori_adi}</span></td><td>${c.periyot}</td><td class="price">${c.fiyat} ${c.para_birimi}</td></tr>`).join('');
+        document.getElementById("cihazListe").innerHTML = cihazlar.length === 0
+            ? '<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:20px;">Kütüphane boş.</td></tr>'
+            : cihazlar.map(c => `
+                <tr>
+                    <td><strong>${c.cihaz_adi}</strong></td>
+                    <td><span class="badge">${c.kategori_adi}</span></td>
+                    <td>${c.periyot}</td>
+                    <td class="price">${c.fiyat} ${c.para_birimi}</td>
+                    <td>
+                        <button class="btn-edit" onclick="duzenle(${JSON.stringify(c).replace(/"/g,'&quot;')})">✏️ Düzenle</button>
+                        <button class="btn-del" onclick="sil(${c.id})">🗑️ Sil</button>
+                    </td>
+                </tr>`).join('');
     }
+
     async function cihazKaydet(e) {
         e.preventDefault();
         const btn = document.getElementById("submitBtn");
+        const duzenleId = document.getElementById("duzenle_id").value;
         btn.disabled = true; btn.innerText = "Kaydediliyor...";
-        const payload = { kategori_id: document.getElementById("kategoriSelect").value, cihaz_adi: document.getElementById("cihaz_adi").value, periyot: document.getElementById("periyot").value, fiyat: document.getElementById("fiyat").value, para_birimi: document.getElementById("para_birimi").value };
-        const res = await fetch('/api/cihaz-kutuphanesi', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
-        if (res.ok) { document.getElementById("cihazForm").reset(); showToast("✅ Cihaz kütüphaneye eklendi!"); kutüphaneYukle(); }
-        btn.disabled = false; btn.innerText = "🚀 Kütüphaneye Ekle";
+        const payload = {
+            kategori_id: document.getElementById("kategoriSelect").value,
+            cihaz_adi: document.getElementById("cihaz_adi").value,
+            periyot: document.getElementById("periyot").value,
+            fiyat: document.getElementById("fiyat").value,
+            para_birimi: document.getElementById("para_birimi").value
+        };
+        const url = duzenleId ? `/api/cihaz-kutuphanesi/${duzenleId}` : '/api/cihaz-kutuphanesi';
+        const method = duzenleId ? 'PUT' : 'POST';
+        const res = await fetch(url, { method, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+        if (res.ok) {
+            document.getElementById("cihazForm").reset();
+            document.getElementById("duzenle_id").value = "";
+            btn.innerText = "🚀 Kütüphaneye Ekle";
+            showToast(duzenleId ? "✅ Cihaz güncellendi!" : "✅ Cihaz eklendi!");
+            kutüphaneYukle();
+        }
+        btn.disabled = false; btn.innerText = duzenleId ? "💾 Güncelle" : "🚀 Kütüphaneye Ekle";
     }
+
+    function duzenle(c) {
+        document.getElementById("duzenle_id").value = c.id;
+        document.getElementById("cihaz_adi").value = c.cihaz_adi;
+        document.getElementById("kategoriSelect").value = c.kategori_id;
+        document.getElementById("periyot").value = c.periyot;
+        document.getElementById("fiyat").value = c.fiyat;
+        document.getElementById("para_birimi").value = c.para_birimi;
+        document.getElementById("submitBtn").innerText = "💾 Güncelle";
+        const content = document.getElementById("accContent");
+        const header = document.querySelector(".accordion-header");
+        content.style.display = "block"; header.classList.add("active");
+        document.getElementById("accIcon").innerText = "▲";
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function sil(id) {
+        if (!confirm("Bu cihazı silmek istediğinize emin misiniz?")) return;
+        const res = await fetch(`/api/cihaz-kutuphanesi/${id}`, { method: 'DELETE' });
+        if (res.ok) { showToast("🗑️ Cihaz silindi!"); kutüphaneYukle(); }
+        else showToast("❌ Silme başarısız!", true);
+    }
+
     function tabloAra() {
         const filter = document.getElementById("cihazAra").value.toUpperCase();
         const rows = document.getElementById("cihazListe").getElementsByTagName("tr");
         for (let i = 0; i < rows.length; i++) {
-            rows[i].style.display = (rows[i].cells[0].textContent.toUpperCase().includes(filter) || rows[i].cells[1].textContent.toUpperCase().includes(filter)) ? "" : "none";
+            rows[i].style.display = (rows[i].cells[0]?.textContent.toUpperCase().includes(filter) || rows[i].cells[1]?.textContent.toUpperCase().includes(filter)) ? "" : "none";
         }
     }
+
     window.onload = () => { kategorileriGetir(); kutüphaneYukle(); };
 </script>
 </body>

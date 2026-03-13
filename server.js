@@ -91,7 +91,18 @@ app.post('/api/kategoriler', async (req, res) => {
     }
 });
 
-// 3. Kategori Sil
+// 3. Kategori Güncelle
+app.put('/api/kategoriler/:id', async (req, res) => {
+    try {
+        const { kategori_adi } = req.body;
+        const result = await pool.query('UPDATE kategoriler SET kategori_adi=$1 WHERE id=$2 RETURNING *', [kategori_adi, req.params.id]);
+        res.json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// 4. Kategori Sil
 app.delete('/api/kategoriler/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -131,6 +142,30 @@ app.post('/api/cihaz-kutuphanesi', async (req, res) => {
     } catch (err) {
         console.error("Kayıt Hatası:", err.message);
         res.status(500).json({ error: "Veritabanı kayıt hatası." });
+    }
+});
+
+// 3. Cihaz Güncelle
+app.put('/api/cihaz-kutuphanesi/:id', async (req, res) => {
+    try {
+        const { kategori_id, cihaz_adi, periyot, fiyat, para_birimi } = req.body;
+        const result = await pool.query(
+            'UPDATE cihaz_kutuphanesi SET kategori_id=$1, cihaz_adi=$2, periyot=$3, fiyat=$4, para_birimi=$5 WHERE id=$6 RETURNING *',
+            [kategori_id, cihaz_adi, periyot, fiyat, para_birimi, req.params.id]
+        );
+        res.json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// 4. Cihaz Sil
+app.delete('/api/cihaz-kutuphanesi/:id', async (req, res) => {
+    try {
+        await pool.query('DELETE FROM cihaz_kutuphanesi WHERE id=$1', [req.params.id]);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -175,6 +210,28 @@ app.post('/api/talimatlar', async (req, res) => {
             [talimat_adi, talimat_kodu, olcme_araligi]
         );
         res.json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.put('/api/talimatlar/:id', async (req, res) => {
+    try {
+        const { talimat_adi, talimat_kodu, olcme_araligi } = req.body;
+        const result = await pool.query(
+            'UPDATE talimatlar SET talimat_adi=$1, talimat_kodu=$2, olcme_araligi=$3 WHERE id=$4 RETURNING *',
+            [talimat_adi, talimat_kodu, olcme_araligi, req.params.id]
+        );
+        res.json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/talimatlar/:id', async (req, res) => {
+    try {
+        await pool.query('DELETE FROM talimatlar WHERE id=$1', [req.params.id]);
+        res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
