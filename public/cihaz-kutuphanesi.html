@@ -2,31 +2,36 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LabQMS Pro - Cihaz Kütüphanesi</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root { --primary: #1E40AF; --border: #e2e8f0; --bg: #f8fafc; --success: #10B981; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: #334155; padding: 20px; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: #334155; padding: 20px; margin: 0; }
         .container { max-width: 900px; margin: 0 auto; }
         .card { background: #fff; padding: 25px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .full { grid-column: 1 / -1; }
         label { display: block; font-size: 0.85rem; font-weight: 600; color: #64748b; margin-bottom: 5px; }
-        input, select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; outline: none; }
-        input:focus, select:focus { border-color: var(--primary); }
+        input, select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; outline: none; font-family: inherit; }
+        input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1); }
         .btn { background: var(--primary); color: #fff; padding: 12px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 10px; transition: 0.2s; }
-        .btn:hover { opacity: 0.9; }
+        .btn:hover { background: #1e3a8a; transform: translateY(-1px); }
+        .btn:active { transform: translateY(0); }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9rem; }
-        th { background: #f1f5f9; padding: 12px; text-align: left; color: #64748b; }
+        th { background: #f1f5f9; padding: 12px; text-align: left; color: #64748b; font-weight: 600; border-bottom: 2px solid var(--border); }
         td { padding: 12px; border-bottom: 1px solid var(--border); }
         .price { color: var(--success); font-weight: bold; }
         .badge { background: #e0e7ff; color: #4338ca; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+        #loading { text-align: center; color: var(--primary); font-weight: 500; display: none; padding: 10px; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="card">
-            <h2 style="margin-top:0;">🗂️ Yeni Cihaz Tipi Ekle</h2>
+            <h2 style="margin-top:0; color: var(--primary); display: flex; align-items: center; gap: 10px;">
+                🗂️ Yeni Cihaz Tipi Ekle
+            </h2>
             <form id="cihazForm" onsubmit="cihazKaydet(event)">
                 <div class="form-grid">
                     <div class="full">
@@ -45,22 +50,30 @@
                             <option value="12 Ay">12 Ay</option>
                             <option value="24 Ay">24 Ay</option>
                             <option value="6 Ay">6 Ay</option>
+                            <option value="Periyotsuz">Periyotsuz</option>
                         </select>
                     </div>
                     <div class="full" style="background: #f0fdf4; padding: 15px; border-radius: 8px; border: 1px solid #dcfce7;">
                         <label style="color: #166534;">Liste Fiyatı (Birim Fiyat)</label>
                         <div style="display: flex; gap:10px;">
                             <input type="number" id="fiyat" placeholder="Örn: 850" step="0.01" required>
-                            <select id="para_birimi" style="width:100px;"><option>₺ TL</option><option>$ USD</option><option>€ EUR</option></select>
+                            <select id="para_birimi" style="width:120px;">
+                                <option value="₺ TL">₺ TL</option>
+                                <option value="$ USD">$ USD</option>
+                                <option value="€ EUR">€ EUR</option>
+                            </select>
                         </div>
                     </div>
-                    <div class="full"><button type="submit" class="btn">🚀 Kütüphaneye Ekle</button></div>
+                    <div class="full">
+                        <button type="submit" id="submitBtn" class="btn">🚀 Kütüphaneye Ekle</button>
+                    </div>
                 </div>
             </form>
         </div>
 
         <div class="card">
-            <h2 style="margin-top:0;">📚 Kayıtlı Cihaz Kütüphanesi</h2>
+            <h2 style="margin-top:0; color: var(--primary);">📚 Kayıtlı Cihaz Kütüphanesi</h2>
+            <div id="loading">Veriler güncelleniyor...</div>
             <table>
                 <thead>
                     <tr>
@@ -77,46 +90,70 @@
     </div>
 
     <script>
-        // 1. KATEGORİLERİ MODÜLDEN ÇEK
+        // 1. KATEGORİLERİ VERİTABANINDAN ÇEK
         async function kategorileriGetir() {
             try {
                 const res = await fetch('/api/kategoriler');
                 const kategoriler = await res.json();
                 const select = document.getElementById("kategoriSelect");
+                
                 select.innerHTML = '<option value="">-- Kategori Seçin --</option>';
                 
+                if (kategoriler.length === 0) {
+                    select.innerHTML = '<option value="">Önce Kategori Ekleyin!</option>';
+                    return;
+                }
+
                 kategoriler.forEach(k => {
                     const opt = document.createElement("option");
-                    opt.value = k.id; // Veritabanındaki ID
-                    opt.innerText = k.kategori_adi; // Kullanıcının gördüğü isim
+                    opt.value = k.id;
+                    opt.innerText = k.kategori_adi;
                     select.appendChild(opt);
                 });
-            } catch (err) { console.error("Kategoriler yüklenemedi:", err); }
+            } catch (err) {
+                console.error("Kategoriler yüklenirken hata:", err);
+                document.getElementById("kategoriSelect").innerHTML = '<option value="">Hata!</option>';
+            }
         }
 
-        // 2. KÜTÜPHANEYİ LİSTELE
+        // 2. KÜTÜPHANE LİSTESİNİ YÜKLE
         async function kütüphaneYukle() {
+            const loading = document.getElementById("loading");
+            loading.style.display = "block";
             try {
                 const res = await fetch('/api/cihaz-kutuphanesi');
                 const cihazlar = await res.json();
                 const tbody = document.getElementById("cihazListe");
                 tbody.innerHTML = "";
                 
-                cihazlar.forEach(c => {
-                    tbody.innerHTML += `
-                        <tr>
-                            <td><strong>${c.cihaz_adi || 'Adsız Cihaz'}</strong></td>
-                            <td><span class="badge">${c.kategori_adi}</span></td>
-                            <td>${c.periyot || '12 Ay'}</td>
-                            <td class="price">${c.fiyat} ${c.para_birimi || '₺'}</td>
-                        </tr>`;
-                });
-            } catch (err) { console.error("Kütüphane yüklenemedi:", err); }
+                if (cihazlar.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Kütüphane henüz boş.</td></tr>';
+                } else {
+                    cihazlar.forEach(c => {
+                        tbody.innerHTML += `
+                            <tr>
+                                <td><strong>${c.cihaz_adi}</strong></td>
+                                <td><span class="badge">${c.kategori_adi}</span></td>
+                                <td>${c.periyot}</td>
+                                <td class="price">${c.fiyat} ${c.para_birimi}</td>
+                            </tr>`;
+                    });
+                }
+            } catch (err) {
+                console.error("Liste yükleme hatası:", err);
+            } finally {
+                loading.style.display = "none";
+            }
         }
 
-        // 3. KAYDETME İŞLEMİ
+        // 3. YENİ CİHAZ KAYDET
         async function cihazKaydet(e) {
             e.preventDefault();
+            
+            const btn = document.getElementById("submitBtn");
+            btn.disabled = true;
+            btn.innerText = "Kaydediliyor...";
+
             const payload = {
                 kategori_id: document.getElementById("kategoriSelect").value,
                 cihaz_adi: document.getElementById("cihaz_adi").value,
@@ -125,18 +162,30 @@
                 para_birimi: document.getElementById("para_birimi").value
             };
 
-            const res = await fetch('/api/cihaz-kutuphanesi', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(payload)
-            });
+            try {
+                const res = await fetch('/api/cihaz-kutuphanesi', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
 
-            if(res.ok) {
-                document.getElementById("cihazForm").reset();
-                kütüphaneYukle();
+                if(res.ok) {
+                    document.getElementById("cihazForm").reset();
+                    await kütüphaneYukle();
+                } else {
+                    const errorData = await res.json();
+                    alert("Hata: " + (errorData.error || "Kayıt yapılamadı"));
+                }
+            } catch (err) {
+                console.error("Sunucu hatası:", err);
+                alert("Sunucuya bağlanılamadı.");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "🚀 Kütüphaneye Ekle";
             }
         }
 
+        // SAYFA AÇILDIĞINDA ÇALIŞACAKLAR
         window.onload = () => {
             kategorileriGetir();
             kütüphaneYukle();

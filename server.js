@@ -102,7 +102,37 @@ app.delete('/api/kategoriler/:id', async (req, res) => {
     }
 });
 
+// CİHAZ KÜTÜPHANESİ API YOLLARI
 
+// 1. Listeleme (Kategorilerle Birlikte)
+app.get('/api/cihaz-kutuphanesi', async (req, res) => {
+    try {
+        const query = `
+            SELECT ck.*, k.kategori_adi 
+            FROM cihaz_kutuphanesi ck 
+            INNER JOIN kategoriler k ON ck.kategori_id = k.id 
+            ORDER BY ck.cihaz_adi ASC`;
+        const result = await pool.query(query);
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// 2. Kaydetme
+app.post('/api/cihaz-kutuphanesi', async (req, res) => {
+    try {
+        const { kategori_id, cihaz_adi, periyot, fiyat, para_birimi } = req.body;
+        const query = `
+            INSERT INTO cihaz_kutuphanesi (kategori_id, cihaz_adi, periyot, fiyat, para_birimi) 
+            VALUES ($1, $2, $3, $4, $5) RETURNING *`;
+        const result = await pool.query(query, [kategori_id, cihaz_adi, periyot, fiyat, para_birimi]);
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error("Kayıt Hatası:", err.message);
+        res.status(500).json({ error: "Veritabanı kayıt hatası." });
+    }
+});
 
 app.listen(PORT, () => {
     console.log(`🚀 Sunucu ${PORT} portunda başarıyla ayağa kalktı.`);
