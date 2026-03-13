@@ -180,6 +180,23 @@ app.post('/api/talimatlar', async (req, res) => {
     }
 });
 
+// Referans Cihazları Getir (Son kalibrasyon bilgileriyle beraber)
+app.get('/api/referans-cihazlar', async (req, res) => {
+    try {
+        const query = `
+            SELECT rc.*, k.kategori_adi, rt.sertifika_no, rt.sonraki_kal_tarihi
+            FROM referans_cihazlar rc
+            LEFT JOIN kategoriler k ON rc.kategori_id = k.id
+            LEFT JOIN (
+                SELECT DISTINCT ON (referans_id) * FROM referans_takip 
+                ORDER BY referans_id, kal_tarihi DESC
+            ) rt ON rc.id = rt.referans_id`;
+        const result = await pool.query(query);
+        res.json(result.rows);
+    } catch (err) { res.status(500).send(err.message); }
+});
+
+
 app.listen(PORT, () => {
     console.log(`🚀 Sunucu ${PORT} portunda başarıyla ayağa kalktı.`);
 });

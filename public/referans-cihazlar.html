@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Referans Cihaz Yönetimi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #1E40AF; --border: #e2e8f0; --bg: #f8fafc; --accent: #4338ca; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); padding: 20px; color: #334155; }
+        .card { background: #fff; padding: 20px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        
+        /* Form Grid */
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        label { display: block; font-size: 0.8rem; font-weight: 600; color: #64748b; margin-bottom: 5px; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; font-family: inherit; }
+        
+        .btn { background: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; width: 100%; }
+        .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+        .btn-history { background: #f1f5f9; color: var(--primary); border: 1px solid var(--primary); }
+
+        /* Tablo ve Arama */
+        .table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th { background: #f8fafc; text-align: left; padding: 12px; border-bottom: 2px solid var(--border); color: #64748b; }
+        td { padding: 12px; border-bottom: 1px solid var(--border); }
+
+        /* Geçmiş Paneli (Modal benzeri) */
+        #historySection { display: none; border-top: 4px solid var(--primary); background: #f0f7ff; }
+        .status-red { color: #dc2626; font-weight: bold; }
+        .status-green { color: #16a34a; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2 style="margin-top:0; color: var(--primary);">🛠️ Yeni Referans Cihaz Tanımla</h2>
+        <form id="refForm" onsubmit="kaydetReferans(event)">
+            <div class="form-grid">
+                <div>
+                    <label>Kategori</label>
+                    <select id="kategoriSelect" required><option value="">Yükleniyor...</option></select>
+                </div>
+                <div>
+                    <label>Cihaz Adı</label>
+                    <input type="text" id="cihaz_adi" required placeholder="Örn: Referans Manometre">
+                </div>
+                <div>
+                    <label>Marka / Model</label>
+                    <input type="text" id="marka_model" placeholder="Örn: Wika 213.53">
+                </div>
+                <div>
+                    <label>Seri No</label>
+                    <input type="text" id="seri_no" required>
+                </div>
+                <div>
+                    <label>Envanter No</label>
+                    <input type="text" id="envanter_no">
+                </div>
+                <div>
+                    <label>Ölçüm Aralığı</label>
+                    <input type="text" id="olcme_araligi" placeholder="Örn: 0-600 Bar">
+                </div>
+            </div>
+            <div class="form-grid">
+                <div style="grid-column: span 2;">
+                    <label>Kalibrasyon Kriteri</label>
+                    <textarea id="kal_kriteri" rows="2"></textarea>
+                </div>
+                <div style="grid-column: span 2;">
+                    <label>Ara Kontrol Kriteri</label>
+                    <textarea id="ara_kriteri" rows="2"></textarea>
+                </div>
+            </div>
+            <button type="submit" class="btn">🚀 Referansı Kaydet</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <div class="table-header">
+            <h2 style="margin:0; color: var(--primary);">📚 Referans Envanteri</h2>
+            <input type="text" id="refAra" onkeyup="tabloAra()" placeholder="Seri no veya ad ara..." style="width:250px;">
+        </div>
+        <table id="refTablo">
+            <thead>
+                <tr>
+                    <th>Seri No</th>
+                    <th>Cihaz Adı</th>
+                    <th>Kategori</th>
+                    <th>Gelecek Kal.</th>
+                    <th>İşlem</th>
+                </tr>
+            </thead>
+            <tbody id="refListe"></tbody>
+        </table>
+    </div>
+
+    <div id="historySection" class="card">
+        <h3 id="selectedDeviceTitle" style="color: var(--accent);">--</h3>
+        <form id="historyForm" onsubmit="kaydetTakip(event)">
+            <input type="hidden" id="selected_ref_id">
+            <div class="form-grid">
+                <div>
+                    <label>Sertifika No</label>
+                    <input type="text" id="sertifika_no" required>
+                </div>
+                <div>
+                    <label>İzlenebilirlik</label>
+                    <input type="text" id="izlenebilirlik">
+                </div>
+                <div>
+                    <label>Kal. Tarihi</label>
+                    <input type="date" id="kal_tarihi" required>
+                </div>
+                <div>
+                    <label>Sonraki Kal. Tarihi</label>
+                    <input type="date" id="sonraki_kal" required>
+                </div>
+                <div>
+                    <label>Ara Kontrol Tarihi</label>
+                    <input type="date" id="ara_tarihi">
+                </div>
+                <div>
+                    <label>Sonraki Ara Kontrol</label>
+                    <input type="date" id="sonraki_ara">
+                </div>
+            </div>
+            <button type="submit" class="btn" style="background:var(--accent);">💾 Dönem Verilerini Güncelle</button>
+        </form>
+    </div>
+
+    <script>
+        // Verileri Yükle
+        async function sayfaYukle() {
+            kategoriYukle();
+            referansYukle();
+        }
+
+        async function kategoriYukle() {
+            const res = await fetch('/api/kategoriler');
+            const data = await res.json();
+            const sel = document.getElementById("kategoriSelect");
+            sel.innerHTML = '<option value="">Seçin...</option>' + 
+                data.map(k => `<option value="${k.id}">${k.kategori_adi}</option>`).join('');
+        }
+
+        async function referansYukle() {
+            const res = await fetch('/api/referans-cihazlar');
+            const data = await res.json();
+            const tbody = document.getElementById("refListe");
+            tbody.innerHTML = data.map(r => `
+                <tr>
+                    <td><b class="code-badge">${r.seri_no}</b></td>
+                    <td>${r.cihaz_adi}</td>
+                    <td>${r.kategori_adi}</td>
+                    <td class="${isLate(r.sonraki_kal_tarihi) ? 'status-red' : 'status-green'}">
+                        ${r.sonraki_kal_tarihi ? new Date(r.sonraki_kal_tarihi).toLocaleDateString('tr-TR') : 'Kayıt Yok'}
+                    </td>
+                    <td><button class="btn btn-sm btn-history" onclick="gecmisAc(${r.id}, '${r.cihaz_adi} - ${r.seri_no}')">🗓️ Takip/Geçmiş</button></td>
+                </tr>
+            `).join('');
+        }
+
+        function isLate(date) {
+            if(!date) return false;
+            return new Date(date) < new Date();
+        }
+
+        function gecmisAc(id, title) {
+            document.getElementById("historySection").style.display = "block";
+            document.getElementById("selected_ref_id").value = id;
+            document.getElementById("selectedDeviceTitle").innerText = "Takip Verileri: " + title;
+            window.scrollTo(0, document.body.scrollHeight);
+        }
+
+        async function kaydetReferans(e) {
+            e.preventDefault();
+            const payload = {
+                kategori_id: document.getElementById("kategoriSelect").value,
+                cihaz_adi: document.getElementById("cihaz_adi").value,
+                marka_model: document.getElementById("marka_model").value,
+                seri_no: document.getElementById("seri_no").value,
+                envanter_no: document.getElementById("envanter_no").value,
+                olcme_araligi: document.getElementById("olcme_araligi").value,
+                kalibrasyon_kriteri: document.getElementById("kal_kriteri").value,
+                ara_kontrol_kriteri: document.getElementById("ara_kriteri").value
+            };
+            const res = await fetch('/api/referans-cihazlar', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            if(res.ok) { alert("Sabit veriler kaydedildi."); referansYukle(); }
+        }
+
+        async function kaydetTakip(e) {
+            e.preventDefault();
+            const payload = {
+                referans_id: document.getElementById("selected_ref_id").value,
+                sertifika_no: document.getElementById("sertifika_no").value,
+                izlenebilirlik: document.getElementById("izlenebilirlik").value,
+                kal_tarihi: document.getElementById("kal_tarihi").value,
+                sonraki_kal_tarihi: document.getElementById("sonraki_kal").value,
+                ara_kontrol_tarihi: document.getElementById("ara_tarihi").value,
+                sonraki_ara_kontrol_tarihi: document.getElementById("sonraki_ara").value
+            };
+            const res = await fetch('/api/referans-takip', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            if(res.ok) { alert("Dinamik veriler güncellendi."); referansYukle(); }
+        }
+
+        function tabloAra() {
+            let filter = document.getElementById("refAra").value.toUpperCase();
+            let rows = document.getElementById("refListe").getElementsByTagName("tr");
+            for (let row of rows) {
+                let text = row.innerText.toUpperCase();
+                row.style.display = text.includes(filter) ? "" : "none";
+            }
+        }
+
+        window.onload = sayfaYukle;
+    </script>
+</body>
+</html>
