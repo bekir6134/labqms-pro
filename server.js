@@ -230,7 +230,7 @@ app.post('/api/referans-cihazlar', async (req, res) => {
     }
 });
 
-// 3. Referans takip/geçmiş verisi ekle (Dinamik Veriler)
+// Referans Takip Verisi Kaydet (Kalibrasyon veya Ara Kontrol)
 app.post('/api/referans-takip', async (req, res) => {
     try {
         const { 
@@ -239,6 +239,7 @@ app.post('/api/referans-takip', async (req, res) => {
             ara_kontrol_tarihi, sonraki_ara_kontrol_tarihi 
         } = req.body;
 
+        // SQL sorgusunda eksik sütun veya tablo adı hatası 404/500 dönebilir
         const query = `
             INSERT INTO referans_takip (
                 referans_id, sertifika_no, izlenebilirlik, 
@@ -246,19 +247,23 @@ app.post('/api/referans-takip', async (req, res) => {
                 ara_kontrol_tarihi, sonraki_ara_kontrol_tarihi
             ) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`;
 
-        const result = await pool.query(query, [
-            referans_id, sertifika_no, izlenebilirlik, 
-            kal_tarihi, sonraki_kal_tarihi, 
-            ara_kontrol_tarihi, sonraki_ara_kontrol_tarihi
-        ]);
-        res.json(result.rows[0]);
+        const values = [
+            referans_id, 
+            sertifika_no, 
+            izlenebilirlik || null, 
+            kal_tarihi || ara_kontrol_tarihi, // Ortak tarih alanı
+            sonraki_kal_tarihi || sonraki_ara_kontrol_tarihi, 
+            ara_kontrol_tarihi || null, 
+            sonraki_ara_kontrol_tarihi || null
+        ];
+
+        const result = await pool.query(query, values);
+        res.status(200).json(result.rows[0]);
     } catch (err) {
-        console.error(err.message);
-        res.status(500).json({ error: err.message });
+        console.error("API Hatası:", err.message);
+        res.status(500).send("Sunucu Hatası: " + err.message);
     }
 });
-
-// --- REFERANS CİHAZLAR API BİTİŞ ---
 
 
 app.listen(PORT, () => {

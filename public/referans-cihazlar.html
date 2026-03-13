@@ -9,29 +9,36 @@
         body { font-family: 'Inter', sans-serif; background: var(--bg); padding: 20px; color: #334155; }
         .card { background: #fff; padding: 25px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
         
+        /* Butonlar */
         .btn { padding: 10px 15px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; transition: 0.2s; }
         .btn-primary { background: var(--primary); color: white; width: 100%; }
         .btn-kal { background: var(--success); color: white; font-size: 0.75rem; }
         .btn-ara { background: var(--warning); color: white; font-size: 0.75rem; }
         
+        /* Formlar */
         .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 15px; }
         label { display: block; font-size: 0.8rem; font-weight: 600; color: #64748b; margin-bottom: 5px; }
         input, select, textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; font-family: inherit; }
         
+        /* Tablo */
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th { background: #f8fafc; text-align: left; padding: 12px; border-bottom: 2px solid var(--border); color: #64748b; font-size: 0.85rem; }
         td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
         
+        /* Tarihçe Satırı */
         .history-row { background: #f8fafc; display: none; }
         .history-container { padding: 15px; border: 1px dashed #cbd5e1; border-radius: 8px; margin: 10px; background: white; }
         
+        /* İşlem Panelleri */
         .action-panel { display: none; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); background: #fff; border-left: 6px solid var(--primary); }
         .status-badge { padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
+        
+        #success-msg { display:none; background:#dcfce7; color:#166534; padding:15px; border-radius:8px; margin-bottom:15px; text-align:center; font-weight:600; border:1px solid #bbf7d0; }
     </style>
 </head>
 <body>
 
-    <div id="success-msg" style="display:none; background:#dcfce7; color:#166534; padding:15px; border-radius:8px; margin-bottom:15px; text-align:center; font-weight:600;">✅ İşlem başarıyla kaydedildi!</div>
+    <div id="success-msg">✅ İşlem başarıyla kaydedildi!</div>
 
     <div class="card">
         <h2 style="margin-top:0; color: var(--primary);">🛠️ Referans Cihaz Tanımlama</h2>
@@ -42,13 +49,13 @@
                 <div><label>Marka</label><input type="text" id="marka"></div>
                 <div><label>Model</label><input type="text" id="model"></div>
                 <div><label>Seri No</label><input type="text" id="seri_no" required></div>
-                <div><label>Ölçüm Aralığı</label><input type="text" id="olcme_araligi" placeholder="Örn: 0-100 bar"></div>
+                <div><label>Ölçüm Aralığı</label><input type="text" id="olcme_araligi"></div>
             </div>
             <div class="form-grid">
                 <div style="grid-column: span 2;"><label>Kalibrasyon Kriteri</label><textarea id="kal_kriteri" rows="2"></textarea></div>
                 <div style="grid-column: span 2;"><label>Ara Kontrol Kriteri</label><textarea id="ara_kriteri" rows="2"></textarea></div>
             </div>
-            <button type="submit" class="btn btn-primary">🚀 Cihazı Envantere Kaydet</button>
+            <button type="submit" id="refSubmitBtn" class="btn btn-primary">🚀 Cihazı Envantere Kaydet</button>
         </form>
     </div>
 
@@ -63,7 +70,7 @@
                 <div><label>Kal. Tarihi</label><input type="date" id="kal_tarihi" required></div>
                 <div><label>Gelecek Kal. Tarihi</label><input type="date" id="kal_sonraki" required></div>
             </div>
-            <button type="submit" class="btn btn-kal" style="width:100%; font-size:1rem;">💾 Kalibrasyon Verisini Kaydet</button>
+            <button type="submit" id="kalSubmitBtn" class="btn btn-kal" style="width:100%; font-size:1rem;">💾 Kalibrasyon Verisini Kaydet</button>
         </form>
     </div>
 
@@ -77,7 +84,7 @@
                 <div><label>Kontrol Tarihi</label><input type="date" id="ara_tarihi" required></div>
                 <div><label>Gelecek Kontrol Tarihi</label><input type="date" id="ara_sonraki" required></div>
             </div>
-            <button type="submit" class="btn" style="width:100%; font-size:1rem; background:var(--warning); color:white;">💾 Ara Kontrol Verisini Kaydet</button>
+            <button type="submit" id="araSubmitBtn" class="btn" style="width:100%; font-size:1rem; background:var(--warning); color:white;">💾 Ara Kontrol Verisini Kaydet</button>
         </form>
     </div>
 
@@ -97,7 +104,6 @@
     </div>
 
     <script>
-        // Sayfa Başlangıç
         async function sayfaYukle() {
             kategoriYukle();
             referansYukle();
@@ -154,25 +160,28 @@
             if(row.style.display === "table-row") { row.style.display = "none"; return; }
             row.style.display = "table-row";
             
-            const res = await fetch(`/api/referans-tarihce/${id}`);
-            const data = await res.json();
-            
-            detailDiv.innerHTML = data.length > 0 ? `
-                <table style="background:white; border-radius:8px; border:1px solid #e2e8f0;">
-                    <tr style="font-size:0.75rem; color:#64748b;"><th>İşlem</th><th>No</th><th>Tarih</th><th>Gelecek Tarih</th></tr>
-                    ${data.map(d => `
-                        <tr>
-                            <td><span class="status-badge" style="background:${d.sertifika_no.startsWith('ARA') ? '#fef3c7' : '#dcfce7'}">${d.sertifika_no.startsWith('ARA') ? 'ARA KONTROL' : 'KALİBRASYON'}</span></td>
-                            <td>${d.sertifika_no}</td>
-                            <td>${new Date(d.kal_tarihi).toLocaleDateString('tr-TR')}</td>
-                            <td>${new Date(d.sonraki_kal_tarihi).toLocaleDateString('tr-TR')}</td>
-                        </tr>
-                    `).join('')}
-                </table>` : "Bu cihaza ait geçmiş kayıt bulunamadı.";
+            try {
+                const res = await fetch(`/api/referans-tarihce/${id}`);
+                const data = await res.json();
+                detailDiv.innerHTML = data.length > 0 ? `
+                    <table style="background:white; border-radius:8px; border:1px solid #e2e8f0;">
+                        <tr style="font-size:0.75rem; color:#64748b;"><th>İşlem</th><th>No</th><th>Tarih</th><th>Gelecek Tarih</th></tr>
+                        ${data.map(d => `
+                            <tr>
+                                <td><span class="status-badge" style="background:${d.sertifika_no.includes('ARA') ? '#fef3c7' : '#dcfce7'}">${d.sertifika_no.includes('ARA') ? 'ARA KONTROL' : 'KALİBRASYON'}</span></td>
+                                <td>${d.sertifika_no}</td>
+                                <td>${new Date(d.kal_tarihi).toLocaleDateString('tr-TR')}</td>
+                                <td>${new Date(d.sonraki_kal_tarihi).toLocaleDateString('tr-TR')}</td>
+                            </tr>
+                        `).join('')}
+                    </table>` : "Geçmiş kaydı bulunamadı.";
+            } catch(e) { detailDiv.innerText = "Veri yüklenemedi."; }
         }
 
         async function kaydetReferans(e) {
             e.preventDefault();
+            const btn = document.getElementById("refSubmitBtn");
+            btn.disabled = true;
             const payload = {
                 kategori_id: document.getElementById("kategoriSelect").value,
                 cihaz_adi: document.getElementById("cihaz_adi").value,
@@ -191,10 +200,14 @@
                 document.getElementById("success-msg").style.display = "block";
                 setTimeout(() => location.reload(), 2000);
             }
+            btn.disabled = false;
         }
 
         async function kaydetDinamik(e, tip) {
             e.preventDefault();
+            const btn = tip === 'KAL' ? document.getElementById("kalSubmitBtn") : document.getElementById("araSubmitBtn");
+            btn.disabled = true;
+
             const payload = tip === 'KAL' ? {
                 referans_id: document.getElementById("kal_ref_id").value,
                 sertifika_no: document.getElementById("kal_sertifika").value,
@@ -204,16 +217,28 @@
             } : {
                 referans_id: document.getElementById("ara_ref_id").value,
                 sertifika_no: document.getElementById("ara_no").value,
-                kal_tarihi: document.getElementById("ara_tarihi").value,
+                kal_tarihi: document.getElementById("ara_tarihi").value, // Ortak field kullanıyoruz
                 sonraki_kal_tarihi: document.getElementById("ara_sonraki").value
             };
-            const res = await fetch('/api/referans-takip', {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(payload)
-            });
-            if(res.ok) {
-                document.getElementById("success-msg").style.display = "block";
-                setTimeout(() => location.reload(), 2000);
+
+            try {
+                const res = await fetch('/api/referans-takip', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                
+                // Eğer hata HTML (Unexpected token <) geliyorsa burası yakalayacak
+                if(res.ok) {
+                    document.getElementById("success-msg").style.display = "block";
+                    setTimeout(() => location.reload(), 2000);
+                } else {
+                    const errorData = await res.json();
+                    alert("Hata: " + errorData.error);
+                }
+            } catch(err) {
+                alert("Sunucuyla iletişim kurulamadı. Lütfen API yolunu ve SQL tablosunu kontrol edin.");
+            } finally {
+                btn.disabled = false;
             }
         }
 
