@@ -1264,6 +1264,41 @@ app.post('/api/sertifika-mail/:id', async (req, res) => {
 });
 
 // Mail gönder (toplu)
+
+// EronSign - İmzalı PDF yükle ve aşamayı güncelle
+app.post('/api/imzali-pdf-yukle', async (req, res) => {
+    try {
+        const { sertifika_id, pdf_base64, dosya_adi } = req.body;
+        if (!sertifika_id || !pdf_base64) {
+            return res.status(400).json({ error: 'sertifika_id ve pdf_base64 zorunlu' });
+        }
+
+        // Mevcut aşamayı öğren
+        const mevcut = await pool.query('SELECT asama FROM sertifikalar WHERE id=$1', [sertifika_id]);
+        if (!mevcut.rows.length) return res.status(404).json({ error: 'Sertifika bulunamadı' });
+
+        const mevcutAsama = mevcut.rows[0].asama;
+
+        // Aşama geçişi: hazırlanıyor → imzalandı, imzalandı → onaylandı
+        let yeniAsama = mevcutAsama;
+        if (mevcutAsama === 'hazırlanıyor') yeniAsama = 'imzalandı';
+        else if (mevcutAsama === 'imzalandı') yeniAsama = 'onaylandı';
+
+        // İmzalı PDF'i ve aşamayı kaydet
+        await pool.query(
+            'UPDATE sertifikalar SET sertifika_pdf=$1, asama=$2 WHERE id=$3',
+            [pdf_base64, yeniAsama, sertifika_id]
+        );
+
+        console.log(`[EronSign] Sertifika #${sertifika_id}: ${mevcutAsama} → ${yeniAsama}`);
+        res.json({ ok: true, sertifika_id, eski_asama: mevcutAsama, yeni_asama: yeniAsama });
+
+    } catch (err) {
+        console.error('İmzalı PDF yükleme hata:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.post('/api/sertifika-mail-toplu', async (req, res) => {
     try {
         const { idler } = req.body;
