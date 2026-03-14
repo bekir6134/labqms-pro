@@ -1265,6 +1265,57 @@ app.post('/api/sertifika-mail/:id', async (req, res) => {
 
 // Mail gönder (toplu)
 
+
+// Sertifika numarası otomatik üret
+app.post('/api/sertifika-no-uret', async (req, res) => {
+    try {
+        const { sertifika_id } = req.body;
+
+        // Ayarlardan format ve sayac al
+        const ayarlar = await pool.query(
+            "SELECT key, value FROM ayarlar WHERE key IN ('kd_format','kd_sayac','kd_basamak','akreditasyon_no')"
+        );
+        const ayar = {};
+        ayarlar.rows.forEach(r => ayar[r.key] = r.value);
+
+        const format   = ayar.kd_format  || 'SERT-{YIL}-{SAYI}';
+        const basamak  = parseInt(ayar.kd_basamak || '3');
+        const mevcutSayac = parseInt(ayar.kd_sayac || '0');
+        const yeniSayac   = mevcutSayac + 1;
+
+        // Formatı doldur
+        const yil  = new Date().getFullYear();
+        const ay   = String(new Date().getMonth() + 1).padStart(2, '0');
+        const sayi = String(yeniSayac).padStart(basamak, '0');
+
+        let sertNo = format
+            .replace(/{YIL}/g, yil)
+            .replace(/{YY}/g, String(yil).slice(-2))
+            .replace(/{AY}/g, ay)
+            .replace(/{SAYI}/g, sayi);
+
+        // Sayacı güncelle
+        await pool.query(
+            "INSERT INTO ayarlar (key, value) VALUES ('kd_sayac', $1) ON CONFLICT (key) DO UPDATE SET value=$1",
+            [String(yeniSayac)]
+        );
+
+        // Sertifikaya no ata
+        if (sertifika_id) {
+            await pool.query(
+                'UPDATE sertifikalar SET sertifika_no=$1 WHERE id=$2',
+                [sertNo, sertifika_id]
+            );
+        }
+
+        res.json({ sertifika_no: sertNo, sayac: yeniSayac });
+
+    } catch (err) {
+        console.error('Sertifika no üretme hata:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // EronSign - İmzalı PDF yükle ve aşamayı güncelle
 app.post('/api/imzali-pdf-yukle', async (req, res) => {
     try {
