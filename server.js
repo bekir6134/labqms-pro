@@ -993,9 +993,22 @@ app.delete('/api/cevre-kosullari/:id', async (req, res) => {
 app.get('/api/sertifikalar', async (req, res) => {
     try {
         const result = await pool.query(`
-            SELECT s.*, m.firma_adi, m.sube_adi,
-                   p1.ad_soyad as kal_yapan_adi,
-                   p2.ad_soyad as onaylayan_adi
+            SELECT 
+                s.id, s.ie_id, s.ie_no, s.musteri_id, s.cihaz_index,
+                s.cihaz_adi, s.imalatci, s.tip, s.seri_no, s.envanter_no,
+                s.fis_no, s.kal_yeri, s.sertifika_tipi, s.sertifika_no,
+                s.kal_tarihi, s.yayin_tarihi, s.onay_tarihi, s.gelecek_kal,
+                s.kal_yapan_id, s.onaylayan_id, s.sicaklik, s.nem, s.basinc,
+                s.uygunluk, s.yorum, s.asama, s.olusturulma,
+                s.olcum_pdf_sayfa,
+                -- PDF var mı bilgisi (base64 verisi değil)
+                CASE WHEN s.olcum_pdf_url IS NOT NULL AND s.olcum_pdf_url != '' 
+                     THEN true ELSE false END as olcum_pdf_var,
+                CASE WHEN s.sertifika_pdf IS NOT NULL AND s.sertifika_pdf != '' 
+                     THEN true ELSE false END as imzali_pdf_var,
+                m.firma_adi, m.sube_adi,
+                p1.ad_soyad as kal_yapan_adi,
+                p2.ad_soyad as onaylayan_adi
             FROM sertifikalar s
             LEFT JOIN musteriler m ON s.musteri_id = m.id
             LEFT JOIN personeller p1 ON s.kal_yapan_id = p1.id
@@ -1251,15 +1264,37 @@ app.get('/api/sertifikalar/:id/olcum-pdf', async (req, res) => {
     } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
-// Mail gönder (tek)
+// Mail gönder (tek) - imzalı PDF kontrolü
 app.post('/api/sertifika-mail/:id', async (req, res) => {
     try {
+        const result = await pool.query(
+            'SELECT asama, sertifika_pdf, sertifika_no, imzali_pdf_var FROM sertifikalar WHERE id=$1',
+            [req.params.id]
+        );
+        if(!result.rows.length) return res.status(404).json({ error: 'Sertifika bulunamadı' });
+        const s = result.rows[0];
+
+        // İmzalı PDF kontrolü
+        if(!s.sertifika_pdf) {
+            return res.status(400).json({ 
+                error: 'Bu sertifika henüz imzalanmamış! Mail gönderilemez.',
+                asama: s.asama
+            });
+        }
+        if(s.asama !== 'onaylandı') {
+            return res.status(400).json({ 
+                error: `Sertifika onaylanmamış (mevcut aşama: ${s.asama}). Önce onaylanmalı.`,
+                asama: s.asama
+            });
+        }
+
+        // Aşamayı güncelle
         await pool.query(
             "UPDATE sertifikalar SET asama='sertifika_gönderildi' WHERE id=$1",
             [req.params.id]
         );
-        // Mail entegrasyonu ilerleyen aşamada
-        res.json({ success: true });
+        // TODO: Gerçek mail gönderimi (nodemailer entegrasyonu)
+        res.json({ success: true, mesaj: 'Sertifika gönderildi olarak işaretlendi.' });
     } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
