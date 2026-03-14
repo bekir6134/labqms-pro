@@ -585,18 +585,25 @@ app.post('/api/ayarlar', async (req, res) => {
 // --- İŞ EMİRLERİ ---
 app.get('/api/is-emirleri-on-veriler', async (req, res) => {
     try {
-        const musteriler = await pool.query('SELECT id, firma_adi, sube_adi FROM musteriler ORDER BY firma_adi');
-        const cihazKutuphanesi = await pool.query('SELECT id, cihaz_adi, kategori FROM cihaz_kutuphanesi ORDER BY cihaz_adi');
-        res.json({ musteriler: musteriler.rows, cihazlar: cihazKutuphanesi.rows });
+        const [musteriler, personeller, teklifler] = await Promise.all([
+            pool.query('SELECT id, firma_adi, sube_adi FROM musteriler ORDER BY firma_adi'),
+            pool.query('SELECT id, ad_soyad, varsayilan_onaylayici FROM personeller ORDER BY ad_soyad'),
+            pool.query('SELECT id, teklif_no, musteri_id FROM teklifler ORDER BY id DESC')
+        ]);
+        res.json({ musteriler: musteriler.rows, personeller: personeller.rows, teklifler: teklifler.rows });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.get('/api/is-emirleri', async (req, res) => {
     try {
         const result = await pool.query(`
-            SELECT ie.*, m.firma_adi, m.sube_adi
+            SELECT ie.*, m.firma_adi, m.sube_adi,
+                   t.teklif_no,
+                   p.ad_soyad as teslim_alan_adi
             FROM is_emirleri ie
             LEFT JOIN musteriler m ON ie.musteri_id = m.id
+            LEFT JOIN teklifler t ON ie.teklif_id = t.id
+            LEFT JOIN personeller p ON ie.teslim_alan_id = p.id
             ORDER BY ie.olusturulma DESC`);
         res.json(result.rows);
     } catch (err) { res.status(500).json({ error: err.message }); }
@@ -604,17 +611,19 @@ app.get('/api/is-emirleri', async (req, res) => {
 
 app.post('/api/is-emirleri', async (req, res) => {
     try {
-        const { musteri_id, kabul_tarihi, teslim_tarihi, cihazlar, notlar } = req.body;
-        // IE no üret: IE-2026-001
+        const { musteri_id, kabul_tarihi, teslim_tarihi, cihazlar, notlar,
+                teklif_id, teslim_eden, teslim_alan_id } = req.body;
         const yil = new Date().getFullYear();
         const sayacRes = await pool.query(
             `SELECT COUNT(*) FROM is_emirleri WHERE ie_no LIKE $1`, [`IE-${yil}-%`]);
         const sira = parseInt(sayacRes.rows[0].count) + 1;
         const ie_no = `IE-${yil}-${String(sira).padStart(3,'0')}`;
         const result = await pool.query(
-            `INSERT INTO is_emirleri (ie_no, musteri_id, kabul_tarihi, teslim_tarihi, cihazlar, notlar, asama)
-             VALUES ($1,$2,$3,$4,$5,$6,'kabul_edildi') RETURNING *`,
-            [ie_no, musteri_id, kabul_tarihi, teslim_tarihi||null, JSON.stringify(cihazlar), notlar||'']
+            `INSERT INTO is_emirleri (ie_no, musteri_id, kabul_tarihi, teslim_tarihi, cihazlar, notlar, asama,
+             teklif_id, teslim_eden, teslim_alan_id)
+             VALUES ($1,$2,$3,$4,$5,$6,'kabul_edildi',$7,$8,$9) RETURNING *`,
+            [ie_no, musteri_id, kabul_tarihi, teslim_tarihi||null, JSON.stringify(cihazlar), notlar||'',
+             teklif_id||null, teslim_eden||null, teslim_alan_id||null]
         );
         res.json(result.rows[0]);
     } catch (err) { res.status(500).json({ error: err.message }); }
@@ -633,10 +642,13 @@ app.put('/api/is-emirleri/:id/asama', async (req, res) => {
 
 app.put('/api/is-emirleri/:id', async (req, res) => {
     try {
-        const { musteri_id, kabul_tarihi, teslim_tarihi, cihazlar, notlar, asama } = req.body;
+        const { musteri_id, kabul_tarihi, teslim_tarihi, cihazlar, notlar, asama,
+                teklif_id, teslim_eden, teslim_alan_id } = req.body;
         const result = await pool.query(
-            `UPDATE is_emirleri SET musteri_id=$1, kabul_tarihi=$2, teslim_tarihi=$3, cihazlar=$4, notlar=$5, asama=$6 WHERE id=$7 RETURNING *`,
-            [musteri_id, kabul_tarihi, teslim_tarihi||null, JSON.stringify(cihazlar), notlar||'', asama, req.params.id]
+            `UPDATE is_emirleri SET musteri_id=$1, kabul_tarihi=$2, teslim_tarihi=$3, cihazlar=$4,
+             notlar=$5, asama=$6, teklif_id=$7, teslim_eden=$8, teslim_alan_id=$9 WHERE id=$10 RETURNING *`,
+            [musteri_id, kabul_tarihi, teslim_tarihi||null, JSON.stringify(cihazlar), notlar||'',
+             asama, teklif_id||null, teslim_eden||null, teslim_alan_id||null, req.params.id]
         );
         res.json(result.rows[0]);
     } catch (err) { res.status(500).json({ error: err.message }); }
