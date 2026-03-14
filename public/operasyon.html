@@ -200,11 +200,11 @@
                     </div>
                     <div>
                         <label>İmalatçı</label>
-                        <input type="text" id="s_imalatci">
+                        <input type="text" id="s_imalatci" class="readonly-field" readonly>
                     </div>
                     <div>
                         <label>Tip / Model</label>
-                        <input type="text" id="s_tip">
+                        <input type="text" id="s_tip" class="readonly-field" readonly>
                     </div>
                     <div>
                         <label>Seri Numarası</label>
@@ -220,7 +220,7 @@
                     </div>
                     <div>
                         <label>Kalibrasyonun Yapıldığı Yer</label>
-                        <input type="text" id="s_kal_yeri">
+                        <input type="text" id="s_kal_yeri" class="readonly-field" readonly>
                     </div>
                     <div>
                         <label>Sertifika Tipi</label>
@@ -230,6 +230,12 @@
                         </select>
                     </div>
                 </div>
+            </div>
+
+            <!-- MC BAĞLANTI NOTU -->
+            <div id="mc-baglanti-notu" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:9px 13px;margin-bottom:14px;gap:8px;align-items:flex-start;">
+                <span style="font-size:1rem;">🔗</span>
+                <span style="font-size:0.82rem;color:#1e40af;"></span>
             </div>
 
             <!-- TARİHLER & PERSONEL -->
@@ -747,16 +753,50 @@
         // Müşteri bilgisi
         const musteri = musteriler.find(m=>m.id===ie.musteri_id)||{};
 
-        // Formu doldur
+        // Müşteri cihazı detaylarını çek (musteri_cihaz_id varsa)
+        let mc = null;
+        if(cihaz.musteri_cihaz_id) {
+            try {
+                const mcRes = await fetch(\`/api/musteri-cihazlari/\${cihaz.musteri_cihaz_id}\`);
+                if(mcRes.ok) mc = await mcRes.json();
+            } catch(e) {}
+        }
+
+        // Formu doldur - musteri_cihazlari öncelikli, yoksa kabul fişindeki veri
         document.getElementById("s_firma_adi").value   = ie.firma_adi + (ie.sube_adi?' / '+ie.sube_adi:'');
         document.getElementById("s_firma_adres").value = musteri.adres || '';
-        document.getElementById("s_cihaz_adi").value   = cihaz.cihaz_adi||'';
-        document.getElementById("s_imalatci").value    = (cihaz.marka_model||'').split('/')[0].trim();
-        document.getElementById("s_tip").value         = (cihaz.marka_model||'').split('/')[1]?.trim()||'';
-        document.getElementById("s_seri_no").value     = cihaz.seri_no||'';
-        document.getElementById("s_envanter_no").value = cihaz.envanter_no||cihaz.aksesuar||'';
-        document.getElementById("s_fis_no").value      = ie.ie_no||'';
-        document.getElementById("s_kal_yeri").value    = cihaz.kalibrasyon_yeri||cihaz.aksesuar||'';
+        document.getElementById("s_cihaz_adi").value   = mc?.cihaz_adi || cihaz.cihaz_adi || '';
+        document.getElementById("s_imalatci").value    = mc?.marka || (cihaz.marka_model||'').split('/')[0].trim();
+        document.getElementById("s_tip").value         = mc?.model || (cihaz.marka_model||'').split('/')[1]?.trim() || '';
+        document.getElementById("s_seri_no").value     = mc?.seri_no || cihaz.seri_no || '';
+        document.getElementById("s_envanter_no").value = mc?.envanter_no || '';
+        document.getElementById("s_fis_no").value      = ie.ie_no || '';
+        document.getElementById("s_kal_yeri").value    = mc?.kalibrasyon_yeri || '';
+
+        // musteri_cihaz_id varsa cihaz alanları readonly (müşteri cihazı envanterinden geliyor)
+        const cihazAlanlar = ['s_cihaz_adi','s_imalatci','s_tip','s_seri_no','s_envanter_no','s_kal_yeri'];
+        const mcVarMi = !!cihaz.musteri_cihaz_id;
+        cihazAlanlar.forEach(id => {
+            const el = document.getElementById(id);
+            if(mcVarMi) {
+                el.readOnly = true;
+                el.classList.add('readonly-field');
+                el.title = 'Müşteri cihazları envanterinden geliyor';
+            } else {
+                el.readOnly = false;
+                el.classList.remove('readonly-field');
+                el.title = '';
+            }
+        });
+
+        // MC bağlantısı varsa bilgi notu göster
+        const mcNot = document.getElementById('mc-baglanti-notu');
+        if(mcVarMi) {
+            mcNot.style.display = 'flex';
+            mcNot.querySelector('span').textContent = `Cihaz bilgileri müşteri cihazları envanterinden (ID: ${cihaz.musteri_cihaz_id}) geliyor — düzenlemek için Müşteri Cihazları modülünü kullanın.`;
+        } else {
+            mcNot.style.display = 'none';
+        }
         document.getElementById("s_kal_tarihi").value  = ie.kabul_tarihi?.substring(0,10)||'';
         document.getElementById("s_yayin_tarihi").value= new Date().toISOString().substring(0,10);
         document.getElementById("s_onay_tarihi").value = new Date().toISOString().substring(0,10);
@@ -785,10 +825,26 @@
         document.getElementById("s_prosedurler").textContent = '— (Metot bağlantısı kurulunca otomatik gelecek)';
         document.getElementById("s_referanslar").textContent  = '— (Metot bağlantısı kurulunca otomatik gelecek)';
 
-        // Çevre koşulları (kategori varsa)
+        // Çevre koşulları - musteri cihazının kategorisine göre çek
         document.getElementById("s_sicaklik").value = '';
         document.getElementById("s_nem").value      = '';
         document.getElementById("s_basinc").value   = '';
+        if(mc?.kategori_id) {
+            try {
+                const ckRes = await fetch(\`/api/cevre-kosullari/kategori/\${mc.kategori_id}\`);
+                if(ckRes.ok) {
+                    const ck = await ckRes.json();
+                    if(ck) {
+                        if(ck.sicaklik_merkez) document.getElementById("s_sicaklik").value =
+                            \`(\${ck.sicaklik_merkez}\${ck.sicaklik_tolerans?'±'+ck.sicaklik_tolerans:'\'}) °C\`;
+                        if(ck.nem_merkez) document.getElementById("s_nem").value =
+                            \`(\${ck.nem_merkez}\${ck.nem_tolerans?'±'+ck.nem_tolerans:'\'}) %rh\`;
+                        if(ck.basinc_merkez) document.getElementById("s_basinc").value =
+                            \`(\${ck.basinc_merkez}\${ck.basinc_tolerans?'±'+ck.basinc_tolerans:'\'}) hPa\`;
+                    }
+                }
+            } catch(e) {}
+        }
 
         document.getElementById("sertModalBaslik").textContent =
             `📋 Sertifika Hazırlama — ${cihaz.cihaz_adi} (${ie.ie_no})`;

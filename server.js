@@ -493,6 +493,24 @@ app.get('/api/musteri-cihazlari-on-veriler', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+app.get('/api/musteri-cihazlari/:id', async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT mc.*, 
+                m.firma_adi,
+                k.kategori_adi,
+                km.metot_kodu, km.prosedur, km.referans_cihazlar
+            FROM musteri_cihazlari mc
+            LEFT JOIN musteriler m ON mc.musteri_id = m.id
+            LEFT JOIN kategoriler k ON mc.kategori_id = k.id
+            LEFT JOIN kalibrasyon_metotlari km ON mc.metot_id = km.id
+            WHERE mc.id = $1
+        `, [req.params.id]);
+        if(!result.rows.length) return res.status(404).json({ error: 'Bulunamadı' });
+        res.json(result.rows[0]);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 app.get('/api/musteri-cihazlari', async (req, res) => {
     try {
         const result = await pool.query(`
@@ -935,4 +953,120 @@ app.delete('/api/cevre-kosullari/:id', async (req, res) => {
         await pool.query('DELETE FROM cevre_kosullari WHERE id=$1', [req.params.id]);
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// --- SERTİFİKALAR ---
+app.get('/api/sertifikalar', async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT s.*, m.firma_adi, m.sube_adi,
+                   p1.ad_soyad as kal_yapan_adi,
+                   p2.ad_soyad as onaylayan_adi
+            FROM sertifikalar s
+            LEFT JOIN musteriler m ON s.musteri_id = m.id
+            LEFT JOIN personeller p1 ON s.kal_yapan_id = p1.id
+            LEFT JOIN personeller p2 ON s.onaylayan_id = p2.id
+            ORDER BY s.olusturulma DESC`);
+        res.json(result.rows);
+    } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/sertifikalar', async (req, res) => {
+    try {
+        const { ie_id, ie_no, musteri_id, cihaz_index, cihaz_adi, imalatci, tip,
+                seri_no, envanter_no, fis_no, kal_yeri, sertifika_tipi,
+                kal_tarihi, yayin_tarihi, onay_tarihi, gelecek_kal,
+                kal_yapan_id, onaylayan_id, sicaklik, nem, basinc,
+                uygunluk, yorum, asama } = req.body;
+
+        // Aynı iş emri + cihaz index için sertifika var mı kontrol
+        const mevcut = await pool.query(
+            'SELECT id FROM sertifikalar WHERE ie_id=$1 AND cihaz_index=$2',
+            [ie_id, cihaz_index]
+        );
+        if(mevcut.rows.length)
+            return res.status(400).json({ error: "Bu cihaz için zaten sertifika mevcut! Düzenleme yapın." });
+
+        const result = await pool.query(`
+            INSERT INTO sertifikalar
+            (ie_id, ie_no, musteri_id, cihaz_index, cihaz_adi, imalatci, tip,
+             seri_no, envanter_no, fis_no, kal_yeri, sertifika_tipi,
+             kal_tarihi, yayin_tarihi, onay_tarihi, gelecek_kal,
+             kal_yapan_id, onaylayan_id, sicaklik, nem, basinc,
+             uygunluk, yorum, asama)
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24)
+            RETURNING *`,
+            [ie_id, ie_no, musteri_id, cihaz_index, cihaz_adi, imalatci, tip,
+             seri_no, envanter_no||null, fis_no, kal_yeri, sertifika_tipi,
+             kal_tarihi, yayin_tarihi, onay_tarihi, gelecek_kal||null,
+             kal_yapan_id||null, onaylayan_id||null, sicaklik, nem, basinc,
+             uygunluk, yorum||null, asama||'hazırlanıyor']
+        );
+        res.json(result.rows[0]);
+    } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+app.put('/api/sertifikalar/:id', async (req, res) => {
+    try {
+        const { cihaz_adi, imalatci, tip, seri_no, envanter_no, fis_no, kal_yeri,
+                sertifika_tipi, kal_tarihi, yayin_tarihi, onay_tarihi, gelecek_kal,
+                kal_yapan_id, onaylayan_id, sicaklik, nem, basinc, uygunluk, yorum } = req.body;
+        const result = await pool.query(`
+            UPDATE sertifikalar SET
+            cihaz_adi=$1, imalatci=$2, tip=$3, seri_no=$4, envanter_no=$5,
+            fis_no=$6, kal_yeri=$7, sertifika_tipi=$8, kal_tarihi=$9,
+            yayin_tarihi=$10, onay_tarihi=$11, gelecek_kal=$12,
+            kal_yapan_id=$13, onaylayan_id=$14, sicaklik=$15, nem=$16,
+            basinc=$17, uygunluk=$18, yorum=$19
+            WHERE id=$20 RETURNING *`,
+            [cihaz_adi, imalatci, tip, seri_no, envanter_no||null,
+             fis_no, kal_yeri, sertifika_tipi, kal_tarihi,
+             yayin_tarihi, onay_tarihi, gelecek_kal||null,
+             kal_yapan_id||null, onaylayan_id||null, sicaklik, nem,
+             basinc, uygunluk, yorum||null, req.params.id]
+        );
+        res.json(result.rows[0]);
+    } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+app.put('/api/sertifikalar/:id/asama', async (req, res) => {
+    try {
+        const { asama } = req.body;
+        const result = await pool.query(
+            'UPDATE sertifikalar SET asama=$1 WHERE id=$2 RETURNING *',
+            [asama, req.params.id]
+        );
+        res.json(result.rows[0]);
+    } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+app.delete('/api/sertifikalar/:id', async (req, res) => {
+    try {
+        await pool.query('DELETE FROM sertifikalar WHERE id=$1', [req.params.id]);
+        res.json({ success: true });
+    } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+// Mail gönder (tek)
+app.post('/api/sertifika-mail/:id', async (req, res) => {
+    try {
+        await pool.query(
+            "UPDATE sertifikalar SET asama='sertifika_gönderildi' WHERE id=$1",
+            [req.params.id]
+        );
+        // Mail entegrasyonu ilerleyen aşamada
+        res.json({ success: true });
+    } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+// Mail gönder (toplu)
+app.post('/api/sertifika-mail-toplu', async (req, res) => {
+    try {
+        const { idler } = req.body;
+        await pool.query(
+            "UPDATE sertifikalar SET asama='sertifika_gönderildi' WHERE id=ANY($1)",
+            [idler]
+        );
+        res.json({ success: true, basarili: idler.length });
+    } catch(err) { res.status(500).json({ error: err.message }); }
 });
