@@ -1296,8 +1296,38 @@
     }
 
     async function tekliOnayla(id) {
-        showToast("✅ EronSign onay süreci başlatılıyor...");
-        await sertAsamaGuncelle([id], 'onaylandı');
+        const s = tumSertifikalar.find(x=>x.id===id);
+        if(!s) return;
+        if(!s.sertifika_no) return showToast("❌ Sertifika numarası eksik!", true);
+
+        showToast('📄 İmzalı PDF alınıyor...');
+        try {
+            // DB'deki imzalı PDF'i al
+            const pdfRes = await fetch('/api/sertifikalar/' + id + '/imzali-pdf');
+            if(!pdfRes.ok) {
+                const err = await pdfRes.json();
+                return showToast('❌ ' + (err.error || 'İmzalı PDF alınamadı!'), true);
+            }
+            const pdfData = await pdfRes.json();
+
+            const sertNo   = s.sertifika_no.replace(/[/\\]/g,'-');
+            const dosyaAdi = id + '+' + sertNo + '_onay.pdf';
+
+            showToast('📤 Onay imzası için EronSign\'a gönderiliyor...');
+            const res = await fetch('http://localhost:5600/pdfImzala', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify([{
+                    sertifika_id:  id,
+                    e_pdf_adi:     dosyaAdi,
+                    e_pdf_base64:  pdfData.pdf_base64
+                }])
+            });
+            if(res.ok) showToast('✅ PDF onay imzası için EronSign\'a iletildi. İmzalandıktan sonra otomatik güncellenecek.');
+            else showToast("❌ EronSign'a gönderilemedi!", true);
+        } catch(e) {
+            showToast('❌ EronSign servisine ulaşılamadı (localhost:5600). Servis çalışıyor mu?', true);
+        }
     }
 
     async function tekliMail(id) {
