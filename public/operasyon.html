@@ -1240,17 +1240,37 @@
         const s = tumSertifikalar.find(x=>x.id===id);
         if(!s) return;
         if(!s.olcum_pdf_url) return showToast("❌ Önce ölçüm PDF'i yükleyin!", true);
-        const sertNo   = (s.sertifika_no||String(id)).replace(/[/\\]/g,'-');
+        if(!s.sertifika_no)  return showToast("❌ Önce sertifika numarası verin!", true);
+
+        const sertNo   = s.sertifika_no.replace(/[/\\]/g,'-');
         const dosyaAdi = id + '+' + sertNo + '.pdf';
-        const pdfUrl   = window.location.origin + '/api/sertifikalar/' + id + '/pdf?preview=1';
-        showToast('📤 EronSign\'a gönderiliyor...');
+
+        showToast('📄 PDF hazırlanıyor...');
+
         try {
+            // 1) PDF'i server'dan al (birleşik S1+S2+ölçüm)
+            const pdfRes = await fetch('/api/sertifikalar/' + id + '/pdf?preview=1');
+            if(!pdfRes.ok) return showToast('❌ PDF üretilemedi!', true);
+            const pdfBlob   = await pdfRes.blob();
+            const pdfBase64 = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload  = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = reject;
+                reader.readAsDataURL(pdfBlob);
+            });
+
+            // 2) EronSign'a base64 olarak gönder — dosya anında hazır
+            showToast('📤 EronSign\'a gönderiliyor...');
             const res = await fetch('http://localhost:5600/pdfImzala', {
                 method: 'POST',
                 headers: {'Content-Type':'application/json'},
-                body: JSON.stringify([{ sertifika_id: id, e_pdf_adi: dosyaAdi, e_pdf_url: pdfUrl }])
+                body: JSON.stringify([{
+                    sertifika_id:  id,
+                    e_pdf_adi:     dosyaAdi,
+                    e_pdf_base64:  pdfBase64
+                }])
             });
-            if(res.ok) showToast('✅ PDF imzalama kuyruğuna alındı. EronSign imzaladıktan sonra otomatik güncellenecek.');
+            if(res.ok) showToast('✅ PDF EronSign\'a iletildi. İmzalandıktan sonra otomatik güncellenecek.');
             else showToast("❌ EronSign'a gönderilemedi!", true);
         } catch(e) {
             showToast('❌ EronSign servisine ulaşılamadı (localhost:5600). Servis çalışıyor mu?', true);
@@ -1272,22 +1292,31 @@
     async function topluImzala() {
         const idler = secilenIdler();
         if(!idler.length) return showToast("❌ Sertifika seçin!", true);
-        const pdfsiz = idler.filter(id => !tumSertifikalar.find(s=>s.id===id)?.olcum_pdf_url);
+        const pdfsiz  = idler.filter(id => !tumSertifikalar.find(s=>s.id===id)?.olcum_pdf_url);
+        const nosuz   = idler.filter(id => !tumSertifikalar.find(s=>s.id===id)?.sertifika_no);
         if(pdfsiz.length) return showToast(`❌ ${pdfsiz.length} sertifikada ölçüm PDF'i eksik!`, true);
-        showToast(`📤 ${idler.length} sertifika EronSign'a gönderiliyor...`);
+        if(nosuz.length)  return showToast(`❌ ${nosuz.length} sertifikada numara eksik!`, true);
+
+        showToast(`📄 ${idler.length} PDF hazırlanıyor...`);
         try {
-            const dosyalar = idler.map(id => {
+            const dosyalar = [];
+            for(const id of idler) {
                 const s = tumSertifikalar.find(x=>x.id===id);
-                const sertNo = (s?.sertifika_no||String(id)).replace(/[/\\]/g,'-');
-                return {
-                    sertifika_id: id,
-                    e_pdf_adi: id + '+' + sertNo + '.pdf',
-                    e_pdf_url: window.location.origin + '/api/sertifikalar/' + id + '/pdf?preview=1'
-                };
-            });
+                const sertNo = s.sertifika_no.replace(/[/\\]/g,'-');
+                const pdfRes = await fetch('/api/sertifikalar/' + id + '/pdf?preview=1');
+                if(!pdfRes.ok) { showToast('❌ #' + id + ' PDF üretilemedi!', true); return; }
+                const pdfBlob   = await pdfRes.blob();
+                const pdfBase64 = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload  = () => resolve(reader.result.split(',')[1]);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(pdfBlob);
+                });
+                dosyalar.push({ sertifika_id: id, e_pdf_adi: id+'+'+sertNo+'.pdf', e_pdf_base64: pdfBase64 });
+            }
+            showToast(`📤 ${idler.length} PDF EronSign'a gönderiliyor...`);
             const res = await fetch('http://localhost:5600/pdfImzala', {
-                method:'POST',
-                headers:{'Content-Type':'application/json'},
+                method:'POST', headers:{'Content-Type':'application/json'},
                 body: JSON.stringify(dosyalar)
             });
             if(res.ok) showToast(`✅ ${idler.length} PDF imzalama kuyruğuna alındı.`);
