@@ -1163,7 +1163,7 @@
         tbody.innerHTML = data.map(s => {
             const asama = s.asama||'hazırlanıyor';
             const tarih = s.kal_tarihi?new Date(s.kal_tarihi).toLocaleDateString('tr-TR'):'-';
-            const pdfVar = s.olcum_pdf_url;
+            const pdfVar = s.olcum_pdf_var;
 
             // Aşamaya göre butonlar
             let butonlar = `<button class="btn btn-duzenle" onclick="sertDuzenle(${s.id})">✏️ Düzenle</button>`;
@@ -1182,11 +1182,9 @@
             }
             if(asama==='imzalandı') {
                 butonlar += `<button class="btn btn-onayla" onclick="tekliOnayla(${s.id})">✅ Onayla</button>`;
-                butonlar += `<button class="btn" style="background:#f3e8ff;color:#7c3aed;" onclick="imzaliPdfIndir(${s.id})">📥 İmzalı PDF</button>`;
             }
             if(asama==='onaylandı' || asama==='sertifika_gönderildi') {
                 butonlar += `<button class="btn btn-mail" onclick="tekliMail(${s.id})">📧 Mail</button>`;
-                butonlar += `<button class="btn" style="background:#f3e8ff;color:#7c3aed;" onclick="imzaliPdfIndir(${s.id})">📥 İmzalı PDF</button>`;
             }
             butonlar += `<button class="btn btn-uygun" onclick="uygunsuzlukForm(${s.id})">⚠️ Uygunsuzluk</button>`;
             butonlar += `<button class="btn" style="background:#fff1f2;color:#be123c;font-size:0.72rem;" onclick="icerikTemizle(${s.id})" title="Sertifikayı siler, iş emrinde tekrar oluşturulabilir">🗑️ Temizle</button>`;
@@ -1241,7 +1239,7 @@
     async function tekliImzala(id) {
         const s = tumSertifikalar.find(x=>x.id===id);
         if(!s) return;
-        if(!s.olcum_pdf_url) return showToast("❌ Önce ölçüm PDF'i yükleyin!", true);
+        if(!s.olcum_pdf_var) return showToast("❌ Önce ölçüm PDF'i yükleyin!", true);
         if(!s.sertifika_no)  return showToast("❌ Önce sertifika numarası verin!", true);
 
         showToast('📄 PDF hazırlanıyor...');
@@ -1333,16 +1331,32 @@
     }
 
     async function tekliMail(id) {
+        const s = tumSertifikalar.find(x=>x.id===id);
+        if(!s) return;
+        // İmzalı PDF var mı kontrol et
+        if(!s.imzali_pdf_var) {
+            showToast('❌ Bu sertifika imzalanmamış! Önce imzalanıp onaylanmalı.', true);
+            return;
+        }
+        if(s.asama !== 'onaylandı') {
+            showToast('❌ Sertifika onaylanmamış! Mevcut aşama: ' + (s.asama||'?'), true);
+            return;
+        }
         const res = await fetch(`/api/sertifika-mail/${id}`, {method:'POST'});
-        if(res.ok) { showToast("📧 Mail gönderildi!"); await sertYukle(); }
-        else showToast("❌ Mail gönderilemedi!", true);
+        if(res.ok) { 
+            showToast('📧 Sertifika gönderildi olarak işaretlendi!'); 
+            await sertYukle(); 
+        } else {
+            const err = await res.json().catch(()=>({}));
+            showToast('❌ ' + (err.error || 'Mail gönderilemedi!'), true);
+        }
     }
 
     // ── TOPLU İŞLEMLER ──
     async function topluImzala() {
         const idler = secilenIdler();
         if(!idler.length) return showToast("❌ Sertifika seçin!", true);
-        const pdfsiz = idler.filter(id => !tumSertifikalar.find(s=>s.id===id)?.olcum_pdf_url);
+        const pdfsiz = idler.filter(id => !tumSertifikalar.find(s=>s.id===id)?.olcum_pdf_var);
         const nosuz  = idler.filter(id => !tumSertifikalar.find(s=>s.id===id)?.sertifika_no);
         if(pdfsiz.length) return showToast(`❌ ${pdfsiz.length} sertifikada ölçüm PDF'i eksik!`, true);
         if(nosuz.length)  return showToast(`❌ ${nosuz.length} sertifikada numara eksik!`, true);
