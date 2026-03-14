@@ -1273,10 +1273,10 @@ app.post('/api/sertifika-no-uret', async (req, res) => {
 
         // Ayarlardan format ve sayac al
         const ayarlar = await pool.query(
-            "SELECT key, value FROM ayarlar WHERE key IN ('kd_format','kd_sayac','kd_basamak','akreditasyon_no')"
+            "SELECT anahtar, deger FROM ayarlar WHERE anahtar IN ('kd_format','kd_sayac','kd_basamak','akreditasyon_no')"
         );
         const ayar = {};
-        ayarlar.rows.forEach(r => ayar[r.key] = r.value);
+        ayarlar.rows.forEach(r => ayar[r.anahtar] = r.deger);
 
         const format   = ayar.kd_format  || 'SERT-{YIL}-{SAYI}';
         const basamak  = parseInt(ayar.kd_basamak || '3');
@@ -1296,7 +1296,7 @@ app.post('/api/sertifika-no-uret', async (req, res) => {
 
         // Sayacı güncelle
         await pool.query(
-            "INSERT INTO ayarlar (key, value) VALUES ('kd_sayac', $1) ON CONFLICT (key) DO UPDATE SET value=$1",
+            "INSERT INTO ayarlar (anahtar, deger) VALUES ('kd_sayac', $1) ON CONFLICT (anahtar) DO UPDATE SET deger=$1",
             [String(yeniSayac)]
         );
 
