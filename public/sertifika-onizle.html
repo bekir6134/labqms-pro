@@ -5,7 +5,8 @@
 <title>Sertifika Önizleme</title>
 <style>
     * { box-sizing:border-box; margin:0; padding:0; }
-    body { font-family:'Liberation Sans', Arial, sans-serif; background:#e5e7eb; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+    body { font-family:'Noto Sans', Arial, sans-serif; background:#e5e7eb; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     * { -webkit-font-smoothing: antialiased; }
 
     /* ARAÇ ÇUBUĞU */
@@ -20,13 +21,16 @@
     .sayfa-ici { padding: 80px 20px 40px; display:flex; flex-direction:column; align-items:center; gap:24px; }
 
     /* A4 SAYFA */
-    .a4 { width:210mm; background:white; padding:12mm 15mm 10mm; box-shadow:0 4px 24px rgba(0,0,0,0.15); position:relative; page-break-after:always; page-break-inside:avoid; }
+    .a4 { width:210mm; background:white; padding:12mm 15mm 10mm; box-shadow:0 4px 24px rgba(0,0,0,0.15); position:relative; }
     @media print {
-        html, body { margin:0; padding:0; background:white; }
+        html, body { margin:0; padding:0; background:white; width:210mm; }
         .toolbar { display:none !important; }
         .sayfa-ici { padding:0 !important; gap:0 !important; background:white; }
-        .a4 { width:210mm; min-height:297mm; box-shadow:none; margin:0; padding:12mm 15mm 10mm;
-              page-break-after:always; page-break-inside:avoid; }
+        .a4 { width:210mm !important; box-shadow:none; margin:0 !important;
+              padding:12mm 15mm 10mm !important;
+              page-break-after:always; break-after:page;
+              page-break-inside:avoid; break-inside:avoid; }
+        @page { size:210mm 297mm; margin:0; }
     }
 
     /* RENKLer */
@@ -421,6 +425,9 @@ async function yukle() {
                 console.error('Ölçüm PDF hata:', pdfErr);
             }
         }
+
+        // Puppeteer için render tamamlandı sinyali
+        document.body.setAttribute('data-render-done', 'true');
 
     } catch(e) {
         document.getElementById('sayfaIci').innerHTML = '<div style="padding:60px;text-align:center;color:#ef4444;">Hata: ' + e.message + '</div>';
