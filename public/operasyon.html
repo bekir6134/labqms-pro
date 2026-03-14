@@ -1170,10 +1170,13 @@
             } else {
                 butonlar += `<button class="btn btn-pdf-yukle" onclick="olcumPdfYukle(${s.id})" title="Değiştir">📎 Ölçüm PDF ✓</button>`;
             }
-            // Tam sertifika önizle + indir
+            // Tam sertifika önizle
             butonlar += `<button class="btn btn-onizle" onclick="tamOnizle(${s.id})">👁️ Önizle</button>`;
 
-
+            // Aşamaya göre aksiyon butonları
+            if(asama==='hazırlanıyor' && pdfVar) {
+                butonlar += `<button class="btn btn-imzala" onclick="tekliImzala(${s.id})">✍️ İmzala</button>`;
+            }
             if(asama==='imzalandı') {
                 butonlar += `<button class="btn btn-onayla" onclick="tekliOnayla(${s.id})">✅ Onayla</button>`;
             }
