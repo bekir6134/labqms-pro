@@ -499,7 +499,16 @@ app.get('/api/musteri-cihazlari/:id', async (req, res) => {
             SELECT mc.*, 
                 m.firma_adi,
                 k.kategori_adi,
-                km.metot_kodu, km.prosedur, km.referans_cihazlar
+                km.metot_kodu,
+                km.metot_adi,
+                COALESCE(
+                    (SELECT json_agg(json_build_object('talimat_kodu', t.talimat_kodu, 'talimat_adi', t.talimat_adi))
+                     FROM talimatlar t WHERE t.id = ANY(km.talimatlar)), '[]'
+                ) as talimat_detay,
+                COALESCE(
+                    (SELECT json_agg(json_build_object('cihaz_adi', rc.cihaz_adi, 'marka', rc.marka, 'model', rc.model, 'seri_no', rc.seri_no, 'envanter_no', rc.envanter_no))
+                     FROM referans_cihazlar rc WHERE rc.id = ANY(km.referanslar)), '[]'
+                ) as referans_detay
             FROM musteri_cihazlari mc
             LEFT JOIN musteriler m ON mc.musteri_id = m.id
             LEFT JOIN kategoriler k ON mc.kategori_id = k.id

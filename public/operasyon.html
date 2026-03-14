@@ -275,12 +275,12 @@
                 <div class="form-grid g2">
                     <div class="full">
                         <label>Kalibrasyon Prosedürleri</label>
-                        <div id="s_prosedurler" class="sabit-metin">—</div>
+                        <div id="s_prosedurler" class="sabit-metin" style="white-space:pre-line;">—</div>
                         <div class="hint">💡 Cihazın metoduna göre otomatik gelir</div>
                     </div>
                     <div class="full">
                         <label>Kullanılan Referans Cihazlar</label>
-                        <div id="s_referanslar" class="sabit-metin" style="font-style:normal;">—</div>
+                        <div id="s_referanslar" class="sabit-metin" style="font-style:normal;white-space:pre-line;">—</div>
                         <div class="hint">💡 Metoda bağlı referans cihazların son kalibrasyon bilgileri</div>
                     </div>
                 </div>
@@ -517,6 +517,7 @@
     let tumSertifikalar = [], filtreliSert = [];
     let personeller = [], musteriler = [];
     let aktifSertCihaz = null; // sertifika formu için
+    let duzenle_sert_id = null; // düzenleme modunda sertifika id'si
 
     function showToast(msg, err=false) {
         const t=document.getElementById("toast"); t.textContent=msg;
@@ -806,7 +807,6 @@
         document.getElementById("s_seri_no").value     = mc?.seri_no || cihaz.seri_no || '';
         document.getElementById("s_envanter_no").value = mc?.envanter_no || cihaz.envanter_no || '';
         document.getElementById("s_fis_no").value      = ie.ie_no || '';
-        document.getElementById("s_kal_yeri").value    = mc?.kalibrasyon_yeri || cihaz.kalibrasyon_yeri || '';
 
         // musteri_cihaz_id varsa cihaz alanları readonly (müşteri cihazı envanterinden geliyor)
         const cihazAlanlar = ['s_cihaz_adi','s_imalatci','s_tip','s_seri_no','s_envanter_no','s_kal_yeri'];
@@ -856,9 +856,29 @@
         const mevcutP = personeller.find(p=>p.kullanici_adi===kullanici.kullanici_adi);
         if(mevcutP) pSel1.value = mevcutP.id;
 
-        // Prosedür & referans (metot varsa)
-        document.getElementById("s_prosedurler").textContent = '— (Metot bağlantısı kurulunca otomatik gelecek)';
-        document.getElementById("s_referanslar").textContent  = '— (Metot bağlantısı kurulunca otomatik gelecek)';
+        // Kalibrasyon yeri
+        document.getElementById("s_kal_yeri").value = mc?.kalibrasyon_yeri || cihaz.kalibrasyon_yeri || '';
+
+        // Prosedür & referans - metot varsa mc'den gelen talimat ve referans detayları
+        if(mc?.talimat_detay && mc.talimat_detay.length) {
+            const talimatlar = mc.talimat_detay
+                .map(t => t.talimat_kodu ? `${t.talimat_kodu} - ${t.talimat_adi}` : t.talimat_adi)
+                .join('\n');
+            document.getElementById("s_prosedurler").textContent = talimatlar;
+        } else if(mc?.metot_kodu) {
+            document.getElementById("s_prosedurler").textContent = mc.metot_kodu + (mc.metot_adi ? ' - ' + mc.metot_adi : '');
+        } else {
+            document.getElementById("s_prosedurler").textContent = '— Metot bağlantısı yok';
+        }
+
+        if(mc?.referans_detay && mc.referans_detay.length) {
+            const referanslar = mc.referans_detay
+                .map(r => [r.cihaz_adi, r.marka, r.model, r.seri_no ? 'S/N:'+r.seri_no : ''].filter(Boolean).join(' | '))
+                .join('\n');
+            document.getElementById("s_referanslar").textContent = referanslar;
+        } else {
+            document.getElementById("s_referanslar").textContent = '— Referans cihaz tanımlanmamış';
+        }
 
         // Çevre koşulları - musteri cihazının kategorisine göre çek
         document.getElementById("s_sicaklik").value = '';
@@ -890,6 +910,9 @@
     function sertModalKapat() {
         document.getElementById("sertModal").classList.remove("open");
         aktifSertCihaz = null;
+        duzenle_sert_id = null;
+        document.getElementById('sertKaydetBtn').textContent = '💾 Sertifika Kaydet (Hazırlanıyor)';
+        document.getElementById('sertModalBaslik').textContent = '📋 Sertifika Hazırlama';
     }
 
     async function sertifkaKaydet() {
@@ -924,13 +947,21 @@
             asama:          'hazırlanıyor'
         };
 
-        const res = await fetch('/api/sertifikalar', {
-            method:'POST', headers:{'Content-Type':'application/json'},
-            body:JSON.stringify(payload)
-        });
+        let res;
+        if(duzenle_sert_id) {
+            res = await fetch(`/api/sertifikalar/${duzenle_sert_id}`, {
+                method:'PUT', headers:{'Content-Type':'application/json'},
+                body:JSON.stringify(payload)
+            });
+        } else {
+            res = await fetch('/api/sertifikalar', {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body:JSON.stringify(payload)
+            });
+        }
 
         if(res.ok) {
-            showToast("✅ Sertifika oluşturuldu! Aşama: Hazırlanıyor");
+            showToast(duzenle_sert_id ? "✅ Sertifika güncellendi!" : "✅ Sertifika oluşturuldu! Aşama: Hazırlanıyor");
             sertModalKapat();
             await ieYukle();
         } else {
@@ -1147,8 +1178,56 @@
         showToast("👁️ PDF önizleme açılıyor...");
     }
 
-    function sertDuzenle(id) {
-        showToast("✏️ Sertifika düzenleme açılıyor...");
+    async function sertDuzenle(id) {
+        const s = tumSertifikalar.find(x=>x.id===id);
+        if(!s) { showToast('❌ Sertifika bulunamadı!', true); return; }
+
+        duzenle_sert_id = id;
+        aktifSertCihaz = null; // yeni oluşturma değil
+
+        // Formu doldur
+        document.getElementById('s_firma_adi').value    = s.firma_adi || '';
+        document.getElementById('s_firma_adres').value  = '';
+        document.getElementById('s_cihaz_adi').value    = s.cihaz_adi || '';
+        document.getElementById('s_imalatci').value     = s.imalatci || '';
+        document.getElementById('s_tip').value          = s.tip || '';
+        document.getElementById('s_seri_no').value      = s.seri_no || '';
+        document.getElementById('s_envanter_no').value  = s.envanter_no || '';
+        document.getElementById('s_fis_no').value       = s.fis_no || '';
+        document.getElementById('s_kal_yeri').value     = s.kal_yeri || '';
+        document.getElementById('s_tip_secim').value    = s.sertifika_tipi || 'akredite';
+        document.getElementById('s_kal_tarihi').value   = s.kal_tarihi?.substring(0,10) || '';
+        document.getElementById('s_yayin_tarihi').value = s.yayin_tarihi?.substring(0,10) || '';
+        document.getElementById('s_onay_tarihi').value  = s.onay_tarihi?.substring(0,10) || '';
+        document.getElementById('s_gelecek_kal').value  = s.gelecek_kal?.substring(0,10) || '';
+        document.getElementById('s_sicaklik').value     = s.sicaklik || '';
+        document.getElementById('s_nem').value          = s.nem || '';
+        document.getElementById('s_basinc').value       = s.basinc || '';
+        document.getElementById('s_uygunluk').value     = s.uygunluk || 'kullaniciya_birakildi';
+        document.getElementById('s_kal_no').value       = s.sertifika_no || 'Numara henüz alınmadı';
+        document.getElementById('s_yorum').value        = s.yorum || '';
+
+        // Personel dropdown doldur
+        const pOpts = '<option value="">-- Seçin --</option>' +
+            personeller.map(p=>`<option value="${p.id}">${p.ad_soyad}</option>`).join('');
+        document.getElementById('s_kal_yapan').innerHTML = pOpts;
+        document.getElementById('s_onaylayan').innerHTML = pOpts;
+        if(s.kal_yapan_id) document.getElementById('s_kal_yapan').value = s.kal_yapan_id;
+        if(s.onaylayan_id) document.getElementById('s_onaylayan').value = s.onaylayan_id;
+
+        // Alanları düzenlenebilir yap
+        ['s_cihaz_adi','s_imalatci','s_tip','s_seri_no','s_envanter_no','s_kal_yeri'].forEach(id => {
+            const el = document.getElementById(id);
+            el.readOnly = false;
+            el.classList.remove('readonly-field');
+        });
+        document.getElementById('mc-baglanti-notu').style.display = 'none';
+
+        // Modal başlığı ve buton güncelle
+        document.getElementById('sertModalBaslik').textContent = `✏️ Sertifika Düzenle — ${s.cihaz_adi} (${s.fis_no})`;
+        document.getElementById('sertKaydetBtn').textContent = '💾 Değişiklikleri Kaydet';
+
+        document.getElementById('sertModal').classList.add('open');
     }
 
     function uygunsuzlukForm(id) {
