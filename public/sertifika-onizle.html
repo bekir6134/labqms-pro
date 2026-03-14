@@ -506,10 +506,9 @@ async function yukle() {
     }
 }
 
-async function pdfKaydet() {
+async function pdfKaydet(mod) {
     const btn = document.getElementById('btnPdfKaydet');
-    btn.disabled = true;
-    btn.textContent = '⏳ Hazırlanıyor...';
+    if(btn) { btn.disabled = true; btn.textContent = '⏳ Hazırlanıyor...'; }
 
     try {
         const { jsPDF } = window.jspdf;
@@ -535,7 +534,12 @@ async function pdfKaydet() {
             pdf.addImage(imgData, 'JPEG', 0, 0, pdfW, pdfH);
         }
 
-        // Blob URL oluştur ve yeni sekmede aç
+        if(mod === 'base64') {
+            // Base64 string döndür (imzalama için)
+            return pdf.output('datauristring').split(',')[1];
+        }
+
+        // Normal mod: Blob URL aç
         const pdfBlob = pdf.output('blob');
         const blobUrl = URL.createObjectURL(pdfBlob);
         window.open(blobUrl, '_blank');
@@ -546,8 +550,7 @@ async function pdfKaydet() {
         console.error(e);
     }
 
-    btn.disabled = false;
-    btn.textContent = '📥 PDF İndir';
+    if(btn) { btn.disabled = false; btn.textContent = '📥 PDF İndir'; }
 }
 
 window.onload = () => {
