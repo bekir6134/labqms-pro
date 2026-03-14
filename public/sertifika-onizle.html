@@ -107,9 +107,10 @@
     .prosedur-tablo td { font-size:8pt; padding:3px 5px; border:0.3pt solid var(--sinir); text-align:center; }
     .prosedur-tablo tr:nth-child(even) td { background:var(--acik); }
 
-    .ref-tablo { width:100%; border-collapse:collapse; margin-bottom:2mm; }
-    .ref-tablo th { background:var(--tablo-bg); font-size:7.5pt; padding:2px 3px; text-align:center; border:0.3pt solid var(--sinir); }
-    .ref-tablo td { font-size:7pt; padding:2px 3px; border:0.3pt solid var(--sinir); vertical-align:middle; }
+    .ref-tablo { width:100%; border-collapse:collapse; margin-bottom:2mm; table-layout:fixed; }
+    .ref-tablo th { background:var(--tablo-bg); font-size:7pt; padding:3px 4px; text-align:center; border:0.3pt solid var(--sinir); font-weight:700; vertical-align:middle; word-wrap:break-word; }
+    .ref-tablo td { font-size:7pt; padding:3px 4px; border:0.3pt solid var(--sinir); vertical-align:middle; text-align:center; word-wrap:break-word; }
+    .ref-tablo td:nth-child(2) { text-align:left; }
     .ref-tablo tr:nth-child(even) td { background:var(--acik); }
 
     /* PRINT */
@@ -388,10 +389,21 @@ async function yukle() {
             <!-- 6. REFERANSLAR -->
             <div class="bolum-baslik">6. KALİBRASYONDA KULLANILAN REFERANSLAR / REFERENCES USED IN CALIBRATION</div>
             <table class="ref-tablo">
+                <colgroup>
+                    <col style="width:16mm;">
+                    <col style="width:60mm;">
+                    <col style="width:24mm;">
+                    <col style="width:22mm;">
+                    <col style="width:32mm;">
+                    <col style="width:22mm;">
+                </colgroup>
                 <thead><tr>
-                    <th>Demirbaş No</th><th>Cihaz Tanımı / Marka / Model</th>
-                    <th>Seri No</th><th>Gelecek Kal.</th>
-                    <th>Sertifika No</th><th>İzlenebilirlik</th>
+                    <th>Demirbaş No</th>
+                    <th>Cihaz Tanımı / Marka / Model</th>
+                    <th>Seri No</th>
+                    <th>Gelecek Kal.</th>
+                    <th>Sertifika No</th>
+                    <th>İzlenebilirlik</th>
                 </tr></thead>
                 <tbody>${refRows}</tbody>
             </table>
@@ -463,7 +475,8 @@ async function yukle() {
                     const ft = document.createElement('div');
                     ft.style.cssText = 'padding:2mm 15mm 3mm;border-top:0.5pt solid #ccc;';
                     ft.innerHTML = '<p style="font-size:5.5pt;color:#555;font-style:italic;text-align:center;line-height:1.4;margin-bottom:1mm;">Bu sertifika dijital imzal\u0131d\u0131r. Laboratuvar\u0131n yaz\u0131l\u0131 izni olmadan k\u0131smen kopya\u0131lan\u0131p \u00e7o\u011falt\u0131lamaz. \u0130mzas\u0131z ve m\u00fch\u00fcrs\u00fcz sertifikalar ge\u00e7ersizdir.</p>'
-                                + '<p style="font-size:5.5pt;color:#555;font-style:italic;text-align:center;line-height:1.4;margin-bottom:2mm;">This certificate is digitally signed. Shall not be reproduced other than in full except with the written permission of the laboratory.</p>'
+                                + '<p style="font-size:5.5pt;color:#555;font-style:italic;text-align:center;line-height:1.4;margin-bottom:1mm;">This certificate is digitally signed. Shall not be reproduced other than in full except with the written permission of the laboratory. Calibration certificates without signature and seal are not valid.</p>'
+                                + '<p style="font-size:5.5pt;color:#555;font-style:italic;text-align:center;line-height:1.4;margin-bottom:2mm;">Bu sertifikan\u0131n kullan\u0131m\u0131ndan \u00f6nce asist.turkak.org.tr ba\u011flant\u0131s\u0131 \u00fczerinden kare kodu okutarak do\u011frulayın\u0131z.</p>'
                                 + '<div style="display:flex;justify-content:space-between;align-items:center;">'
                                 + '<span style="font-size:6.5pt;color:#555;">' + formNo + '</span>'
                                 + '<span style="font-size:6.5pt;color:#555;">Sayfa No: ' + (2+i) + ' / ' + toplamSayfa + '</span>'
