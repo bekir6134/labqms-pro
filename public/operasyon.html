@@ -289,6 +289,7 @@
             <!-- ÇEVRE KOŞULLARI -->
             <div class="form-section">
                 <div class="form-section-title">🌡️ Çevre Koşulları</div>
+                <div id="cevre-oto-bilgi" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:7px 12px;margin-bottom:10px;font-size:0.8rem;color:#1e40af;"></div>
                 <div class="form-grid g3">
                     <div>
                         <label>Sıcaklık</label>
@@ -303,7 +304,7 @@
                         <input type="text" id="s_basinc" placeholder="Örn: (1013±20) hPa">
                     </div>
                 </div>
-                <div class="hint" style="margin-top:6px;">💡 Kategoriye göre otomatik gelir, değiştirilebilir</div>
+                <div class="hint" style="margin-top:6px;">💡 Kategoriye göre otomatik gelir, istersen elle değiştirebilirsin</div>
             </div>
 
             <!-- UYGUNLUK & KARAR KURALI -->
@@ -786,8 +787,14 @@
         const cihaz = cihazlar[cihazIdx];
         aktifSertCihaz = { ie, cihaz, cihazIdx };
 
-        // Müşteri bilgisi
-        const musteri = musteriler.find(m=>m.id===ie.musteri_id)||{};
+        // Müşteri bilgisi - önce local listeden bak, adres yoksa API'den çek
+        let musteri = musteriler.find(m=>m.id==ie.musteri_id) || {};
+        if(!musteri.adres && ie.musteri_id) {
+            try {
+                const mRes = await fetch('/api/musteriler/' + ie.musteri_id);
+                if(mRes.ok) musteri = await mRes.json();
+            } catch(e) {}
+        }
 
         // Müşteri cihazı detaylarını çek (musteri_cihaz_id varsa)
         let mc = null;
@@ -800,7 +807,11 @@
 
         // Formu doldur - musteri_cihazlari öncelikli, yoksa kabul fişindeki veri
         document.getElementById("s_firma_adi").value   = ie.firma_adi + (ie.sube_adi?' / '+ie.sube_adi:'');
-        document.getElementById("s_firma_adres").value = musteri.adres || '';
+        const adresParcalar = [];
+        if(musteri.adres) adresParcalar.push(musteri.adres);
+        const ilIlce = [musteri.ilce, musteri.il].filter(Boolean).join(' / ');
+        if(ilIlce) adresParcalar.push(ilIlce);
+        document.getElementById("s_firma_adres").value = adresParcalar.join(' - ') || '';
         document.getElementById("s_cihaz_adi").value   = mc?.cihaz_adi || cihaz.cihaz_adi || '';
         document.getElementById("s_imalatci").value    = mc?.marka || (cihaz.marka_model||'').split('/')[0].trim();
         document.getElementById("s_tip").value         = mc?.model || (cihaz.marka_model||'').split('/')[1]?.trim() || '';
@@ -880,25 +891,48 @@
             document.getElementById("s_referanslar").textContent = '— Referans cihaz tanımlanmamış';
         }
 
-        // Çevre koşulları - musteri cihazının kategorisine göre çek
+        // Çevre koşulları - kategoriye göre otomatik çek
         document.getElementById("s_sicaklik").value = '';
         document.getElementById("s_nem").value      = '';
         document.getElementById("s_basinc").value   = '';
+        const cevreNot = document.getElementById("cevre-oto-bilgi");
+        cevreNot.style.display = 'none';
+
         if(mc?.kategori_id) {
             try {
                 const ckRes = await fetch(`/api/cevre-kosullari/kategori/${mc.kategori_id}`);
                 if(ckRes.ok) {
                     const ck = await ckRes.json();
-                    if(ck) {
+                    if(ck && (ck.sicaklik_merkez || ck.nem_merkez || ck.basinc_merkez)) {
                         if(ck.sicaklik_merkez) document.getElementById("s_sicaklik").value =
                             `(${ck.sicaklik_merkez}${ck.sicaklik_tolerans?'±'+ck.sicaklik_tolerans:''}) °C`;
                         if(ck.nem_merkez) document.getElementById("s_nem").value =
                             `(${ck.nem_merkez}${ck.nem_tolerans?'±'+ck.nem_tolerans:''}) %rh`;
                         if(ck.basinc_merkez) document.getElementById("s_basinc").value =
                             `(${ck.basinc_merkez}${ck.basinc_tolerans?'±'+ck.basinc_tolerans:''}) hPa`;
+                        cevreNot.style.display = 'block';
+                        cevreNot.textContent = `🔗 Çevre koşulları "${mc.kategori_adi}" kategorisinden otomatik getirildi. İstersen değiştirebilirsin.`;
+                    } else {
+                        cevreNot.style.display = 'block';
+                        cevreNot.style.background = '#fffbeb';
+                        cevreNot.style.borderColor = '#fbbf24';
+                        cevreNot.style.color = '#92400e';
+                        cevreNot.textContent = `⚠️ "${mc.kategori_adi}" kategorisine çevre koşulu tanımlanmamış. Lütfen elle gir.`;
                     }
                 }
-            } catch(e) {}
+            } catch(e) {
+                cevreNot.style.display = 'block';
+                cevreNot.style.background = '#fff1f2';
+                cevreNot.style.borderColor = '#fecdd3';
+                cevreNot.style.color = '#be123c';
+                cevreNot.textContent = '⚠️ Çevre koşulları yüklenemedi, lütfen elle gir.';
+            }
+        } else {
+            cevreNot.style.display = 'block';
+            cevreNot.style.background = '#fffbeb';
+            cevreNot.style.borderColor = '#fbbf24';
+            cevreNot.style.color = '#92400e';
+            cevreNot.textContent = '⚠️ Cihaza kategori bağlı değil. Çevre koşullarını elle gir.';
         }
 
         document.getElementById("sertModalBaslik").textContent =
