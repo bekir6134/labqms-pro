@@ -283,22 +283,42 @@ async function yukle() {
                 <tr>
                     <td style="width:33mm;"><div class="imza-baslik">Mühür</div><div class="imza-en">Seal</div><div style="margin-top:4mm;">${ayar.muhur_logo ? `<img src="${ayar.muhur_logo}" style="max-width:28mm;max-height:20mm;object-fit:contain;">` : ''}</div></td>
                     <td style="width:42mm;"><div class="imza-baslik">Yayımlandığı Tarih</div><div class="imza-en">Date</div><div class="imza-deger">${yayin_tarihi}</div></td>
-                    <td style="width:60mm;"><div class="imza-baslik">Kalibrasyonu Yapan</div><div class="imza-en">Calibrated by</div><div class="imza-deger">${s.kal_yapan_adi||'—'}</div><div style="display:flex;justify-content:center;margin-top:2mm;">
-  <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 72 72">
-    <circle cx="36" cy="36" r="32" fill="#cc0000"/>
-    <circle cx="36" cy="36" r="28" fill="none" stroke="#fff" stroke-width="1.5"/>
-    <text x="36" y="30" text-anchor="middle" font-size="15" fill="white">&#x270C;</text>
-    <text x="36" y="41" text-anchor="middle" font-size="6" font-weight="bold" fill="white" font-family="Arial,sans-serif">E-&#x130;MZALIDIR</text>
-    <text x="36" y="50" text-anchor="middle" font-size="5" fill="rgba(255,255,255,0.85)" font-family="Arial,sans-serif">Digitally Signed</text>
+                    <td style="width:60mm;"><div class="imza-baslik">Kalibrasyonu Yapan</div><div class="imza-en">Calibrated by</div><div class="imza-deger">${s.kal_yapan_adi||'—'}</div><div style="display:flex;justify-content:center;margin-top:3mm;">
+  <svg xmlns="http://www.w3.org/2000/svg" width="80" height="32" viewBox="0 0 120 48">
+    <defs>
+      <linearGradient id="eg1" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#1a56db"/>
+        <stop offset="100%" stop-color="#0e3a8c"/>
+      </linearGradient>
+    </defs>
+    <rect x="1" y="1" width="118" height="46" rx="6" fill="url(#eg1)" stroke="#1a56db" stroke-width="0.5"/>
+    <rect x="3" y="3" width="114" height="42" rx="5" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="0.5"/>
+    <!-- Kalem imza çizgisi -->
+    <path d="M15 32 Q20 20 28 28 Q33 33 38 18" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    <circle cx="38" cy="18" r="1.5" fill="white"/>
+    <line x1="12" y1="35" x2="42" y2="35" stroke="rgba(255,255,255,0.6)" stroke-width="0.8"/>
+    <!-- Yazı -->
+    <text x="75" y="20" text-anchor="middle" font-size="8" font-weight="bold" fill="white" font-family="Arial,sans-serif">E-&#x130;MZALI</text>
+    <text x="75" y="31" text-anchor="middle" font-size="6.5" fill="rgba(255,255,255,0.9)" font-family="Arial,sans-serif">Digitally Signed</text>
+    <text x="75" y="41" text-anchor="middle" font-size="5.5" fill="rgba(255,255,255,0.7)" font-family="Arial,sans-serif">&#x2713; Elektronik &#x130;mza</text>
   </svg>
 </div></td>
-                    <td><div class="imza-baslik">Onaylayan / Tarih</div><div class="imza-en">Approval / Date</div><div class="imza-deger" style="margin-bottom:2mm;">${s.onaylayan_adi||'--'}</div><div style="font-size:8pt;margin-bottom:2mm;">${onay_tarihi}</div><div style="display:flex;justify-content:center;margin-top:2mm;">
-  <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 72 72">
-    <circle cx="36" cy="36" r="32" fill="#cc0000"/>
-    <circle cx="36" cy="36" r="28" fill="none" stroke="#fff" stroke-width="1.5"/>
-    <text x="36" y="30" text-anchor="middle" font-size="15" fill="white">&#x270C;</text>
-    <text x="36" y="41" text-anchor="middle" font-size="6" font-weight="bold" fill="white" font-family="Arial,sans-serif">E-&#x130;MZALIDIR</text>
-    <text x="36" y="50" text-anchor="middle" font-size="5" fill="rgba(255,255,255,0.85)" font-family="Arial,sans-serif">Digitally Signed</text>
+                    <td><div class="imza-baslik">Onaylayan / Tarih</div><div class="imza-en">Approval / Date</div><div class="imza-deger" style="margin-bottom:2mm;">${s.onaylayan_adi||'—'}</div><div style="font-size:8pt;margin-bottom:3mm;">${onay_tarihi}</div><div style="display:flex;justify-content:center;">
+  <svg xmlns="http://www.w3.org/2000/svg" width="80" height="32" viewBox="0 0 120 48">
+    <defs>
+      <linearGradient id="eg2" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#1a56db"/>
+        <stop offset="100%" stop-color="#0e3a8c"/>
+      </linearGradient>
+    </defs>
+    <rect x="1" y="1" width="118" height="46" rx="6" fill="url(#eg2)" stroke="#1a56db" stroke-width="0.5"/>
+    <rect x="3" y="3" width="114" height="42" rx="5" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="0.5"/>
+    <path d="M15 32 Q20 20 28 28 Q33 33 38 18" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    <circle cx="38" cy="18" r="1.5" fill="white"/>
+    <line x1="12" y1="35" x2="42" y2="35" stroke="rgba(255,255,255,0.6)" stroke-width="0.8"/>
+    <text x="75" y="20" text-anchor="middle" font-size="8" font-weight="bold" fill="white" font-family="Arial,sans-serif">E-&#x130;MZALI</text>
+    <text x="75" y="31" text-anchor="middle" font-size="6.5" fill="rgba(255,255,255,0.9)" font-family="Arial,sans-serif">Digitally Signed</text>
+    <text x="75" y="41" text-anchor="middle" font-size="5.5" fill="rgba(255,255,255,0.7)" font-family="Arial,sans-serif">&#x2713; Elektronik &#x130;mza</text>
   </svg>
 </div></td>
                 </tr>
@@ -415,7 +435,7 @@ async function yukle() {
 
                 for(let i = 1; i <= pdfDoc.numPages; i++) {
                     const sayfa    = await pdfDoc.getPage(i);
-                    const scale    = 794 / sayfa.getViewport({scale:1}).width;
+                    const scale    = 760 / sayfa.getViewport({scale:1}).width;
                     const viewport = sayfa.getViewport({scale});
 
                     const canvas = document.createElement('canvas');
@@ -424,23 +444,34 @@ async function yukle() {
 
                     const sayfaDiv = document.createElement('div');
                     sayfaDiv.className = 'a4';
-                    sayfaDiv.style.cssText = 'padding:0;width:210mm;overflow:hidden;';
-                    sayfaDiv.appendChild(canvas);
+                    sayfaDiv.style.cssText = 'padding:0;width:210mm;overflow:hidden;background:white;';
+
+                    // ÜST BAŞLIK - firma ünvanı sol, sertifika no sağ
+                    const hd = document.createElement('div');
+                    hd.style.cssText = 'padding:4mm 15mm 2mm;border-bottom:1pt solid #222;display:flex;justify-content:space-between;align-items:center;';
+                    hd.innerHTML = '<span style="font-size:8pt;font-weight:700;color:#1E3A5F;flex:1;text-align:justify;">' + labAdi + '</span>'
+                                 + '<span style="font-size:8pt;font-weight:700;color:#1E3A5F;margin-left:8mm;white-space:nowrap;">' + sertNo + '</span>';
+                    sayfaDiv.appendChild(hd);
+
+                    // Canvas (ölçüm içeriği)
+                    const canvasWrap = document.createElement('div');
+                    canvasWrap.style.cssText = 'padding:0 15mm;';
+                    canvasWrap.appendChild(canvas);
+                    sayfaDiv.appendChild(canvasWrap);
+
+                    // ALT BİLGİ
+                    const ft = document.createElement('div');
+                    ft.style.cssText = 'padding:2mm 15mm 3mm;border-top:0.5pt solid #ccc;';
+                    ft.innerHTML = '<p style="font-size:5.5pt;color:#555;font-style:italic;text-align:center;line-height:1.4;margin-bottom:1mm;">Bu sertifika dijital imzal\u0131d\u0131r. Laboratuvar\u0131n yaz\u0131l\u0131 izni olmadan k\u0131smen kopya\u0131lan\u0131p \u00e7o\u011falt\u0131lamaz. \u0130mzas\u0131z ve m\u00fch\u00fcrs\u00fcz sertifikalar ge\u00e7ersizdir.</p>'
+                                + '<p style="font-size:5.5pt;color:#555;font-style:italic;text-align:center;line-height:1.4;margin-bottom:2mm;">This certificate is digitally signed. Shall not be reproduced other than in full except with the written permission of the laboratory.</p>'
+                                + '<div style="display:flex;justify-content:space-between;align-items:center;">'
+                                + '<span style="font-size:6.5pt;color:#555;">' + formNo + '</span>'
+                                + '<span style="font-size:6.5pt;color:#555;">Sayfa No: ' + (2+i) + ' / ' + toplamSayfa + '</span>'
+                                + '</div>';
+                    sayfaDiv.appendChild(ft);
+
                     sayfaIci.appendChild(sayfaDiv);
-
                     await sayfa.render({canvasContext: canvas.getContext('2d'), viewport}).promise;
-
-                    const sayfaNoDiv = document.createElement('div');
-                    // Yasal metin
-                    const yasalDiv = document.createElement('div');
-                    yasalDiv.style.cssText = 'padding:2mm 0 0;border-top:0.5pt solid #ccc;margin:2mm 0 0;';
-                    yasalDiv.innerHTML = '<p style="font-size:6pt;color:#555;font-style:italic;text-align:center;line-height:1.4;">Bu sertifika dijital imzalıdır. Laboratuvarın yazılı izni olmadan kısmen kopyalanıp çoğaltılamaz. İmzasız ve mühürsüz sertifikalar geçersizdir.</p>';
-                    sayfaDiv.style.padding = '0 0 4mm';
-                    sayfaDiv.appendChild(yasalDiv);
-                    
-                    sayfaNoDiv.style.cssText = 'font-size:6.5pt;color:#555;text-align:right;padding:1mm 15mm 4mm;';
-                    sayfaNoDiv.textContent = formNo + '  |  Sayfa No: ' + (2+i) + ' / ' + toplamSayfa;
-                    sayfaDiv.appendChild(sayfaNoDiv);
                 }
             } catch(pdfErr) {
                 const errDiv = document.createElement('div');
