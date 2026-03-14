@@ -382,6 +382,46 @@ async function yukle() {
             </div>
         </div>`;
 
+        // Ölçüm PDF varsa PDF.js ile render et
+        if(s.olcum_pdf_url) {
+            const sayfaIci = document.getElementById('sayfaIci');
+            try {
+                const pdfjsLib = window['pdfjs-dist/build/pdf'];
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                const pdfData = Uint8Array.from(atob(s.olcum_pdf_url), c => c.charCodeAt(0));
+                const pdfDoc  = await pdfjsLib.getDocument({data: pdfData}).promise;
+
+                for(let i = 1; i <= pdfDoc.numPages; i++) {
+                    const sayfa    = await pdfDoc.getPage(i);
+                    const scale    = 794 / sayfa.getViewport({scale:1}).width;
+                    const viewport = sayfa.getViewport({scale});
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width  = viewport.width;
+                    canvas.height = viewport.height;
+
+                    const sayfaDiv = document.createElement('div');
+                    sayfaDiv.className = 'a4';
+                    sayfaDiv.style.cssText = 'padding:0;width:210mm;overflow:hidden;';
+                    sayfaDiv.appendChild(canvas);
+                    sayfaIci.appendChild(sayfaDiv);
+
+                    await sayfa.render({canvasContext: canvas.getContext('2d'), viewport}).promise;
+
+                    const sayfaNoDiv = document.createElement('div');
+                    sayfaNoDiv.style.cssText = 'font-size:6.5pt;color:#555;text-align:right;padding:2mm 15mm 4mm;';
+                    sayfaNoDiv.textContent = formNo + '  |  Sayfa No: ' + (2+i) + ' / ' + toplamSayfa;
+                    sayfaDiv.appendChild(sayfaNoDiv);
+                }
+            } catch(pdfErr) {
+                const errDiv = document.createElement('div');
+                errDiv.style.cssText = 'padding:20px;text-align:center;color:#ef4444;';
+                errDiv.textContent = 'Ölçüm PDF gösterilemedi: ' + pdfErr.message;
+                sayfaIci.appendChild(errDiv);
+                console.error('Ölçüm PDF hata:', pdfErr);
+            }
+        }
+
     } catch(e) {
         document.getElementById('sayfaIci').innerHTML = '<div style="padding:60px;text-align:center;color:#ef4444;">Hata: ' + e.message + '</div>';
         console.error(e);
