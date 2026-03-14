@@ -1268,7 +1268,7 @@ app.get('/api/sertifikalar/:id/olcum-pdf', async (req, res) => {
 app.post('/api/sertifika-mail/:id', async (req, res) => {
     try {
         const result = await pool.query(
-            'SELECT asama, sertifika_pdf, sertifika_no, imzali_pdf_var FROM sertifikalar WHERE id=$1',
+            'SELECT asama, sertifika_pdf, sertifika_no FROM sertifikalar WHERE id=$1',
             [req.params.id]
         );
         if(!result.rows.length) return res.status(404).json({ error: 'Sertifika bulunamadı' });
