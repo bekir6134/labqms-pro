@@ -113,6 +113,14 @@ app.delete('/api/kategoriler/:id', async (req, res) => {
     }
 });
 
+app.get('/api/musteriler/:id', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM musteriler WHERE id=$1', [req.params.id]);
+        if(!result.rows.length) return res.status(404).json({ error: 'Bulunamadı' });
+        res.json(result.rows[0]);
+    } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
 app.delete('/api/musteriler/:id', async (req, res) => {
     try {
         await pool.query('DELETE FROM musteriler WHERE id=$1', [req.params.id]);
@@ -1065,6 +1073,31 @@ app.delete('/api/sertifikalar/:id', async (req, res) => {
     try {
         await pool.query('DELETE FROM sertifikalar WHERE id=$1', [req.params.id]);
         res.json({ success: true });
+    } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+// Ölçüm PDF yükle
+app.post('/api/sertifikalar/:id/olcum-pdf', async (req, res) => {
+    try {
+        const { pdf_base64, sayfa_sayisi } = req.body;
+        if(!pdf_base64) return res.status(400).json({ error: 'PDF verisi eksik' });
+        const result = await pool.query(
+            `UPDATE sertifikalar SET olcum_pdf_url=$1, olcum_pdf_sayfa=$2 WHERE id=$3 RETURNING id, olcum_pdf_sayfa`,
+            [pdf_base64, sayfa_sayisi||0, req.params.id]
+        );
+        res.json(result.rows[0]);
+    } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+// Ölçüm PDF getir (önizleme)
+app.get('/api/sertifikalar/:id/olcum-pdf', async (req, res) => {
+    try {
+        const result = await pool.query(
+            'SELECT olcum_pdf_url, olcum_pdf_sayfa FROM sertifikalar WHERE id=$1',
+            [req.params.id]
+        );
+        if(!result.rows.length) return res.status(404).json({ error: 'Bulunamadı' });
+        res.json(result.rows[0]);
     } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
