@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const puppeteer = require('puppeteer-core');
 const QRCode    = require('qrcode');
+const { PDFDocument } = require('pdf-lib');
 const chromium  = require('@sparticuz/chromium');
 const { Pool } = require('pg');
 const path = require('path');
@@ -11,7 +12,8 @@ const app = express(); // İŞTE HATAYA SEBEP OLAN EKSİK SATIR BUYDU!
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.use(express.static(path.join(__dirname, 'public'))); 
 
 // Neon.tech PostgreSQL Bağlantısı
@@ -1124,46 +1126,70 @@ app.get('/api/sertifikalar/:id/tam', async (req, res) => {
 app.get('/api/sertifikalar/:id/pdf', async (req, res) => {
     let browser;
     try {
-        const onizleUrl = `${req.protocol}://${req.get('host')}/sertifika-onizle.html?id=${req.params.id}&print=1`;
+        // Ölçüm PDF'ini DB'den çek
+        const sertRow = await pool.query(
+            'SELECT olcum_pdf_url, sertifika_no, cihaz_adi FROM sertifikalar WHERE id=$1',
+            [req.params.id]
+        );
+        if(!sertRow.rows.length) return res.status(404).json({ error: 'Sertifika bulunamadı' });
+        const sert = sertRow.rows[0];
 
+        // S1+S2 HTML → PDF (Puppeteer)
+        const onizleUrl = `${req.protocol}://${req.get('host')}/sertifika-onizle.html?id=${req.params.id}&print=1`;
         browser = await puppeteer.launch({
             args: chromium.args,
             defaultViewport: chromium.defaultViewport,
             executablePath: await chromium.executablePath(),
             headless: chromium.headless,
         });
-
         const page = await browser.newPage();
-        await page.setViewport({ width: 794, height: 1123 }); // A4 px
+        await page.setViewport({ width: 794, height: 1123 });
         await page.goto(onizleUrl, { waitUntil: 'networkidle0', timeout: 30000 });
-
-        // İçeriğin render olmasını bekle
         await page.waitForSelector('.a4', { timeout: 10000 }).catch(()=>{});
-        await new Promise(r => setTimeout(r, 1500)); // font/img yüklenmesi
+        await new Promise(r => setTimeout(r, 1500));
 
-        // Sayfa sayısını al
-        const toplamSayfa = await page.evaluate(() => {
-            return parseInt(document.getElementById('tbToplamSayfa')?.textContent?.match(/\d+/)?.[0] || '2');
-        });
-
-        const pdfBuffer = await page.pdf({
+        const s1s2Buffer = await page.pdf({
             format: 'A4',
             margin: { top: '0', right: '0', bottom: '0', left: '0' },
             printBackground: true,
             preferCSSPageSize: true,
         });
-
         await browser.close();
+        browser = null;
+
+        let sonPdfBuffer;
+
+        // Ölçüm PDF varsa birleştir
+        if(sert.olcum_pdf_url) {
+            const olcumBytes = Buffer.from(sert.olcum_pdf_url, 'base64');
+            const birlesikDoc = await PDFDocument.create();
+
+            // S1+S2 sayfaları ekle
+            const s1s2Doc = await PDFDocument.load(s1s2Buffer);
+            const s1s2Pages = await birlesikDoc.copyPages(s1s2Doc, s1s2Doc.getPageIndices());
+            s1s2Pages.forEach(p => birlesikDoc.addPage(p));
+
+            // Ölçüm PDF sayfaları ekle
+            const olcumDoc = await PDFDocument.load(olcumBytes);
+            const olcumPages = await birlesikDoc.copyPages(olcumDoc, olcumDoc.getPageIndices());
+            olcumPages.forEach(p => birlesikDoc.addPage(p));
+
+            const birlesikBytes = await birlesikDoc.save();
+            sonPdfBuffer = Buffer.from(birlesikBytes);
+        } else {
+            sonPdfBuffer = s1s2Buffer;
+        }
 
         // DB'ye kaydet
         await pool.query(
             'UPDATE sertifikalar SET sertifika_pdf=$1 WHERE id=$2',
-            [pdfBuffer.toString('base64'), req.params.id]
+            [sonPdfBuffer.toString('base64'), req.params.id]
         );
 
+        const dosyaAdi = `sertifika-${sert.sertifika_no || req.params.id}.pdf`;
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="sertifika-${req.params.id}.pdf"`);
-        res.send(pdfBuffer);
+        res.setHeader('Content-Disposition', `attachment; filename="${dosyaAdi}"`);
+        res.send(sonPdfBuffer);
 
     } catch(err) {
         if(browser) await browser.close().catch(()=>{});

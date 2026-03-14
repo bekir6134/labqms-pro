@@ -1106,14 +1106,15 @@
 
             // Aşamaya göre butonlar
             let butonlar = `<button class="btn btn-duzenle" onclick="sertDuzenle(${s.id})">✏️ Düzenle</button>`;
+            // Ölçüm PDF
             if(!pdfVar) {
-                butonlar += `<button class="btn btn-pdf-yukle" onclick="olcumPdfYukle(${s.id})">📎 PDF Yükle</button>`;
+                butonlar += `<button class="btn btn-pdf-yukle" onclick="olcumPdfYukle(${s.id})">📎 Ölçüm PDF</button>`;
             } else {
-                butonlar += `<button class="btn btn-onizle" onclick="sertOnizle(${s.id})">👁️ Önizle</button>`;
+                butonlar += `<button class="btn btn-pdf-yukle" onclick="olcumPdfYukle(${s.id})" title="Değiştir">📎 Ölçüm PDF ✓</button>`;
             }
-            // Tam sertifika önizle ve PDF indir her zaman
-            butonlar += `<button class="btn" style="background:#f0fdf4;color:#166534;" onclick="tamOnizle(${s.id})">📋 Önizle</button>`;
-            butonlar += `<button class="btn" style="background:#fdf2f8;color:#86198f;" onclick="pdfIndir(${s.id})" title="Sertifika PDF üret ve indir">📥 PDF</button>`;
+            // Tam sertifika önizle + indir
+            butonlar += `<button class="btn btn-onizle" onclick="tamOnizle(${s.id})">👁️ Önizle</button>`;
+            butonlar += `<button class="btn" style="background:#fdf2f8;color:#86198f;" onclick="pdfIndir(${s.id})">📥 İndir</button>`;
             if(asama==='hazırlanıyor' && pdfVar) {
                 butonlar += `<button class="btn btn-imzala" onclick="tekliImzala(${s.id})">✍️ İmzala</button>`;
             }
@@ -1249,7 +1250,7 @@
     function olcumPdfYukle(id) {
         aktifPdfSertId = id;
         const s = tumSertifikalar.find(x=>x.id===id);
-        document.getElementById('pdfModalBaslik').textContent = '📎 Ölçüm PDF Yükle — ' + (s?.cihaz_adi||'');
+        document.getElementById('pdfModalBaslik').textContent = '📎 Ölçüm Sayfaları — ' + (s?.cihaz_adi||'');
         document.getElementById('pdfCanvasAlani').innerHTML = `
             <div style="text-align:center;padding:40px;color:#64748b;">
                 <div style="font-size:3rem;margin-bottom:12px;">📎</div>
