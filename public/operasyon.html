@@ -598,6 +598,8 @@
             tumIsEmirleri = []; tumSertifikalar = [];
         }
         ieFiltrele();
+        // Sertifikalar yüklüyse aşama sync yap
+        if(tumSertifikalar.length) await ieSertAsamaSync();
     }
 
     function ieFiltrele() {
@@ -657,6 +659,12 @@
             container.innerHTML='<div style="text-align:center;color:#94a3b8;padding:30px;">Kayıt bulunamadı.</div>';
             return;
         }
+        // Açık accordion'ları kaydet
+        const acikIdler = new Set();
+        document.querySelectorAll('.ie-acc-body.open').forEach(el => {
+            const id = el.id.replace('body-','');
+            if(id) acikIdler.add(id);
+        });
         try {
         container.innerHTML = data.map(r => {
             let cihazlar = [];
@@ -761,6 +769,15 @@
                 </div>
             </div>`;
         }).join('');
+        // Açık olanları geri aç
+        acikIdler.forEach(id => {
+            const body  = document.getElementById('body-' + id);
+            const arrow = document.getElementById('arrow-' + id);
+            const head  = document.querySelector('#ie-acc-' + id + ' .ie-acc-head');
+            if(body)  body.classList.add('open');
+            if(arrow) arrow.classList.add('open');
+            if(head)  head.classList.add('open');
+        });
         } catch(e) {
             container.innerHTML = '<div style="text-align:center;color:#ef4444;padding:20px;">⚠️ Görüntüleme hatası: ' + e.message + '</div>';
             console.error('renderIEListe hata:', e);
@@ -1067,6 +1084,8 @@
 
 
         sertFiltrele();
+        // İş emri aşamalarını sertifika aşamalarına göre güncelle
+        await ieSertAsamaSync();
     }
 
     function sertFiltrele() {
@@ -1526,6 +1545,9 @@
                 }
             }
         }
+        // Kanban ve listeyi yenile
+        renderIEKanban(filtreliIE);
+        renderIEListe(filtreliIE);
     }
 
     async function icerikTemizle(id) {
