@@ -134,7 +134,7 @@
         /* TOAST */
         /* İŞ EMRİ ACCORDION */
         .ie-acc { background:#fff; border:1px solid var(--border); border-radius:10px; margin-bottom:8px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,0.04); }
-        .ie-acc-head { display:grid; grid-template-columns:120px 1fr 110px 110px 90px 120px auto; gap:12px; align-items:center; padding:12px 16px; cursor:pointer; transition:0.15s; }
+        .ie-acc-head { display:grid; grid-template-columns:130px minmax(180px,1fr) 110px 110px 80px 150px 60px; gap:10px; align-items:center; padding:12px 16px; cursor:pointer; transition:0.15s; }
         .ie-acc-head:hover { background:#f8fafc; }
         .ie-acc-head.open { background:#eff6ff; border-bottom:1px solid var(--border); }
         .ie-acc-no { font-weight:700; color:var(--primary); font-size:0.88rem; }
@@ -395,7 +395,7 @@
         </div>
         <div class="card-body" style="padding:12px;">
             <!-- IE BAŞLIK SATIRI -->
-            <div style="display:grid;grid-template-columns:120px 1fr 110px 110px 90px 120px auto;gap:12px;padding:6px 16px;margin-bottom:4px;">
+            <div style="display:grid;grid-template-columns:130px minmax(180px,1fr) 110px 110px 80px 150px 60px;gap:10px;padding:6px 16px;margin-bottom:4px;">
                 <div style="font-size:0.72rem;font-weight:700;color:#94a3b8;">IE NO</div>
                 <div style="font-size:0.72rem;font-weight:700;color:#94a3b8;">FİRMA</div>
                 <div style="font-size:0.72rem;font-weight:700;color:#94a3b8;">KABUL TARİHİ</div>
@@ -537,27 +537,22 @@
     // ════════════════════════════════
     async function ieYukle() {
         try {
-            const res = await fetch('/api/is-emirleri');
-            if(!res.ok) {
-                const errText = await res.text();
-                showToast('API Hata: ' + res.status + ' - ' + errText.substring(0,100), true);
-                tumIsEmirleri = [];
-                ieFiltrele();
-                return;
+            const [ieRes, sRes] = await Promise.all([
+                fetch('/api/is-emirleri'),
+                fetch('/api/sertifikalar')
+            ]);
+            if(!ieRes.ok) {
+                showToast('API Hata: ' + ieRes.status, true);
+                tumIsEmirleri = []; ieFiltrele(); return;
             }
-            tumIsEmirleri = await res.json();
-            if(!Array.isArray(tumIsEmirleri)) {
-                showToast('API beklenen formatta veri döndürmedi', true);
-                console.error('API yaniti:', tumIsEmirleri);
-                tumIsEmirleri = [];
-                ieFiltrele();
-                return;
-            }
+            tumIsEmirleri = await ieRes.json();
+            tumSertifikalar = sRes.ok ? await sRes.json() : [];
+            if(!Array.isArray(tumIsEmirleri)) { tumIsEmirleri = []; }
+            if(!Array.isArray(tumSertifikalar)) { tumSertifikalar = []; }
             tumIsEmirleri.forEach(r => { if(!r.asama) r.asama = 'kabul_edildi'; });
         } catch(e) {
             showToast('Bağlantı hatası: ' + e.message, true);
-            console.error('ieYukle hata:', e);
-            tumIsEmirleri = [];
+            tumIsEmirleri = []; tumSertifikalar = [];
         }
         ieFiltrele();
     }
@@ -635,9 +630,16 @@
                 const marka = parca[0]||c.marka||'';
                 const model = parca[1]||c.model||'';
 
-                const btn = tedarikci
-                    ? `<button class="btn btn-pdf-yukle" onclick="pdfYukle(${r.id},${idx})">📎 PDF Yükle</button>`
-                    : `<button class="btn btn-sertifika" onclick="sertifkaForm(${r.id},${idx})">📋 Sertifika Oluştur</button>`;
+                // Bu cihaz için sertifika var mı?
+                const mevcutSert = tumSertifikalar.find(s => s.ie_id === r.id && s.cihaz_index === idx);
+                let btn;
+                if(tedarikci) {
+                    btn = `<button class="btn btn-pdf-yukle" onclick="pdfYukle(${r.id},${idx})">📎 PDF Yükle</button>`;
+                } else if(mevcutSert) {
+                    btn = `<span style="font-size:0.75rem;color:#10B981;font-weight:700;">✅ Sertifika Oluşturuldu</span>`;
+                } else {
+                    btn = `<button class="btn btn-sertifika" onclick="sertifkaForm(${r.id},${idx})">📋 Sertifika Oluştur</button>`;
+                }
 
                 return `<div class="cihaz-satir">
                     <div>
@@ -790,9 +792,9 @@
         document.getElementById("s_imalatci").value    = mc?.marka || (cihaz.marka_model||'').split('/')[0].trim();
         document.getElementById("s_tip").value         = mc?.model || (cihaz.marka_model||'').split('/')[1]?.trim() || '';
         document.getElementById("s_seri_no").value     = mc?.seri_no || cihaz.seri_no || '';
-        document.getElementById("s_envanter_no").value = mc?.envanter_no || '';
+        document.getElementById("s_envanter_no").value = mc?.envanter_no || cihaz.envanter_no || '';
         document.getElementById("s_fis_no").value      = ie.ie_no || '';
-        document.getElementById("s_kal_yeri").value    = mc?.kalibrasyon_yeri || '';
+        document.getElementById("s_kal_yeri").value    = mc?.kalibrasyon_yeri || cihaz.kalibrasyon_yeri || '';
 
         // musteri_cihaz_id varsa cihaz alanları readonly (müşteri cihazı envanterinden geliyor)
         const cihazAlanlar = ['s_cihaz_adi','s_imalatci','s_tip','s_seri_no','s_envanter_no','s_kal_yeri'];
@@ -1004,8 +1006,9 @@
                 butonlar += `<button class="btn btn-mail" onclick="tekliMail(${s.id})">📧 Mail</button>`;
             }
             butonlar += `<button class="btn btn-uygun" onclick="uygunsuzlukForm(${s.id})">⚠️ Uygunsuzluk</button>`;
+            butonlar += `<button class="btn" style="background:#fff1f2;color:#be123c;font-size:0.72rem;" onclick="icerikTemizle(${s.id})" title="Sertifikayı siler, iş emrinde tekrar oluşturulabilir">🗑️ Temizle</button>`;
 
-            return `<tr>
+            return `<tr data-sert-id="${s.id}">
                 <td><input type="checkbox" class="sert-sec" data-id="${s.id}" onchange="secimGuncelle()"></td>
                 <td style="font-weight:700;color:var(--primary);font-size:0.82rem;">${s.sertifika_no||'—'}</td>
                 <td style="font-size:0.82rem;">${s.firma_adi||'—'}</td>
@@ -1108,6 +1111,21 @@
     }
 
     // ── DİĞER İŞLEMLER ──
+    function sertifkaDuzenle(sertId) {
+        // Sertifikalar sekmesine geç
+        document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+        document.getElementById('panel-sertifikalar').classList.add('active');
+        document.querySelectorAll('.tab-btn')[1].classList.add('active');
+        sertYukle().then(() => {
+            // İlgili sertifikayı vurgula
+            setTimeout(() => {
+                const row = document.querySelector(`tr[data-sert-id="${sertId}"]`);
+                if(row) { row.scrollIntoView({behavior:'smooth', block:'center'}); row.style.background='#fffbeb'; setTimeout(()=>row.style.background='',2000); }
+            }, 500);
+        });
+    }
+
     function olcumPdfYukle(id) {
         showToast("📎 PDF yükleme ekranı açılıyor...");
         // PDF yükleme modal buraya gelecek
@@ -1123,6 +1141,20 @@
 
     function uygunsuzlukForm(id) {
         showToast("⚠️ Uygunsuzluk formu açılıyor...");
+    }
+
+    async function icerikTemizle(id) {
+        const s = tumSertifikalar.find(x=>x.id===id);
+        const cihazAdi = s?.cihaz_adi || 'bu sertifika';
+        if(!confirm(`"${cihazAdi}" sertifikası silinecek ve iş emrinde tekrar oluşturulabilecek. Emin misiniz?`)) return;
+        const res = await fetch(`/api/sertifikalar/${id}`, {method:'DELETE'});
+        if(res.ok) {
+            showToast('🗑️ Sertifika temizlendi, iş emrinde tekrar oluşturulabilir.');
+            await sertYukle();
+            await ieYukle();
+        } else {
+            showToast('❌ Silinemedi!', true);
+        }
     }
 
     function pdfYukle(ieId, cihazIdx) {
