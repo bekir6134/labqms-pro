@@ -873,3 +873,66 @@ app.get('/api/turkak-token', async (req, res) => {
         res.json({ token: result.rows[0].deger });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
+
+// --- ÇEVRE KOŞULLARI ---
+app.get('/api/cevre-kosullari', async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT ck.*, k.kategori_adi
+            FROM cevre_kosullari ck
+            LEFT JOIN kategoriler k ON ck.kategori_id = k.id
+            ORDER BY k.kategori_adi ASC`);
+        res.json(result.rows);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/cevre-kosullari/kategori/:kategori_id', async (req, res) => {
+    try {
+        const result = await pool.query(
+            `SELECT ck.*, k.kategori_adi FROM cevre_kosullari ck
+             LEFT JOIN kategoriler k ON ck.kategori_id = k.id
+             WHERE ck.kategori_id = $1`,
+            [req.params.kategori_id]
+        );
+        res.json(result.rows[0] || null);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/cevre-kosullari', async (req, res) => {
+    try {
+        const { kategori_id, sicaklik_merkez, sicaklik_tolerans,
+                nem_merkez, nem_tolerans, basinc_merkez, basinc_tolerans } = req.body;
+        const result = await pool.query(
+            `INSERT INTO cevre_kosullari
+             (kategori_id, sicaklik_merkez, sicaklik_tolerans, nem_merkez, nem_tolerans, basinc_merkez, basinc_tolerans)
+             VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+            [kategori_id, sicaklik_merkez||null, sicaklik_tolerans||null,
+             nem_merkez||null, nem_tolerans||null, basinc_merkez||null, basinc_tolerans||null]
+        );
+        res.json(result.rows[0]);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.put('/api/cevre-kosullari/:id', async (req, res) => {
+    try {
+        const { kategori_id, sicaklik_merkez, sicaklik_tolerans,
+                nem_merkez, nem_tolerans, basinc_merkez, basinc_tolerans } = req.body;
+        const result = await pool.query(
+            `UPDATE cevre_kosullari SET
+             kategori_id=$1, sicaklik_merkez=$2, sicaklik_tolerans=$3,
+             nem_merkez=$4, nem_tolerans=$5, basinc_merkez=$6, basinc_tolerans=$7
+             WHERE id=$8 RETURNING *`,
+            [kategori_id, sicaklik_merkez||null, sicaklik_tolerans||null,
+             nem_merkez||null, nem_tolerans||null, basinc_merkez||null, basinc_tolerans||null,
+             req.params.id]
+        );
+        res.json(result.rows[0]);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.delete('/api/cevre-kosullari/:id', async (req, res) => {
+    try {
+        await pool.query('DELETE FROM cevre_kosullari WHERE id=$1', [req.params.id]);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
