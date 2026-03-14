@@ -132,6 +132,30 @@
         .modal-close { position:absolute; right:16px; top:16px; font-size:1.2rem; cursor:pointer; color:#64748b; border:none; background:none; }
 
         /* TOAST */
+        /* İŞ EMRİ ACCORDION */
+        .ie-acc { background:#fff; border:1px solid var(--border); border-radius:10px; margin-bottom:8px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,0.04); }
+        .ie-acc-head { display:grid; grid-template-columns:120px 1fr 110px 110px 90px 120px auto; gap:12px; align-items:center; padding:12px 16px; cursor:pointer; transition:0.15s; }
+        .ie-acc-head:hover { background:#f8fafc; }
+        .ie-acc-head.open { background:#eff6ff; border-bottom:1px solid var(--border); }
+        .ie-acc-no { font-weight:700; color:var(--primary); font-size:0.88rem; }
+        .ie-acc-firma { font-size:0.87rem; font-weight:600; color:#334155; }
+        .ie-acc-tarih { font-size:0.82rem; color:#64748b; }
+        .ie-acc-cihaz-cnt { font-size:0.8rem; }
+        .ie-acc-arrow { font-size:0.8rem; color:#94a3b8; transition:transform 0.2s; }
+        .ie-acc-arrow.open { transform:rotate(180deg); }
+        .ie-acc-body { display:none; padding:0; }
+        .ie-acc-body.open { display:block; }
+
+        /* CİHAZ SATIRI */
+        .cihaz-satir { display:grid; grid-template-columns:200px 130px 130px 1fr auto; gap:12px; align-items:center; padding:10px 16px 10px 32px; border-bottom:1px solid var(--border); background:#fafbff; }
+        .cihaz-satir:last-child { border-bottom:none; }
+        .cihaz-satir:hover { background:#f1f5f9; }
+        .cihaz-ad { font-weight:600; font-size:0.85rem; color:#334155; }
+        .cihaz-marka { font-size:0.8rem; color:#64748b; margin-top:2px; }
+        .cihaz-model { font-size:0.8rem; color:#64748b; }
+        .cihaz-seri { font-size:0.78rem; color:#94a3b8; font-family:monospace; }
+        .col-label { font-size:0.7rem; font-weight:700; color:#94a3b8; text-transform:uppercase; margin-bottom:2px; }
+
         #toast { visibility:hidden; min-width:260px; background-color:var(--success); color:#fff; text-align:center; border-radius:8px; padding:14px; position:fixed; z-index:9999; right:24px; top:24px; font-weight:600; box-shadow:0 4px 12px rgba(0,0,0,0.15); }
         #toast.show { visibility:visible; }
         #toast.error { background-color:#ef4444; }
@@ -325,9 +349,9 @@
     <!-- FİLTRE -->
     <div class="filter-wrap">
         <div class="filter-grid">
-            <div class="filter-item">
-                <label>Firma</label>
-                <input type="text" id="ie_filtre_firma" onkeyup="ieFiltrele()" placeholder="Firma adı ara...">
+            <div class="filter-item" style="min-width:220px;">
+                <label>Firma / İş Emri No Ara</label>
+                <input type="text" id="ie_filtre_ara" onkeyup="ieFiltrele()" placeholder="Firma adı veya IE no...">
             </div>
             <div class="filter-item">
                 <label>Aşama</label>
@@ -342,8 +366,12 @@
                 </select>
             </div>
             <div class="filter-item">
-                <label>Arama</label>
-                <input type="text" id="ie_filtre_ara" onkeyup="ieFiltrele()" placeholder="IE no, firma...">
+                <label>Başlangıç Tarihi</label>
+                <input type="date" id="ie_filtre_tarih_bas" onchange="ieFiltrele()">
+            </div>
+            <div class="filter-item">
+                <label>Bitiş Tarihi</label>
+                <input type="date" id="ie_filtre_tarih_bit" onchange="ieFiltrele()">
             </div>
             <button class="btn-filtre-temizle" onclick="ieFiltreSifirla()">↩ Temizle</button>
         </div>
@@ -358,21 +386,18 @@
             <div class="card-title">📋 İş Emri Listesi</div>
             <input type="text" id="ie_ara" onkeyup="ieFiltrele()" placeholder="🔍 Ara..." style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.83rem;outline:none;width:200px;">
         </div>
-        <div class="card-body">
-            <table>
-                <thead>
-                    <tr>
-                        <th>IE No</th>
-                        <th>Firma</th>
-                        <th>Kabul Tarihi</th>
-                        <th>Teslim Tarihi</th>
-                        <th>Cihaz</th>
-                        <th>Aşama</th>
-                        <th>İşlemler</th>
-                    </tr>
-                </thead>
-                <tbody id="ieListe"></tbody>
-            </table>
+        <div class="card-body" style="padding:12px;">
+            <!-- IE BAŞLIK SATIRI -->
+            <div style="display:grid;grid-template-columns:120px 1fr 110px 110px 90px 120px auto;gap:12px;padding:6px 16px;margin-bottom:4px;">
+                <div style="font-size:0.72rem;font-weight:700;color:#94a3b8;">IE NO</div>
+                <div style="font-size:0.72rem;font-weight:700;color:#94a3b8;">FİRMA</div>
+                <div style="font-size:0.72rem;font-weight:700;color:#94a3b8;">KABUL TARİHİ</div>
+                <div style="font-size:0.72rem;font-weight:700;color:#94a3b8;">TESLİM TARİHİ</div>
+                <div style="font-size:0.72rem;font-weight:700;color:#94a3b8;">CİHAZ</div>
+                <div style="font-size:0.72rem;font-weight:700;color:#94a3b8;">AŞAMA</div>
+                <div></div>
+            </div>
+            <div id="ieListe"></div>
         </div>
     </div>
 </div>
@@ -511,29 +536,33 @@
         tumIsEmirleri = await ieRes.json();
         musteriler = await mRes.json();
 
-        // Firma filtresi input olarak çalışıyor
+
 
         ieFiltrele();
     }
 
     function ieFiltrele() {
-        const firma = document.getElementById("ie_filtre_firma").value.trim();
-        const asama = document.getElementById("ie_filtre_asama").value;
-        const ara   = (document.getElementById("ie_filtre_ara").value || document.getElementById("ie_ara").value || '').toUpperCase();
+        const ara      = (document.getElementById("ie_filtre_ara").value || document.getElementById("ie_ara").value || '').trim().toUpperCase();
+        const asama    = document.getElementById("ie_filtre_asama").value;
+        const tarihBas = document.getElementById("ie_filtre_tarih_bas").value;
+        const tarihBit = document.getElementById("ie_filtre_tarih_bit").value;
 
-        filtreliIE = tumIsEmirleri.filter(r =>
-            (!firma || (r.firma_adi||'').toUpperCase().includes(firma.toUpperCase())) &&
-            (!asama || r.asama === asama) &&
-            (!ara   || (r.ie_no||'').toUpperCase().includes(ara) || (r.firma_adi||'').toUpperCase().includes(ara))
-        );
+        filtreliIE = tumIsEmirleri.filter(r => {
+            if(asama && r.asama !== asama) return false;
+            if(ara && !(r.ie_no||'').toUpperCase().includes(ara) && !(r.firma_adi||'').toUpperCase().includes(ara)) return false;
+            if(tarihBas && r.kabul_tarihi && r.kabul_tarihi.substring(0,10) < tarihBas) return false;
+            if(tarihBit && r.kabul_tarihi && r.kabul_tarihi.substring(0,10) > tarihBit) return false;
+            return true;
+        });
         renderIEKanban(filtreliIE);
         renderIEListe(filtreliIE);
     }
 
     function ieFiltreSifirla() {
-        document.getElementById("ie_filtre_firma").value = "";
-        document.getElementById("ie_filtre_asama").value = "";
         document.getElementById("ie_filtre_ara").value = "";
+        document.getElementById("ie_filtre_asama").value = "";
+        document.getElementById("ie_filtre_tarih_bas").value = "";
+        document.getElementById("ie_filtre_tarih_bit").value = "";
         document.getElementById("ie_ara").value = "";
         ieFiltrele();
     }
@@ -563,47 +592,99 @@
     }
 
     function renderIEListe(data) {
-        const tbody = document.getElementById("ieListe");
-        if(!data.length) { tbody.innerHTML='<tr class="empty-row"><td colspan="7">Kayıt bulunamadı.</td></tr>'; return; }
-        tbody.innerHTML = data.map(r => {
+        const container = document.getElementById("ieListe");
+        if(!data.length) {
+            container.innerHTML='<div style="text-align:center;color:#94a3b8;padding:30px;">Kayıt bulunamadı.</div>';
+            return;
+        }
+        container.innerHTML = data.map(r => {
             const cihazlar = Array.isArray(r.cihazlar)?r.cihazlar:JSON.parse(r.cihazlar||'[]');
             const asama = r.asama||'kabul_edildi';
             const kabul = r.kabul_tarihi?new Date(r.kabul_tarihi).toLocaleDateString('tr-TR'):'-';
             const teslim = r.teslim_tarihi?new Date(r.teslim_tarihi).toLocaleDateString('tr-TR'):'-';
 
-            // Cihaz bazlı işlem butonları
-            const cihazButonlar = cihazlar.map((c,idx) => {
-                const kategori = (c.kategori_adi||'').toLowerCase();
-                const tedarikci = kategori === 'tedarikçi';
-                if(tedarikci) {
-                    return `<div style="margin-bottom:4px;font-size:0.78rem;">
-                        <span style="color:#64748b;">${c.cihaz_adi}</span>
-                        <button class="btn btn-pdf-yukle" onclick="pdfYukle(${r.id},${idx})">📎 PDF Yükle</button>
-                    </div>`;
-                }
-                return `<div style="margin-bottom:4px;font-size:0.78rem;">
-                    <span style="color:#64748b;">${c.cihaz_adi}</span>
-                    <button class="btn btn-sertifika" onclick="sertifkaForm(${r.id},${idx})">📋 Sertifika</button>
+            // Cihaz satırları
+            const cihazSatirlari = cihazlar.map((c,idx) => {
+                const tedarikci = (c.kategori_adi||c.kategori||'').toLowerCase() === 'tedarikçi';
+                const markaModel = c.marka_model||'';
+                const parca = markaModel.split('/').map(s=>s.trim());
+                const marka = parca[0]||c.marka||'';
+                const model = parca[1]||c.model||'';
+
+                const btn = tedarikci
+                    ? `<button class="btn btn-pdf-yukle" onclick="pdfYukle(${r.id},${idx})">📎 PDF Yükle</button>`
+                    : `<button class="btn btn-sertifika" onclick="sertifkaForm(${r.id},${idx})">📋 Sertifika Oluştur</button>`;
+
+                return `<div class="cihaz-satir">
+                    <div>
+                        <div class="col-label">Cihaz Adı</div>
+                        <div class="cihaz-ad">${c.cihaz_adi||'—'}</div>
+                    </div>
+                    <div>
+                        <div class="col-label">Marka</div>
+                        <div class="cihaz-marka">${marka||'—'}</div>
+                    </div>
+                    <div>
+                        <div class="col-label">Model</div>
+                        <div class="cihaz-model">${model||'—'}</div>
+                    </div>
+                    <div>
+                        <div class="col-label">Seri No</div>
+                        <div class="cihaz-seri">${c.seri_no||'—'}</div>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
+                        ${btn}
+                        ${tedarikci ? '<span style="font-size:0.7rem;color:#94a3b8;">Tedarikçi</span>' : ''}
+                    </div>
                 </div>`;
             }).join('');
 
-            return `<tr>
-                <td style="color:var(--primary);font-weight:700;">${r.ie_no}</td>
-                <td>${r.firma_adi}${r.sube_adi?`<br><span style="color:#94a3b8;font-size:0.77rem;">${r.sube_adi}</span>`:''}</td>
-                <td>${kabul}</td>
-                <td>${teslim}</td>
-                <td>${cihazButonlar}</td>
-                <td>
-                    <span class="asama-badge asama-${asama}">${IE_ASAMA_LABEL[asama]}</span><br>
-                    <select class="asama-select" style="margin-top:4px;" onchange="ieAsamaGuncelle(${r.id},this.value)">
-                        ${IE_ASAMALAR.map(a=>`<option value="${a}" ${a===asama?'selected':''}>${IE_ASAMA_LABEL[a]}</option>`).join('')}
-                    </select>
-                </td>
-                <td>
-                    <button class="btn btn-detail" onclick="ieDetay(${r.id})">👁️ Detay</button>
-                </td>
-            </tr>`;
+            return `<div class="ie-acc" id="ie-acc-${r.id}">
+                <div class="ie-acc-head" onclick="ieAccToggle(${r.id})">
+                    <div class="ie-acc-no">${r.ie_no}</div>
+                    <div>
+                        <div class="ie-acc-firma">${r.firma_adi}${r.sube_adi?' / '+r.sube_adi:''}</div>
+                    </div>
+                    <div class="ie-acc-tarih">${kabul}</div>
+                    <div class="ie-acc-tarih">${teslim}</div>
+                    <div>
+                        <span style="background:#eff6ff;color:var(--primary);padding:2px 8px;border-radius:8px;font-size:0.75rem;font-weight:700;">${cihazlar.length} cihaz</span>
+                    </div>
+                    <div>
+                        <span class="asama-badge asama-${asama}">${IE_ASAMA_LABEL[asama]}</span>
+                        <select class="asama-select" style="margin-top:5px;display:block;" onclick="event.stopPropagation()" onchange="ieAsamaGuncelle(${r.id},this.value)">
+                            ${IE_ASAMALAR.map(a=>`<option value="${a}" ${a===asama?'selected':''}>${IE_ASAMA_LABEL[a]}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div style="display:flex;gap:6px;align-items:center;">
+                        <button class="btn btn-detail" onclick="event.stopPropagation();ieDetay(${r.id})">👁️</button>
+                        <span class="ie-acc-arrow" id="arrow-${r.id}">▼</span>
+                    </div>
+                </div>
+                <div class="ie-acc-body" id="body-${r.id}">
+                    <div style="padding:6px 16px 4px 32px;background:#f8fafc;border-bottom:1px solid var(--border);">
+                        <div style="display:grid;grid-template-columns:200px 130px 130px 1fr auto;gap:12px;">
+                            <div style="font-size:0.7rem;font-weight:700;color:#94a3b8;padding:4px 0;">CİHAZ ADI</div>
+                            <div style="font-size:0.7rem;font-weight:700;color:#94a3b8;padding:4px 0;">MARKA</div>
+                            <div style="font-size:0.7rem;font-weight:700;color:#94a3b8;padding:4px 0;">MODEL</div>
+                            <div style="font-size:0.7rem;font-weight:700;color:#94a3b8;padding:4px 0;">SERİ NO</div>
+                            <div style="font-size:0.7rem;font-weight:700;color:#94a3b8;padding:4px 0;">İŞLEM</div>
+                        </div>
+                    </div>
+                    ${cihazSatirlari}
+                </div>
+            </div>`;
         }).join('');
+    }
+
+    function ieAccToggle(id) {
+        const body  = document.getElementById('body-' + id);
+        const arrow = document.getElementById('arrow-' + id);
+        const head  = document.querySelector(`#ie-acc-${id} .ie-acc-head`);
+        const acik  = body.classList.contains('open');
+        body.classList.toggle('open', !acik);
+        arrow.classList.toggle('open', !acik);
+        head.classList.toggle('open', !acik);
     }
 
     async function ieAsamaGuncelle(id, asama) {
@@ -778,7 +859,7 @@
         pSel.innerHTML = '<option value="">Tümü</option>' +
             personeller.map(p=>`<option value="${p.id}">${p.ad_soyad}</option>`).join('');
 
-        // Firma filtresi input olarak çalışıyor
+
 
         sertFiltrele();
     }
