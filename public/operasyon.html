@@ -1,400 +1,978 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-
-    <meta charset="UTF-8"> <script>
-    // GÜVENLİK KONTROLÜ: Kullanıcı giriş yapmış mı?
-    const aktifKullanici = localStorage.getItem("labqms_user");
-    if (!aktifKullanici) {
-        // Eğer giriş yapmamışsa, anında login sayfasına şutla!
-        window.location.href = "login.html";
-    }
-    </script>
-
-    
-    <title>Sistem Ayarları</title>
-    <title>Laboratuvar Operasyon Merkezi</title>
+    <meta charset="UTF-8">
+    <title>Operasyon Merkezi</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root { --primary:#1E40AF; --border:#e2e8f0; --bg:#f8fafc; --success:#10B981; --warning:#f59e0b; }
-        body { font-family:'Inter',sans-serif; background:var(--bg); margin:0; padding:24px; color:#334155; }
-        
-        .header { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; }
-        h2 { margin:0; color:var(--primary); font-size: 1.5rem; }
+        :root { --primary:#1E40AF; --border:#e2e8f0; --bg:#f8fafc; --text:#334155; --success:#10B981; }
+        * { box-sizing:border-box; }
+        body { font-family:'Inter',sans-serif; background:var(--bg); padding:20px; color:var(--text); margin:0; }
 
-        /* GELİŞMİŞ ARAMA VE TARİH FİLTRESİ */
-        .advanced-filters { display:flex; gap:15px; margin-bottom: 20px; align-items:flex-end; background:#fff; padding:15px; border-radius:12px; border:1px solid var(--border); box-shadow:0 4px 6px rgba(0,0,0,0.02); flex-wrap: wrap; }
-        .filter-group { flex:1; min-width: 150px; }
-        .filter-group.date-group { flex:0 0 140px; }
-        .filter-label { display:block; font-size:0.8rem; color:#64748b; margin-bottom:5px; font-weight:600; }
-        .filter-input { width:100%; padding:10px; border-radius:8px; border:1px solid var(--border); font-family:inherit; box-sizing:border-box; outline:none; transition:0.2s; }
-        .filter-input:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(30,64,175,0.1); }
-        .btn-clear { padding:10px 15px; border-radius:8px; border:1px solid var(--border); background:#f8fafc; cursor:pointer; font-weight:600; color:#64748b; transition:0.2s; height: 39px; }
-        .btn-clear:hover { background:#e2e8f0; color:#334155; }
+        /* SEKMELER */
+        .tab-bar { display:flex; gap:4px; margin-bottom:20px; background:#fff; border-radius:12px; padding:5px; border:1px solid var(--border); box-shadow:0 2px 6px rgba(0,0,0,0.04); width:fit-content; }
+        .tab-btn { padding:9px 20px; border:none; border-radius:8px; font-family:inherit; font-size:0.88rem; font-weight:600; cursor:pointer; transition:0.2s; color:#64748b; background:none; }
+        .tab-btn.active { background:var(--primary); color:#fff; box-shadow:0 2px 8px rgba(30,64,175,0.2); }
+        .tab-btn:hover:not(.active) { background:#f1f5f9; color:var(--primary); }
+        .tab-panel { display:none; }
+        .tab-panel.active { display:block; }
 
-        /* AŞAMA BUTONLARI */
-        .filter-bar { display:flex; gap:10px; margin-bottom:20px; overflow-x:auto; padding-bottom:5px; }
-        .filter-btn { padding:8px 16px; border:1px solid var(--border); background:#fff; border-radius:20px; cursor:pointer; font-size:0.85rem; font-weight:600; color:#64748b; transition:0.2s; white-space:nowrap; }
-        .filter-btn:hover { border-color:#cbd5e1; background:#f1f5f9; }
-        .filter-btn.active { background:var(--primary); color:white; border-color:var(--primary); }
+        /* FİLTRE */
+        .filter-wrap { background:#fff; border-radius:12px; border:1px solid var(--border); padding:14px 18px; margin-bottom:16px; }
+        .filter-grid { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+        .filter-item { display:flex; flex-direction:column; gap:4px; }
+        .filter-item label { font-size:0.72rem; font-weight:700; color:#64748b; }
+        .filter-item select, .filter-item input { padding:8px 10px; border:1px solid var(--border); border-radius:8px; font-family:inherit; font-size:0.83rem; outline:none; min-width:130px; }
+        .filter-item select:focus, .filter-item input:focus { border-color:var(--primary); }
+        .btn-filtre-temizle { padding:8px 14px; border:1px solid var(--border); border-radius:8px; background:#f8fafc; cursor:pointer; font-size:0.83rem; color:#64748b; font-weight:600; align-self:flex-end; }
 
-        .card { background:#fff; padding:20px; border-radius:12px; border:1px solid var(--border); box-shadow:0 4px 6px rgba(0,0,0,0.05); overflow-x:auto; }
-        
-        table { width:100%; border-collapse:collapse; min-width:800px; }
-        th { background:#f8fafc; text-align:left; padding:12px; border-bottom:2px solid var(--border); color:#64748b; font-size:0.85rem; }
-        td { padding:12px; border-bottom:1px solid var(--border); font-size:0.9rem; vertical-align:middle; }
-        
-        /* AŞAMA RENKLERİ */
-        .badge { padding:5px 12px; border-radius:12px; font-size:0.75rem; font-weight:700; white-space:nowrap; }
-        .b-kabul { background:#f1f5f9; color:#475569; } 
-        .b-hazirlaniyor { background:#fef9c3; color:#854d0e; } 
-        .b-tamamlandi { background:#dbeafe; color:#1e40af; } 
-        .b-imzalandi { background:#ede9fe; color:#6d28d9; } 
-        .b-onaylandi { background:#d1fae5; color:#065f46; } 
-        .b-sertifika { background:#dcfce7; color:#166534; } 
+        /* KANBAN */
+        .kanban { display:grid; grid-template-columns:repeat(6,1fr); gap:10px; margin-bottom:20px; overflow-x:auto; }
+        .kanban-col { background:#fff; border-radius:10px; border:1px solid var(--border); overflow:hidden; min-width:140px; }
+        .kanban-head { padding:9px 12px; font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; border-bottom:2px solid transparent; }
+        .kh-kabul_edildi         { background:#f1f5f9; color:#475569; border-color:#cbd5e1; }
+        .kh-hazırlanıyor         { background:#fef9c3; color:#854d0e; border-color:#fbbf24; }
+        .kh-tamamlandı           { background:#dbeafe; color:#1e40af; border-color:#60a5fa; }
+        .kh-imzalandı            { background:#ede9fe; color:#6d28d9; border-color:#a78bfa; }
+        .kh-onaylandı            { background:#d1fae5; color:#065f46; border-color:#34d399; }
+        .kh-sertifika_gönderildi { background:#dcfce7; color:#166634; border-color:#4ade80; }
+        .kanban-count { display:inline-block; background:rgba(0,0,0,0.1); border-radius:8px; padding:1px 6px; font-size:0.7rem; margin-left:4px; }
+        .kanban-cards { padding:8px; min-height:60px; }
+        .kanban-card { background:#f8fafc; border:1px solid var(--border); border-radius:7px; padding:8px 10px; margin-bottom:6px; cursor:pointer; transition:0.15s; }
+        .kanban-card:hover { background:#eff6ff; border-color:#93c5fd; transform:translateY(-1px); }
+        .kanban-card .ie { font-weight:700; color:var(--primary); font-size:0.78rem; }
+        .kanban-card .firma { color:#475569; font-size:0.76rem; margin-top:2px; }
+        .kanban-card .meta { color:#94a3b8; font-size:0.72rem; margin-top:3px; }
+        .kanban-empty { color:#94a3b8; font-size:0.75rem; text-align:center; padding:10px; }
 
-        .btn-islem { background:#f8fafc; color:var(--primary); border:1px solid #bfdbfe; padding:8px 14px; border-radius:6px; cursor:pointer; font-weight:600; font-size:0.8rem; transition:0.2s; white-space:nowrap; }
-        .btn-islem:hover { background:var(--primary); color:white; }
+        /* KART */
+        .card { background:#fff; border-radius:12px; border:1px solid var(--border); box-shadow:0 2px 6px rgba(0,0,0,0.04); margin-bottom:16px; }
+        .card-header { padding:14px 20px; border-bottom:1px solid var(--border); background:#f8fafc; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; }
+        .card-title { font-weight:700; color:var(--primary); font-size:0.92rem; }
+        .card-body { padding:16px 20px; overflow-x:auto; }
 
-        /* MODAL TASARIMI */
-        .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center; }
-        .modal { background:#fff; width:500px; border-radius:12px; padding:25px; box-shadow:0 10px 25px rgba(0,0,0,0.2); }
-        .modal-header { font-size:1.2rem; font-weight:700; color:var(--primary); margin-bottom:15px; border-bottom:1px solid var(--border); padding-bottom:10px; }
-        .form-group { margin-bottom:15px; }
-        .cihaz-info { background:#f8fafc; padding:12px; border-radius:8px; margin-bottom:15px; font-size:0.85rem; border:1px dashed #cbd5e1; line-height:1.5; }
-        
-        .btn-group { display:flex; gap:10px; margin-top:20px; }
-        .btn-save { flex:1; background:var(--success); color:white; border:none; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer; }
-        .btn-cancel { flex:1; background:#f1f5f9; color:#475569; border:none; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer; }
+        /* TABLO */
+        table { width:100%; border-collapse:collapse; min-width:700px; }
+        th { background:#f8fafc; padding:10px 11px; text-align:left; color:#64748b; font-size:0.77rem; border-bottom:2px solid var(--border); white-space:nowrap; }
+        td { padding:9px 11px; border-bottom:1px solid var(--border); font-size:0.84rem; vertical-align:middle; }
+        tr:hover td { background:#fafbff; }
+        .empty-row td { text-align:center; color:#94a3b8; padding:25px; }
+
+        /* BADGE */
+        .asama-badge { padding:3px 9px; border-radius:10px; font-size:0.71rem; font-weight:700; white-space:nowrap; }
+        .asama-kabul_edildi         { background:#f1f5f9; color:#475569; }
+        .asama-hazırlanıyor         { background:#fef9c3; color:#854d0e; }
+        .asama-tamamlandı           { background:#dbeafe; color:#1e40af; }
+        .asama-imzalandı            { background:#ede9fe; color:#6d28d9; }
+        .asama-onaylandı            { background:#d1fae5; color:#065f46; }
+        .asama-sertifika_gönderildi { background:#dcfce7; color:#166634; }
+        .tip-akredite    { background:#dbeafe; color:#1e40af; padding:2px 7px; border-radius:8px; font-size:0.71rem; font-weight:700; }
+        .tip-kapsam_disi { background:#f3e8ff; color:#7c3aed; padding:2px 7px; border-radius:8px; font-size:0.71rem; font-weight:700; }
+        .pdf-var   { background:#dcfce7; color:#166634; padding:2px 7px; border-radius:8px; font-size:0.71rem; font-weight:700; }
+        .pdf-yok   { background:#fee2e2; color:#dc2626; padding:2px 7px; border-radius:8px; font-size:0.71rem; font-weight:700; }
+
+        /* BUTONLAR */
+        .btn { padding:5px 10px; border:none; border-radius:6px; cursor:pointer; font-size:0.76rem; font-weight:600; transition:0.15s; margin-right:3px; margin-bottom:2px; display:inline-block; }
+        .btn:hover { opacity:0.85; }
+        .btn:disabled { opacity:0.45; cursor:not-allowed; }
+        .btn-sertifika { background:#e0e7ff; color:#4338ca; }
+        .btn-pdf-yukle { background:#fff7ed; color:#c2410c; }
+        .btn-onizle    { background:#f0fdf4; color:#059669; }
+        .btn-imzala    { background:#ede9fe; color:#6d28d9; }
+        .btn-onayla    { background:#d1fae5; color:#065f46; }
+        .btn-mail      { background:#dbeafe; color:#1e40af; }
+        .btn-uygun     { background:#fee2e2; color:#dc2626; }
+        .btn-detail    { background:#f8fafc; color:#475569; border:1px solid var(--border); }
+        .btn-duzenle   { background:#fef9c3; color:#854d0e; }
+
+        /* TOPLU BAR */
+        .toplu-bar { display:none; background:linear-gradient(135deg,#1e3a8a,var(--primary)); border-radius:10px; padding:12px 18px; margin-bottom:12px; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; color:white; }
+        .toplu-bar.show { display:flex; }
+        .toplu-bar .secili-info { font-weight:700; font-size:0.87rem; }
+        .btn-toplu { background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); color:white; padding:7px 14px; border-radius:7px; cursor:pointer; font-weight:700; font-size:0.82rem; }
+        .btn-toplu:hover { background:rgba(255,255,255,0.25); }
+
+        input[type="checkbox"] { width:15px; height:15px; cursor:pointer; accent-color:var(--primary); }
+
+        /* AŞAMA SELECT */
+        .asama-select { padding:5px 8px; border:1px solid var(--border); border-radius:6px; font-size:0.78rem; font-family:inherit; outline:none; background:#fff; }
+
+        /* SERTİFİKA MODAL */
+        #sertModal { display:none; position:fixed; z-index:3000; inset:0; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; }
+        #sertModal.open { display:flex; }
+        .sert-modal-box { background:#fff; border-radius:16px; width:92%; max-width:860px; max-height:90vh; overflow-y:auto; position:relative; display:flex; flex-direction:column; }
+        .sert-modal-head { padding:18px 24px; border-bottom:1px solid var(--border); background:#f8fafc; display:flex; align-items:center; justify-content:space-between; border-radius:16px 16px 0 0; position:sticky; top:0; z-index:10; }
+        .sert-modal-title { font-weight:700; color:var(--primary); font-size:1rem; }
+        .sert-modal-close { background:none; border:none; font-size:1.3rem; cursor:pointer; color:#64748b; }
+        .sert-modal-body { padding:20px 24px; flex:1; }
+        .sert-modal-foot { padding:14px 24px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:10px; position:sticky; bottom:0; background:#fff; border-radius:0 0 16px 16px; }
+
+        /* FORM */
+        .form-section { margin-bottom:18px; }
+        .form-section-title { font-size:0.78rem; font-weight:700; color:var(--primary); text-transform:uppercase; letter-spacing:0.5px; padding:6px 0; border-bottom:1px solid var(--border); margin-bottom:10px; }
+        .form-grid { display:grid; gap:12px; }
+        .g2 { grid-template-columns:1fr 1fr; }
+        .g3 { grid-template-columns:1fr 1fr 1fr; }
+        .full { grid-column:1/-1; }
+        label { display:block; font-size:0.77rem; font-weight:700; color:#64748b; margin-bottom:4px; }
+        input[type="text"], input[type="date"], input[type="number"], select, textarea {
+            width:100%; padding:9px 11px; border:1px solid var(--border); border-radius:8px; outline:none;
+            font-family:inherit; font-size:0.87rem; transition:0.2s; background:#fff; color:var(--text);
+        }
+        input:focus, select:focus, textarea:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(30,64,175,0.1); }
+        textarea { resize:vertical; min-height:60px; }
+        .readonly-field { background:#f8fafc; color:#64748b; cursor:not-allowed; }
+        .hint { font-size:0.71rem; color:#94a3b8; margin-top:3px; }
+        .sabit-metin { background:#f8fafc; border:1px solid var(--border); border-radius:8px; padding:9px 11px; font-size:0.84rem; color:#475569; font-style:italic; }
+
+        /* DETAY MODAL */
+        #modal { display:none; position:fixed; z-index:2000; inset:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; }
+        #modal.open { display:flex; }
+        .modal-box { background:#fff; border-radius:14px; width:90%; max-width:600px; max-height:85vh; overflow-y:auto; padding:26px; position:relative; }
+        .modal-close { position:absolute; right:16px; top:16px; font-size:1.2rem; cursor:pointer; color:#64748b; border:none; background:none; }
+
+        /* TOAST */
+        #toast { visibility:hidden; min-width:260px; background-color:var(--success); color:#fff; text-align:center; border-radius:8px; padding:14px; position:fixed; z-index:9999; right:24px; top:24px; font-weight:600; box-shadow:0 4px 12px rgba(0,0,0,0.15); }
+        #toast.show { visibility:visible; }
+        #toast.error { background-color:#ef4444; }
     </style>
 </head>
 <body>
+<div id="toast"></div>
 
-    <div class="header">
-        <h2>🔬 Laboratuvar İş Listesi</h2>
+<!-- DETAY MODAL -->
+<div id="modal">
+    <div class="modal-box">
+        <button class="modal-close" onclick="modalKapat()">✕</button>
+        <div id="modalIcerik"></div>
+    </div>
+</div>
+
+<!-- SERTİFİKA OLUŞTURMA MODAL -->
+<div id="sertModal">
+    <div class="sert-modal-box">
+        <div class="sert-modal-head">
+            <div class="sert-modal-title" id="sertModalBaslik">📋 Sertifika Hazırlama</div>
+            <button class="sert-modal-close" onclick="sertModalKapat()">✕</button>
+        </div>
+        <div class="sert-modal-body">
+
+            <!-- FİRMA & CİHAZ BİLGİLERİ -->
+            <div class="form-section">
+                <div class="form-section-title">🏢 Firma & Cihaz Bilgileri</div>
+                <div class="form-grid g2">
+                    <div class="full">
+                        <label>Firma Adı</label>
+                        <input type="text" id="s_firma_adi" class="readonly-field" readonly>
+                    </div>
+                    <div class="full">
+                        <label>Firma Adresi</label>
+                        <input type="text" id="s_firma_adres" class="readonly-field" readonly>
+                    </div>
+                    <div>
+                        <label>Cihaz Adı</label>
+                        <input type="text" id="s_cihaz_adi" class="readonly-field" readonly>
+                    </div>
+                    <div>
+                        <label>İmalatçı</label>
+                        <input type="text" id="s_imalatci">
+                    </div>
+                    <div>
+                        <label>Tip / Model</label>
+                        <input type="text" id="s_tip">
+                    </div>
+                    <div>
+                        <label>Seri Numarası</label>
+                        <input type="text" id="s_seri_no" class="readonly-field" readonly>
+                    </div>
+                    <div>
+                        <label>Demirbaş / Envanter No</label>
+                        <input type="text" id="s_envanter_no" class="readonly-field" readonly>
+                    </div>
+                    <div>
+                        <label>İstek Numarası (Fiş No)</label>
+                        <input type="text" id="s_fis_no" class="readonly-field" readonly>
+                    </div>
+                    <div>
+                        <label>Kalibrasyonun Yapıldığı Yer</label>
+                        <input type="text" id="s_kal_yeri">
+                    </div>
+                    <div>
+                        <label>Sertifika Tipi</label>
+                        <select id="s_tip_secim">
+                            <option value="akredite">Akredite</option>
+                            <option value="kapsam_disi">Kapsam Dışı</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TARİHLER & PERSONEL -->
+            <div class="form-section">
+                <div class="form-section-title">📅 Tarihler & Personel</div>
+                <div class="form-grid g3">
+                    <div>
+                        <label>Kalibrasyon Tarihi</label>
+                        <input type="date" id="s_kal_tarihi">
+                    </div>
+                    <div>
+                        <label>Yayımlanma Tarihi</label>
+                        <input type="date" id="s_yayin_tarihi">
+                    </div>
+                    <div>
+                        <label>Onaylanma Tarihi</label>
+                        <input type="date" id="s_onay_tarihi">
+                    </div>
+                    <div>
+                        <label>Gelecek Kalibrasyon Tarihi <span style="color:#94a3b8;font-weight:400;">(opsiyonel)</span></label>
+                        <input type="date" id="s_gelecek_kal">
+                    </div>
+                    <div>
+                        <label>Kalibrasyonu Yapan</label>
+                        <select id="s_kal_yapan"></select>
+                    </div>
+                    <div>
+                        <label>Onaylayan</label>
+                        <select id="s_onaylayan"></select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PROSEDÜR & REFERANSLAR -->
+            <div class="form-section">
+                <div class="form-section-title">🔬 Prosedür & Referanslar</div>
+                <div class="form-grid g2">
+                    <div class="full">
+                        <label>Kalibrasyon Prosedürleri</label>
+                        <div id="s_prosedurler" class="sabit-metin">—</div>
+                        <div class="hint">💡 Cihazın metoduna göre otomatik gelir</div>
+                    </div>
+                    <div class="full">
+                        <label>Kullanılan Referans Cihazlar</label>
+                        <div id="s_referanslar" class="sabit-metin" style="font-style:normal;">—</div>
+                        <div class="hint">💡 Metoda bağlı referans cihazların son kalibrasyon bilgileri</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ÇEVRE KOŞULLARI -->
+            <div class="form-section">
+                <div class="form-section-title">🌡️ Çevre Koşulları</div>
+                <div class="form-grid g3">
+                    <div>
+                        <label>Sıcaklık</label>
+                        <input type="text" id="s_sicaklik" placeholder="Örn: (23±3) °C">
+                    </div>
+                    <div>
+                        <label>Nem</label>
+                        <input type="text" id="s_nem" placeholder="Örn: (50±20) %rh">
+                    </div>
+                    <div>
+                        <label>Atmosfer Basıncı</label>
+                        <input type="text" id="s_basinc" placeholder="Örn: (1013±20) hPa">
+                    </div>
+                </div>
+                <div class="hint" style="margin-top:6px;">💡 Kategoriye göre otomatik gelir, değiştirilebilir</div>
+            </div>
+
+            <!-- UYGUNLUK & KARAR KURALI -->
+            <div class="form-section">
+                <div class="form-section-title">✅ Uygunluk & Karar Kuralı</div>
+                <div class="form-grid g2">
+                    <div>
+                        <label>Uygunluk Durumu</label>
+                        <select id="s_uygunluk">
+                            <option value="kullaniciya_birakildi">Değerlendirme kullanıcıya bırakıldı</option>
+                            <option value="uygun">Uygun</option>
+                            <option value="uygunsuz">Uygunsuz</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Kalibrasyon Numarası</label>
+                        <input type="text" id="s_kal_no" placeholder="Türkak'tan veya kapsam dışı sayaçtan gelecek" readonly class="readonly-field">
+                    </div>
+                    <div class="full">
+                        <label>Karar Kuralı <span style="color:#94a3b8;font-weight:400;">(sabit metin)</span></label>
+                        <div class="sabit-metin">Ölçüm sonuçları raporda belirtilmiş olup, değerlendirme kullanıcıya bırakılmıştır.</div>
+                    </div>
+                    <div class="full">
+                        <label>Görüş ve Yorumlar <span style="color:#94a3b8;font-weight:400;">(opsiyonel)</span></label>
+                        <textarea id="s_yorum" placeholder="Varsa görüş ve yorumlar..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="sert-modal-foot">
+            <button onclick="sertModalKapat()" style="background:#f1f5f9;color:#475569;border:none;padding:10px 20px;border-radius:8px;font-weight:600;cursor:pointer;">İptal</button>
+            <button onclick="sertifkaKaydet()" style="background:var(--primary);color:white;border:none;padding:10px 22px;border-radius:8px;font-weight:700;cursor:pointer;" id="sertKaydetBtn">💾 Sertifika Kaydet (Hazırlanıyor)</button>
+        </div>
+    </div>
+</div>
+
+<!-- SEKMELER -->
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+    <h2 style="margin:0;color:var(--primary);font-size:1.3rem;">🔄 Operasyon Merkezi</h2>
+    <div class="tab-bar">
+        <button class="tab-btn active" onclick="sekmeAc('is-emirleri',this)">📋 İş Emirleri</button>
+        <button class="tab-btn" onclick="sekmeAc('sertifikalar',this)">📄 Sertifikalar</button>
+    </div>
+</div>
+
+<!-- ════ SEKME 1: İŞ EMİRLERİ ════ -->
+<div class="tab-panel active" id="panel-is-emirleri">
+
+    <!-- FİLTRE -->
+    <div class="filter-wrap">
+        <div class="filter-grid">
+            <div class="filter-item">
+                <label>Firma</label>
+                <input type="text" id="ie_filtre_firma" onkeyup="ieFiltrele()" placeholder="Firma adı ara...">
+            </div>
+            <div class="filter-item">
+                <label>Aşama</label>
+                <select id="ie_filtre_asama" onchange="ieFiltrele()">
+                    <option value="">Tüm Aşamalar</option>
+                    <option value="kabul_edildi">Kabul Edildi</option>
+                    <option value="hazırlanıyor">Hazırlanıyor</option>
+                    <option value="tamamlandı">Tamamlandı</option>
+                    <option value="imzalandı">İmzalandı</option>
+                    <option value="onaylandı">Onaylandı</option>
+                    <option value="sertifika_gönderildi">Sertifika Gönderildi</option>
+                </select>
+            </div>
+            <div class="filter-item">
+                <label>Arama</label>
+                <input type="text" id="ie_filtre_ara" onkeyup="ieFiltrele()" placeholder="IE no, firma...">
+            </div>
+            <button class="btn-filtre-temizle" onclick="ieFiltreSifirla()">↩ Temizle</button>
+        </div>
     </div>
 
-    <div class="advanced-filters">
-        <div class="filter-group">
-            <label class="filter-label">Hızlı Arama</label>
-            <input type="text" id="aramaKutusu" class="filter-input" oninput="uygulaFiltreler()" placeholder="🔍 Cihaz, Firma, S/N, Env No...">
-        </div>
-        <div class="filter-group">
-            <label class="filter-label">Marka / Model</label>
-            <input type="text" id="markaModelKutusu" class="filter-input" oninput="uygulaFiltreler()" placeholder="Örn: Fluke, Mitutoyo...">
-        </div>
-        <div class="filter-group date-group">
-            <label class="filter-label">Başlangıç Tarihi</label>
-            <input type="date" id="tarihBas" class="filter-input" onchange="uygulaFiltreler()">
-        </div>
-        <div class="filter-group date-group">
-            <label class="filter-label">Bitiş Tarihi</label>
-            <input type="date" id="tarihBit" class="filter-input" onchange="uygulaFiltreler()">
-        </div>
-        <div>
-            <button class="btn-clear" onclick="filtreleriTemizle()">Temizle</button>
-        </div>
-    </div>
+    <!-- KANBAN -->
+    <div class="kanban" id="ieKanban"></div>
 
-    <div class="filter-bar" id="filtreBar">
-        <button class="filter-btn active" onclick="asamaSec(event, 'Tümü')">Tümü</button>
-        <button class="filter-btn" onclick="asamaSec(event, 'Kabul Edildi')">📥 Kabul Edildi</button>
-        <button class="filter-btn" onclick="asamaSec(event, 'Hazırlanıyor')">⚙️ Hazırlanıyor</button>
-        <button class="filter-btn" onclick="asamaSec(event, 'Tamamlandı')">✅ Tamamlandı</button>
-        <button class="filter-btn" onclick="asamaSec(event, 'İmzalandı')">✍️ İmzalandı</button>
-        <button class="filter-btn" onclick="asamaSec(event, 'Onaylandı')">🏅 Onaylandı</button>
-        <button class="filter-btn" onclick="asamaSec(event, 'Sertifika Gönderildi')">📧 Sertifika Gönderildi</button>
-    </div>
-
+    <!-- DETAY LİSTE -->
     <div class="card">
-        <table>
-            <thead>
-                <tr>
-                    <th>İş Emri</th>
-                    <th>Firma Adı</th>
-                    <th>Cihaz Bilgisi</th>
-                    <th>S/N</th>
-                    <th>Envanter No</th>
-                    <th>Aşama</th>
-                    <th>İşlem</th>
-                </tr>
-            </thead>
-            <tbody id="cihazListesi">
-                <tr><td colspan="7" style="text-align:center; padding:20px;">Veriler yükleniyor...</td></tr>
-            </tbody>
-        </table>
+        <div class="card-header">
+            <div class="card-title">📋 İş Emri Listesi</div>
+            <input type="text" id="ie_ara" onkeyup="ieFiltrele()" placeholder="🔍 Ara..." style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.83rem;outline:none;width:200px;">
+        </div>
+        <div class="card-body">
+            <table>
+                <thead>
+                    <tr>
+                        <th>IE No</th>
+                        <th>Firma</th>
+                        <th>Kabul Tarihi</th>
+                        <th>Teslim Tarihi</th>
+                        <th>Cihaz</th>
+                        <th>Aşama</th>
+                        <th>İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody id="ieListe"></tbody>
+            </table>
+        </div>
     </div>
+</div>
 
-    <div class="modal-overlay" id="islemModal">
-        <div class="modal">
-            <div class="modal-header">⚙️ Kalibrasyon Veri Girişi</div>
-            
-            <div class="cihaz-info" id="modalCihazInfo"></div>
+<!-- ════ SEKME 2: SERTİFİKALAR ════ -->
+<div class="tab-panel" id="panel-sertifikalar">
 
-            <input type="hidden" id="is_emri_id">
-            <input type="hidden" id="cihaz_index">
-
-            <div class="form-group">
-                <label class="filter-label">İşlemi Yapan Personel</label>
-                <input type="text" id="personel" class="filter-input" placeholder="Ad Soyad giriniz..." required>
-            </div>
-
-            <div class="form-group">
-                <label class="filter-label">Kullanılacak Kalibrasyon Metodu</label>
-                <select id="metot_id" class="filter-input" required>
-                    <option value="">Seçiniz...</option>
+    <!-- FİLTRE -->
+    <div class="filter-wrap">
+        <div class="filter-grid">
+            <div class="filter-item">
+                <label>Kalibrasyonu Yapan</label>
+                <select id="s_filtre_personel" onchange="sertFiltrele()">
+                    <option value="">Tümü</option>
                 </select>
             </div>
-
-            <div style="display:flex; gap:10px;">
-                <div class="form-group" style="flex:1;">
-                    <label class="filter-label">Sıcaklık (°C)</label>
-                    <input type="number" step="0.1" id="sicaklik" class="filter-input" placeholder="Örn: 22.5" required>
-                </div>
-                <div class="form-group" style="flex:1;">
-                    <label class="filter-label">Nem (%RH)</label>
-                    <input type="number" step="1" id="nem" class="filter-input" placeholder="Örn: 45" required>
-                </div>
+            <div class="filter-item">
+                <label>Firma</label>
+                <input type="text" id="s_filtre_firma" onkeyup="sertFiltrele()" placeholder="Firma adı ara...">
             </div>
-
-            <div class="form-group" style="margin-top:10px;">
-                <label style="color:var(--primary); font-size:0.85rem; font-weight:600; display:block; margin-bottom:5px;">Cihazın Yeni Aşaması (Sonraki Adım)</label>
-                <select id="sertifika_asamasi" class="filter-input" required style="border-color:var(--primary); background:#eff6ff; font-weight:600;">
-                    <option value="Kabul Edildi">📥 Kabul Edildi</option>
-                    <option value="Hazırlanıyor">⚙️ Hazırlanıyor</option>
-                    <option value="Tamamlandı">✅ Tamamlandı</option>
-                    <option value="İmzalandı">✍️ İmzalandı</option>
-                    <option value="Onaylandı">🏅 Onaylandı</option>
-                    <option value="Sertifika Gönderildi">📧 Sertifika Mail Gönderildi</option>
+            <div class="filter-item">
+                <label>Fiş No</label>
+                <input type="text" id="s_filtre_fis" onkeyup="sertFiltrele()" placeholder="IE-2026-001">
+            </div>
+            <div class="filter-item">
+                <label>Başlangıç Tarihi</label>
+                <input type="date" id="s_filtre_tarih_bas" onchange="sertFiltrele()">
+            </div>
+            <div class="filter-item">
+                <label>Bitiş Tarihi</label>
+                <input type="date" id="s_filtre_tarih_bit" onchange="sertFiltrele()">
+            </div>
+            <div class="filter-item">
+                <label>Tip</label>
+                <select id="s_filtre_tip" onchange="sertFiltrele()">
+                    <option value="">Tümü</option>
+                    <option value="akredite">Akredite</option>
+                    <option value="kapsam_disi">Kapsam Dışı</option>
                 </select>
             </div>
-
-            <div class="btn-group">
-                <button class="btn-cancel" onclick="modalKapat()">İptal</button>
-                <button class="btn-save" onclick="islemKaydet()">💾 Kaydet ve Aşamayı Güncelle</button>
+            <div class="filter-item">
+                <label>Sertifika No</label>
+                <input type="text" id="s_filtre_no" onkeyup="sertFiltrele()" placeholder="Sertifika no...">
             </div>
+            <div class="filter-item">
+                <label>Aşama</label>
+                <select id="s_filtre_asama" onchange="sertFiltrele()">
+                    <option value="">Tüm Aşamalar</option>
+                    <option value="hazırlanıyor">Hazırlanıyor</option>
+                    <option value="imzalandı">İmzalandı</option>
+                    <option value="onaylandı">Onaylandı</option>
+                    <option value="sertifika_gönderildi">Gönderildi</option>
+                </select>
+            </div>
+            <button class="btn-filtre-temizle" onclick="sertFiltreSifirla()">↩ Temizle</button>
         </div>
     </div>
 
-    <script>
-        let metotlar = [];
-        let tumCihazlar = [];
-        let seciliAsama = 'Tümü';
+    <!-- TOPLU İŞLEM BARI -->
+    <div class="toplu-bar" id="topluBar">
+        <div class="secili-info" id="topluBilgi">0 sertifika seçildi</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn-toplu" onclick="topluImzala()" id="btnTopluImzala">✍️ Seçilenleri İmzala</button>
+            <button class="btn-toplu" onclick="topluOnayla()" id="btnTopluOnayla">✅ Seçilenleri Onayla</button>
+            <button class="btn-toplu" onclick="topluMail()" id="btnTopluMail">📧 Seçilenlere Mail Gönder</button>
+        </div>
+    </div>
 
-        async function sayfaYukle() {
-            await metotlariCek();
-            await cihazlariListele();
-        }
+    <!-- SERTİFİKA LİSTESİ -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">📄 Sertifika Listesi</div>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <label style="font-size:0.8rem;color:#64748b;display:flex;align-items:center;gap:6px;cursor:pointer;">
+                    <input type="checkbox" id="tumunuSec" onchange="tumunuSecToggle()"> Tümünü Seç
+                </label>
+            </div>
+        </div>
+        <div class="card-body">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:36px;"></th>
+                        <th>Sertifika No</th>
+                        <th>Firma</th>
+                        <th>Cihaz</th>
+                        <th>Fiş No</th>
+                        <th>Kal. Tarihi</th>
+                        <th>Tip</th>
+                        <th>Ölçüm PDF</th>
+                        <th>Aşama</th>
+                        <th>İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody id="sertListe"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
-        async function metotlariCek() {
-            try {
-                const res = await fetch('/api/metotlar');
-                metotlar = await res.json();
-                const select = document.getElementById("metot_id");
-                metotlar.forEach(m => {
-                    select.innerHTML += `<option value="${m.id}">${m.metot_kodu} - ${m.metot_adi}</option>`;
-                });
-            } catch(e) { console.error("Metotlar çekilemedi."); }
-        }
+<script>
+    const IE_ASAMA_LABEL = {
+        kabul_edildi:'Kabul Edildi', 'hazırlanıyor':'Hazırlanıyor',
+        'tamamlandı':'Tamamlandı', imzalandı:'İmzalandı',
+        'onaylandı':'Onaylandı', sertifika_gönderildi:'Sertifika Gönderildi'
+    };
+    const IE_ASAMALAR = ['kabul_edildi','hazırlanıyor','tamamlandı','imzalandı','onaylandı','sertifika_gönderildi'];
 
-        async function cihazlariListele() {
-            try {
-                const res = await fetch('/api/is-emirleri');
-                const isEmirleri = await res.json();
-                
-                tumCihazlar = [];
-                
-                isEmirleri.forEach(ie => {
-                    const cihazlar = typeof ie.cihazlar === 'string' ? JSON.parse(ie.cihazlar) : ie.cihazlar;
-                    if(cihazlar && cihazlar.length > 0) {
-                        cihazlar.forEach((c, index) => {
-                            tumCihazlar.push({
-                                ie_id: ie.id,
-                                ie_no: ie.ie_no,
-                                firma_adi: ie.firma_adi,
-                                kabul_tarihi: ie.kabul_tarihi, 
-                                index: index,
-                                ...c
-                            });
-                        });
-                    }
-                });
+    let tumIsEmirleri = [], filtreliIE = [];
+    let tumSertifikalar = [], filtreliSert = [];
+    let personeller = [], musteriler = [];
+    let aktifSertCihaz = null; // sertifika formu için
 
-                uygulaFiltreler();
+    function showToast(msg, err=false) {
+        const t=document.getElementById("toast"); t.textContent=msg;
+        t.className=err?"show error":"show"; setTimeout(()=>t.className="",3000);
+    }
 
-            } catch (err) { console.error("Hata:", err); }
-        }
+    // ── SEKME ──
+    function sekmeAc(id, btn) {
+        document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+        document.getElementById('panel-'+id).classList.add('active');
+        btn.classList.add('active');
+        if(id==='sertifikalar') sertYukle();
+    }
 
-        function asamaSec(event, asama) {
-            seciliAsama = asama;
-            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
-            uygulaFiltreler();
-        }
+    // ════════════════════════════════
+    //  İŞ EMİRLERİ SEKMESİ
+    // ════════════════════════════════
+    async function ieYukle() {
+        const [ieRes, mRes] = await Promise.all([
+            fetch('/api/is-emirleri'),
+            fetch('/api/musteriler')
+        ]);
+        tumIsEmirleri = await ieRes.json();
+        musteriler = await mRes.json();
 
-        function uygulaFiltreler() {
-            const aramaMetni = document.getElementById("aramaKutusu").value.toLocaleUpperCase('tr-TR');
-            const markaModelMetni = document.getElementById("markaModelKutusu").value.toLocaleUpperCase('tr-TR'); // YENİ
-            const basTarih = document.getElementById("tarihBas").value;
-            const bitTarih = document.getElementById("tarihBit").value;
+        // Firma filtresi input olarak çalışıyor
 
-            const filtrelenmis = tumCihazlar.filter(c => {
-                
-                // 1. Aşama Kontrolü
-                const durum = c.islem_durumu || "Kabul Edildi";
-                let asamaUygun = false;
-                if (seciliAsama === 'Tümü') asamaUygun = true;
-                else if (seciliAsama === 'Sertifika Gönderildi' && durum === 'Sertifika Mail Gönderildi') asamaUygun = true;
-                else if (durum === seciliAsama) asamaUygun = true;
+        ieFiltrele();
+    }
 
-                // 2. Genel Metin Arama (Marka/Model buradan çıkarıldı)
-                const aramaUygun = !aramaMetni || 
-                    (c.ie_no || "").toLocaleUpperCase('tr-TR').includes(aramaMetni) ||
-                    (c.firma_adi || "").toLocaleUpperCase('tr-TR').includes(aramaMetni) ||
-                    (c.cihaz_adi || "").toLocaleUpperCase('tr-TR').includes(aramaMetni) ||
-                    (c.seri_no || "").toLocaleUpperCase('tr-TR').includes(aramaMetni) ||
-                    (c.envanter_no || "").toLocaleUpperCase('tr-TR').includes(aramaMetni);
+    function ieFiltrele() {
+        const firma = document.getElementById("ie_filtre_firma").value.trim();
+        const asama = document.getElementById("ie_filtre_asama").value;
+        const ara   = (document.getElementById("ie_filtre_ara").value || document.getElementById("ie_ara").value || '').toUpperCase();
 
-                // 3. Marka / Model Kontrolü (YENİ)
-                const markaModelUygun = !markaModelMetni || 
-                    (c.marka_model || "").toLocaleUpperCase('tr-TR').includes(markaModelMetni);
+        filtreliIE = tumIsEmirleri.filter(r =>
+            (!firma || (r.firma_adi||'').toUpperCase().includes(firma.toUpperCase())) &&
+            (!asama || r.asama === asama) &&
+            (!ara   || (r.ie_no||'').toUpperCase().includes(ara) || (r.firma_adi||'').toUpperCase().includes(ara))
+        );
+        renderIEKanban(filtreliIE);
+        renderIEListe(filtreliIE);
+    }
 
-                // 4. Tarih Aralığı Kontrolü
-                let tarihUygun = true;
-                if(c.kabul_tarihi && (basTarih || bitTarih)) {
-                    const k_tarih = new Date(c.kabul_tarihi);
-                    k_tarih.setHours(0,0,0,0);
-                    
-                    if(basTarih) {
-                        const b_tarih = new Date(basTarih);
-                        b_tarih.setHours(0,0,0,0);
-                        if(k_tarih < b_tarih) tarihUygun = false;
-                    }
-                    if(bitTarih) {
-                        const bit_tarih = new Date(bitTarih);
-                        bit_tarih.setHours(23,59,59,999);
-                        if(k_tarih > bit_tarih) tarihUygun = false;
-                    }
-                } else if (!c.kabul_tarihi && (basTarih || bitTarih)) {
-                    tarihUygun = false; 
-                }
+    function ieFiltreSifirla() {
+        document.getElementById("ie_filtre_firma").value = "";
+        document.getElementById("ie_filtre_asama").value = "";
+        document.getElementById("ie_filtre_ara").value = "";
+        document.getElementById("ie_ara").value = "";
+        ieFiltrele();
+    }
 
-                // Hepsini sağlayanlar listede kalır (Arama VE Marka VE Tarih VE Aşama)
-                return asamaUygun && aramaUygun && markaModelUygun && tarihUygun;
-            });
-
-            tabloyaCiz(filtrelenmis);
-        }
-
-        function filtreleriTemizle() {
-            document.getElementById("aramaKutusu").value = "";
-            document.getElementById("markaModelKutusu").value = ""; // YENİ
-            document.getElementById("tarihBas").value = "";
-            document.getElementById("tarihBit").value = "";
-            
-            seciliAsama = 'Tümü';
-            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-            document.querySelector('.filter-btn').classList.add('active');
-            
-            uygulaFiltreler();
-        }
-
-        function tabloyaCiz(liste) {
-            const tbody = document.getElementById("cihazListesi");
-            tbody.innerHTML = "";
-
-            if(liste.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px; color:#94a3b8;">Belirtilen kriterlere uygun cihaz bulunamadı.</td></tr>`;
-                return;
-            }
-
-            liste.forEach(c => {
-                const durum = c.islem_durumu || "Kabul Edildi";
-                let badgeClass = "b-kabul";
-                
-                if(durum === "Hazırlanıyor") badgeClass = "b-hazirlaniyor";
-                else if(durum === "Tamamlandı") badgeClass = "b-tamamlandi";
-                else if(durum === "İmzalandı") badgeClass = "b-imzalandi";
-                else if(durum === "Onaylandı") badgeClass = "b-onaylandi";
-                else if(durum.includes("Sertifika")) badgeClass = "b-sertifika";
-
-                const tr = document.createElement("tr");
-                tr.innerHTML = `
-                    <td><b style="color:var(--primary)">${c.ie_no}</b></td>
-                    <td>${c.firma_adi}</td>
-                    <td><b>${c.cihaz_adi}</b><br><small style="color:#64748b">${c.marka_model || '-'}</small></td>
-                    <td>${c.seri_no || '-'}</td>
-                    <td><b>${c.envanter_no || '-'}</b></td>
-                    <td><span class="badge ${badgeClass}">${durum}</span></td>
-                    <td>
-                        <button class="btn-islem" onclick='modalAc(${c.ie_id}, ${c.index}, ${JSON.stringify(c).replace(/'/g, "&apos;")})'>
-                            ⚙️ İşlem / Aşama
-                        </button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        function modalAc(ie_id, index, cihaz) {
-            document.getElementById("is_emri_id").value = ie_id;
-            document.getElementById("cihaz_index").value = index;
-            
-            document.getElementById("modalCihazInfo").innerHTML = `
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                    <div><b>Cihaz:</b> ${cihaz.cihaz_adi} (${cihaz.marka_model || 'Markasız'})</div>
-                    <div><b>Seri No:</b> ${cihaz.seri_no || '-'}</div>
-                    <div><b>Envanter No:</b> ${cihaz.envanter_no || '-'}</div>
-                    <div><b>Mevcut Aşama:</b> <span style="color:var(--primary); font-weight:bold;">${cihaz.islem_durumu || 'Kabul Edildi'}</span></div>
+    function renderIEKanban(data) {
+        const kanban = document.getElementById("ieKanban");
+        kanban.innerHTML = IE_ASAMALAR.map(asama => {
+            const kartlar = data.filter(r=>r.asama===asama);
+            return `<div class="kanban-col">
+                <div class="kanban-head kh-${asama}">
+                    ${IE_ASAMA_LABEL[asama]} <span class="kanban-count">${kartlar.length}</span>
                 </div>
-            `;
+                <div class="kanban-cards">
+                    ${kartlar.length===0 ? '<div class="kanban-empty">Boş</div>' :
+                    kartlar.map(r => {
+                        const cihazlar = Array.isArray(r.cihazlar)?r.cihazlar:JSON.parse(r.cihazlar||'[]');
+                        return `<div class="kanban-card" onclick="ieDetay(${r.id})">
+                            <div class="ie">${r.ie_no}</div>
+                            <div class="firma">${r.firma_adi}</div>
+                            <div class="meta">📦 ${cihazlar.length} cihaz</div>
+                            ${r.teslim_tarihi?`<div class="meta">📅 ${new Date(r.teslim_tarihi).toLocaleDateString('tr-TR')}</div>`:''}
+                        </div>`;
+                    }).join('')}
+                </div>
+            </div>`;
+        }).join('');
+    }
 
-            if(cihaz.kalibrasyon_verileri) {
-                document.getElementById("personel").value = cihaz.kalibrasyon_verileri.personel || '';
-                document.getElementById("metot_id").value = cihaz.kalibrasyon_verileri.metot_id || '';
-                document.getElementById("sicaklik").value = cihaz.kalibrasyon_verileri.sicaklik || '';
-                document.getElementById("nem").value = cihaz.kalibrasyon_verileri.nem || '';
+    function renderIEListe(data) {
+        const tbody = document.getElementById("ieListe");
+        if(!data.length) { tbody.innerHTML='<tr class="empty-row"><td colspan="7">Kayıt bulunamadı.</td></tr>'; return; }
+        tbody.innerHTML = data.map(r => {
+            const cihazlar = Array.isArray(r.cihazlar)?r.cihazlar:JSON.parse(r.cihazlar||'[]');
+            const asama = r.asama||'kabul_edildi';
+            const kabul = r.kabul_tarihi?new Date(r.kabul_tarihi).toLocaleDateString('tr-TR'):'-';
+            const teslim = r.teslim_tarihi?new Date(r.teslim_tarihi).toLocaleDateString('tr-TR'):'-';
+
+            // Cihaz bazlı işlem butonları
+            const cihazButonlar = cihazlar.map((c,idx) => {
+                const kategori = (c.kategori_adi||'').toLowerCase();
+                const tedarikci = kategori === 'tedarikçi';
+                if(tedarikci) {
+                    return `<div style="margin-bottom:4px;font-size:0.78rem;">
+                        <span style="color:#64748b;">${c.cihaz_adi}</span>
+                        <button class="btn btn-pdf-yukle" onclick="pdfYukle(${r.id},${idx})">📎 PDF Yükle</button>
+                    </div>`;
+                }
+                return `<div style="margin-bottom:4px;font-size:0.78rem;">
+                    <span style="color:#64748b;">${c.cihaz_adi}</span>
+                    <button class="btn btn-sertifika" onclick="sertifkaForm(${r.id},${idx})">📋 Sertifika</button>
+                </div>`;
+            }).join('');
+
+            return `<tr>
+                <td style="color:var(--primary);font-weight:700;">${r.ie_no}</td>
+                <td>${r.firma_adi}${r.sube_adi?`<br><span style="color:#94a3b8;font-size:0.77rem;">${r.sube_adi}</span>`:''}</td>
+                <td>${kabul}</td>
+                <td>${teslim}</td>
+                <td>${cihazButonlar}</td>
+                <td>
+                    <span class="asama-badge asama-${asama}">${IE_ASAMA_LABEL[asama]}</span><br>
+                    <select class="asama-select" style="margin-top:4px;" onchange="ieAsamaGuncelle(${r.id},this.value)">
+                        ${IE_ASAMALAR.map(a=>`<option value="${a}" ${a===asama?'selected':''}>${IE_ASAMA_LABEL[a]}</option>`).join('')}
+                    </select>
+                </td>
+                <td>
+                    <button class="btn btn-detail" onclick="ieDetay(${r.id})">👁️ Detay</button>
+                </td>
+            </tr>`;
+        }).join('');
+    }
+
+    async function ieAsamaGuncelle(id, asama) {
+        const res = await fetch(`/api/is-emirleri/${id}/asama`, {
+            method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({asama})
+        });
+        if(res.ok) { showToast(`✅ Aşama → ${IE_ASAMA_LABEL[asama]}`); await ieYukle(); }
+        else showToast("❌ Güncellenemedi!", true);
+    }
+
+    function ieDetay(id) {
+        const r = tumIsEmirleri.find(x=>x.id===id); if(!r) return;
+        const cihazlar = Array.isArray(r.cihazlar)?r.cihazlar:JSON.parse(r.cihazlar||'[]');
+        const kabul = r.kabul_tarihi?new Date(r.kabul_tarihi).toLocaleDateString('tr-TR'):'-';
+        const teslim = r.teslim_tarihi?new Date(r.teslim_tarihi).toLocaleDateString('tr-TR'):'-';
+        document.getElementById("modalIcerik").innerHTML = `
+            <h2 style="margin:0 0 14px;color:var(--primary);">📋 ${r.ie_no}</h2>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+                <div><div style="font-size:0.72rem;font-weight:700;color:var(--primary);">FİRMA</div><div>${r.firma_adi}</div></div>
+                <div><div style="font-size:0.72rem;font-weight:700;color:var(--primary);">AŞAMA</div>
+                    <span class="asama-badge asama-${r.asama||'kabul_edildi'}">${IE_ASAMA_LABEL[r.asama||'kabul_edildi']}</span>
+                </div>
+                <div><div style="font-size:0.72rem;font-weight:700;color:var(--primary);">KABUL TARİHİ</div><div>${kabul}</div></div>
+                <div><div style="font-size:0.72rem;font-weight:700;color:var(--primary);">TESLİM TARİHİ</div><div>${teslim}</div></div>
+            </div>
+            ${r.notlar?`<div style="background:#fef9c3;border-radius:8px;padding:8px 12px;font-size:0.83rem;margin-bottom:12px;">📝 ${r.notlar}</div>`:''}
+            <div style="font-size:0.78rem;font-weight:700;color:var(--primary);margin-bottom:8px;">CİHAZLAR</div>
+            <table style="width:100%;border-collapse:collapse;font-size:0.82rem;">
+                <thead><tr style="background:var(--primary);color:white;">
+                    <th style="padding:7px 9px;text-align:left;">Cihaz</th>
+                    <th style="padding:7px 9px;text-align:left;">Seri No</th>
+                    <th style="padding:7px 9px;text-align:left;">Durum</th>
+                </tr></thead>
+                <tbody>${cihazlar.map((c,i)=>`<tr style="background:${i%2?'#f8fafc':'#fff'};">
+                    <td style="padding:7px 9px;">${c.cihaz_adi}<br><small style="color:#94a3b8;">${c.marka_model||''}</small></td>
+                    <td style="padding:7px 9px;">${c.seri_no||'-'}</td>
+                    <td style="padding:7px 9px;">${c.durum||'-'}</td>
+                </tr>`).join('')}</tbody>
+            </table>`;
+        document.getElementById("modal").classList.add("open");
+    }
+
+    function modalKapat() { document.getElementById("modal").classList.remove("open"); }
+
+    // ════════════════════════════════
+    //  SERTİFİKA FORMU
+    // ════════════════════════════════
+    async function sertifkaForm(ieId, cihazIdx) {
+        const ie = tumIsEmirleri.find(x=>x.id===ieId); if(!ie) return;
+        const cihazlar = Array.isArray(ie.cihazlar)?ie.cihazlar:JSON.parse(ie.cihazlar||'[]');
+        const cihaz = cihazlar[cihazIdx];
+        aktifSertCihaz = { ie, cihaz, cihazIdx };
+
+        // Müşteri bilgisi
+        const musteri = musteriler.find(m=>m.id===ie.musteri_id)||{};
+
+        // Formu doldur
+        document.getElementById("s_firma_adi").value   = ie.firma_adi + (ie.sube_adi?' / '+ie.sube_adi:'');
+        document.getElementById("s_firma_adres").value = musteri.adres || '';
+        document.getElementById("s_cihaz_adi").value   = cihaz.cihaz_adi||'';
+        document.getElementById("s_imalatci").value    = (cihaz.marka_model||'').split('/')[0].trim();
+        document.getElementById("s_tip").value         = (cihaz.marka_model||'').split('/')[1]?.trim()||'';
+        document.getElementById("s_seri_no").value     = cihaz.seri_no||'';
+        document.getElementById("s_envanter_no").value = cihaz.envanter_no||cihaz.aksesuar||'';
+        document.getElementById("s_fis_no").value      = ie.ie_no||'';
+        document.getElementById("s_kal_yeri").value    = cihaz.kalibrasyon_yeri||cihaz.aksesuar||'';
+        document.getElementById("s_kal_tarihi").value  = ie.kabul_tarihi?.substring(0,10)||'';
+        document.getElementById("s_yayin_tarihi").value= new Date().toISOString().substring(0,10);
+        document.getElementById("s_onay_tarihi").value = new Date().toISOString().substring(0,10);
+        document.getElementById("s_gelecek_kal").value = '';
+        document.getElementById("s_kal_no").value      = 'Numara henüz alınmadı';
+        document.getElementById("s_yorum").value       = '';
+
+        // Personel dropdown doldur
+        const pSel1 = document.getElementById("s_kal_yapan");
+        const pSel2 = document.getElementById("s_onaylayan");
+        const pOpts = '<option value="">-- Seçin --</option>' +
+            personeller.map(p=>`<option value="${p.id}">${p.ad_soyad}</option>`).join('');
+        pSel1.innerHTML = pOpts;
+        pSel2.innerHTML = pOpts;
+
+        // Varsayılan onaylayıcı
+        const varsayilan = personeller.find(p=>p.varsayilan_onaylayici);
+        if(varsayilan) pSel2.value = varsayilan.id;
+
+        // Oturum açan kişi kalibrasyonu yapan
+        const kullanici = JSON.parse(localStorage.getItem("labqms_user")||'{}');
+        const mevcutP = personeller.find(p=>p.kullanici_adi===kullanici.kullanici_adi);
+        if(mevcutP) pSel1.value = mevcutP.id;
+
+        // Prosedür & referans (metot varsa)
+        document.getElementById("s_prosedurler").textContent = '— (Metot bağlantısı kurulunca otomatik gelecek)';
+        document.getElementById("s_referanslar").textContent  = '— (Metot bağlantısı kurulunca otomatik gelecek)';
+
+        // Çevre koşulları (kategori varsa)
+        document.getElementById("s_sicaklik").value = '';
+        document.getElementById("s_nem").value      = '';
+        document.getElementById("s_basinc").value   = '';
+
+        document.getElementById("sertModalBaslik").textContent =
+            `📋 Sertifika Hazırlama — ${cihaz.cihaz_adi} (${ie.ie_no})`;
+
+        document.getElementById("sertModal").classList.add("open");
+    }
+
+    function sertModalKapat() {
+        document.getElementById("sertModal").classList.remove("open");
+        aktifSertCihaz = null;
+    }
+
+    async function sertifkaKaydet() {
+        if(!aktifSertCihaz) return;
+        const btn = document.getElementById("sertKaydetBtn");
+        btn.disabled=true; btn.textContent="Kaydediliyor...";
+
+        const payload = {
+            ie_id:          aktifSertCihaz.ie.id,
+            ie_no:          aktifSertCihaz.ie.ie_no,
+            musteri_id:     aktifSertCihaz.ie.musteri_id,
+            cihaz_index:    aktifSertCihaz.cihazIdx,
+            cihaz_adi:      document.getElementById("s_cihaz_adi").value,
+            imalatci:       document.getElementById("s_imalatci").value,
+            tip:            document.getElementById("s_tip").value,
+            seri_no:        document.getElementById("s_seri_no").value,
+            envanter_no:    document.getElementById("s_envanter_no").value,
+            fis_no:         document.getElementById("s_fis_no").value,
+            kal_yeri:       document.getElementById("s_kal_yeri").value,
+            sertifika_tipi: document.getElementById("s_tip_secim").value,
+            kal_tarihi:     document.getElementById("s_kal_tarihi").value,
+            yayin_tarihi:   document.getElementById("s_yayin_tarihi").value,
+            onay_tarihi:    document.getElementById("s_onay_tarihi").value,
+            gelecek_kal:    document.getElementById("s_gelecek_kal").value||null,
+            kal_yapan_id:   document.getElementById("s_kal_yapan").value||null,
+            onaylayan_id:   document.getElementById("s_onaylayan").value||null,
+            sicaklik:       document.getElementById("s_sicaklik").value,
+            nem:            document.getElementById("s_nem").value,
+            basinc:         document.getElementById("s_basinc").value,
+            uygunluk:       document.getElementById("s_uygunluk").value,
+            yorum:          document.getElementById("s_yorum").value,
+            asama:          'hazırlanıyor'
+        };
+
+        const res = await fetch('/api/sertifikalar', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify(payload)
+        });
+
+        if(res.ok) {
+            showToast("✅ Sertifika oluşturuldu! Aşama: Hazırlanıyor");
+            sertModalKapat();
+            await ieYukle();
+        } else {
+            const err = await res.json();
+            showToast("❌ " + (err.error||"Kayıt başarısız!"), true);
+        }
+        btn.disabled=false; btn.textContent="💾 Sertifika Kaydet (Hazırlanıyor)";
+    }
+
+    // ════════════════════════════════
+    //  SERTİFİKALAR SEKMESİ
+    // ════════════════════════════════
+    async function sertYukle() {
+        const [sRes, pRes] = await Promise.all([
+            fetch('/api/sertifikalar'),
+            fetch('/api/personeller')
+        ]);
+        tumSertifikalar = await sRes.json();
+        personeller = await pRes.json();
+
+        // Personel filtresi
+        const pSel = document.getElementById("s_filtre_personel");
+        pSel.innerHTML = '<option value="">Tümü</option>' +
+            personeller.map(p=>`<option value="${p.id}">${p.ad_soyad}</option>`).join('');
+
+        // Firma filtresi input olarak çalışıyor
+
+        sertFiltrele();
+    }
+
+    function sertFiltrele() {
+        const personel = document.getElementById("s_filtre_personel").value;
+        const firma    = document.getElementById("s_filtre_firma").value.trim();
+        const fis      = document.getElementById("s_filtre_fis").value.toUpperCase();
+        const tarihBas = document.getElementById("s_filtre_tarih_bas").value;
+        const tarihBit = document.getElementById("s_filtre_tarih_bit").value;
+        const tip      = document.getElementById("s_filtre_tip").value;
+        const sertNo   = document.getElementById("s_filtre_no").value.toUpperCase();
+        const asama    = document.getElementById("s_filtre_asama").value;
+
+        filtreliSert = tumSertifikalar.filter(s => {
+            if(personel && s.kal_yapan_id != personel) return false;
+            if(firma    && !(s.firma_adi||'').toUpperCase().includes(firma.toUpperCase())) return false;
+            if(fis      && !(s.fis_no||'').toUpperCase().includes(fis)) return false;
+            if(tip      && s.sertifika_tipi !== tip)    return false;
+            if(sertNo   && !(s.sertifika_no||'').toUpperCase().includes(sertNo)) return false;
+            if(asama    && s.asama !== asama)            return false;
+            if(tarihBas && s.kal_tarihi < tarihBas)     return false;
+            if(tarihBit && s.kal_tarihi > tarihBit)     return false;
+            return true;
+        });
+        renderSertListe(filtreliSert);
+        secimGuncelle();
+    }
+
+    function sertFiltreSifirla() {
+        ["s_filtre_personel","s_filtre_tip","s_filtre_asama",
+         "s_filtre_fis","s_filtre_no","s_filtre_tarih_bas","s_filtre_tarih_bit","s_filtre_firma"]
+            .forEach(id => document.getElementById(id).value="");
+        sertFiltrele();
+    }
+
+    function renderSertListe(data) {
+        const tbody = document.getElementById("sertListe");
+        if(!data.length) { tbody.innerHTML='<tr class="empty-row"><td colspan="10">Sertifika bulunamadı.</td></tr>'; return; }
+        tbody.innerHTML = data.map(s => {
+            const asama = s.asama||'hazırlanıyor';
+            const tarih = s.kal_tarihi?new Date(s.kal_tarihi).toLocaleDateString('tr-TR'):'-';
+            const pdfVar = s.olcum_pdf_url;
+
+            // Aşamaya göre butonlar
+            let butonlar = `<button class="btn btn-duzenle" onclick="sertDuzenle(${s.id})">✏️ Düzenle</button>`;
+            if(!pdfVar) {
+                butonlar += `<button class="btn btn-pdf-yukle" onclick="olcumPdfYukle(${s.id})">📎 PDF Yükle</button>`;
             } else {
-                document.getElementById("personel").value = ''; document.getElementById("metot_id").value = '';
-                document.getElementById("sicaklik").value = ''; document.getElementById("nem").value = '';
+                butonlar += `<button class="btn btn-onizle" onclick="sertOnizle(${s.id})">👁️ Önizle</button>`;
             }
-
-            document.getElementById("sertifika_asamasi").value = cihaz.islem_durumu || "Kabul Edildi";
-            document.getElementById("islemModal").style.display = "flex";
-        }
-
-        function modalKapat() { document.getElementById("islemModal").style.display = "none"; }
-
-        async function islemKaydet() {
-            const ie_id = document.getElementById("is_emri_id").value;
-            const payload = {
-                cihaz_index: document.getElementById("cihaz_index").value,
-                personel: document.getElementById("personel").value,
-                metot_id: document.getElementById("metot_id").value,
-                sicaklik: document.getElementById("sicaklik").value,
-                nem: document.getElementById("nem").value,
-                sertifika_asamasi: document.getElementById("sertifika_asamasi").value
-            };
-
-            if(payload.sertifika_asamasi !== "Kabul Edildi" && (!payload.personel || !payload.metot_id)) {
-                return alert("Aşama değiştirmek için Personel, Metot ve Çevre Şartlarını doldurmalısınız!");
+            if(asama==='hazırlanıyor' && pdfVar) {
+                butonlar += `<button class="btn btn-imzala" onclick="tekliImzala(${s.id})">✍️ İmzala</button>`;
             }
+            if(asama==='imzalandı') {
+                butonlar += `<button class="btn btn-onayla" onclick="tekliOnayla(${s.id})">✅ Onayla</button>`;
+            }
+            if(asama==='onaylandı') {
+                butonlar += `<button class="btn btn-mail" onclick="tekliMail(${s.id})">📧 Mail</button>`;
+            }
+            butonlar += `<button class="btn btn-uygun" onclick="uygunsuzlukForm(${s.id})">⚠️ Uygunsuzluk</button>`;
 
-            try {
-                const res = await fetch(`/api/is-emirleri/${ie_id}/cihaz-islem`, {
-                    method: 'PUT',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(payload)
-                });
+            return `<tr>
+                <td><input type="checkbox" class="sert-sec" data-id="${s.id}" onchange="secimGuncelle()"></td>
+                <td style="font-weight:700;color:var(--primary);font-size:0.82rem;">${s.sertifika_no||'—'}</td>
+                <td style="font-size:0.82rem;">${s.firma_adi||'—'}</td>
+                <td style="font-size:0.82rem;">${s.cihaz_adi||'—'}</td>
+                <td style="font-size:0.82rem;">${s.fis_no||'—'}</td>
+                <td>${tarih}</td>
+                <td>${s.sertifika_tipi==='akredite'
+                    ? '<span class="tip-akredite">Akredite</span>'
+                    : '<span class="tip-kapsam_disi">Kapsam Dışı</span>'}</td>
+                <td>${pdfVar
+                    ? '<span class="pdf-var">✅ Yüklü</span>'
+                    : '<span class="pdf-yok">❌ Yok</span>'}</td>
+                <td><span class="asama-badge asama-${asama}">${IE_ASAMA_LABEL[asama]||asama}</span></td>
+                <td style="white-space:nowrap;">${butonlar}</td>
+            </tr>`;
+        }).join('');
+    }
 
-                if(res.ok) {
-                    modalKapat();
-                    cihazlariListele(); 
-                } else { alert("Kaydedilirken bir hata oluştu."); }
-            } catch(e) { console.error(e); }
-        }
+    // ── SEÇİM ──
+    function tumunuSecToggle() {
+        const val = document.getElementById("tumunuSec").checked;
+        document.querySelectorAll('.sert-sec').forEach(cb=>cb.checked=val);
+        secimGuncelle();
+    }
 
-        window.onload = sayfaYukle;
-    </script>
+    function secimGuncelle() {
+        const secilen = [...document.querySelectorAll('.sert-sec:checked')];
+        const bar = document.getElementById("topluBar");
+        document.getElementById("topluBilgi").textContent = `${secilen.length} sertifika seçildi`;
+        secilen.length > 0 ? bar.classList.add("show") : bar.classList.remove("show");
+    }
+
+    function secilenIdler() {
+        return [...document.querySelectorAll('.sert-sec:checked')].map(cb=>parseInt(cb.dataset.id));
+    }
+
+    // ── TEKLİ İŞLEMLER ──
+    async function tekliImzala(id) {
+        const s = tumSertifikalar.find(x=>x.id===id);
+        if(!s) return;
+        if(!s.olcum_pdf_url) return showToast("❌ Önce ölçüm PDF'i yükleyin!", true);
+        showToast("✍️ EronSign imza süreci başlatılıyor...");
+        // EronSign entegrasyonu buraya gelecek
+        // Şimdilik aşamayı güncelle
+        await sertAsamaGuncelle([id], 'imzalandı');
+    }
+
+    async function tekliOnayla(id) {
+        showToast("✅ EronSign onay süreci başlatılıyor...");
+        await sertAsamaGuncelle([id], 'onaylandı');
+    }
+
+    async function tekliMail(id) {
+        const res = await fetch(`/api/sertifika-mail/${id}`, {method:'POST'});
+        if(res.ok) { showToast("📧 Mail gönderildi!"); await sertYukle(); }
+        else showToast("❌ Mail gönderilemedi!", true);
+    }
+
+    // ── TOPLU İŞLEMLER ──
+    async function topluImzala() {
+        const idler = secilenIdler();
+        if(!idler.length) return showToast("❌ Sertifika seçin!", true);
+        // PDF kontrolü
+        const pdfsiz = idler.filter(id => !tumSertifikalar.find(s=>s.id===id)?.olcum_pdf_url);
+        if(pdfsiz.length) return showToast(`❌ ${pdfsiz.length} sertifikada ölçüm PDF'i eksik!`, true);
+        showToast(`✍️ ${idler.length} sertifika için EronSign başlatılıyor...`);
+        await sertAsamaGuncelle(idler, 'imzalandı');
+    }
+
+    async function topluOnayla() {
+        const idler = secilenIdler();
+        if(!idler.length) return showToast("❌ Sertifika seçin!", true);
+        showToast(`✅ ${idler.length} sertifika onaylanıyor...`);
+        await sertAsamaGuncelle(idler, 'onaylandı');
+    }
+
+    async function topluMail() {
+        const idler = secilenIdler();
+        if(!idler.length) return showToast("❌ Sertifika seçin!", true);
+        const res = await fetch('/api/sertifika-mail-toplu', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({idler})
+        });
+        if(res.ok) {
+            const d = await res.json();
+            showToast(`📧 ${d.basarili} mail gönderildi!`);
+            await sertYukle();
+        } else showToast("❌ Mail gönderilemedi!", true);
+    }
+
+    async function sertAsamaGuncelle(idler, asama) {
+        await Promise.all(idler.map(id =>
+            fetch(`/api/sertifikalar/${id}/asama`, {
+                method:'PUT', headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({asama})
+            })
+        ));
+        showToast(`✅ ${idler.length} sertifika → ${IE_ASAMA_LABEL[asama]||asama}`);
+        await sertYukle();
+    }
+
+    // ── DİĞER İŞLEMLER ──
+    function olcumPdfYukle(id) {
+        showToast("📎 PDF yükleme ekranı açılıyor...");
+        // PDF yükleme modal buraya gelecek
+    }
+
+    function sertOnizle(id) {
+        showToast("👁️ PDF önizleme açılıyor...");
+    }
+
+    function sertDuzenle(id) {
+        showToast("✏️ Sertifika düzenleme açılıyor...");
+    }
+
+    function uygunsuzlukForm(id) {
+        showToast("⚠️ Uygunsuzluk formu açılıyor...");
+    }
+
+    function pdfYukle(ieId, cihazIdx) {
+        showToast("📎 Tedarikçi PDF yükleme açılıyor...");
+    }
+
+    // ── İLK YÜKLEME ──
+    async function init() {
+        const pRes = await fetch('/api/personeller');
+        personeller = await pRes.json();
+        await ieYukle();
+    }
+
+    window.onload = init;
+</script>
 </body>
 </html>
