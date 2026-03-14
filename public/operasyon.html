@@ -1434,8 +1434,7 @@
     }
 
     function tamOnizle(id) {
-        showToast('📄 PDF hazırlanıyor...');
-        window.open('/api/sertifikalar/' + id + '/pdf?preview=1', '_blank');
+        window.open('/sertifika-onizle.html?id=' + id, '_blank');
     }
 
     async function pdfIndir(id) {

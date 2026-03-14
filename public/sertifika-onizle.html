@@ -130,7 +130,7 @@
         <span class="sayfa-bilgi" id="tbToplamSayfa"></span>
     </div>
     <div class="toolbar-right">
-        <button class="btn-yazdir" onclick="window.print()">🖨️ Yazdır / PDF Kaydet</button>
+        <button class="btn-yazdir" id="btnPdfKaydet" onclick="pdfKaydet()">📥 PDF İndir</button>
         <button class="btn-kapat"  onclick="window.close()">✕ Kapat</button>
     </div>
 </div>
@@ -435,6 +435,50 @@ async function yukle() {
     }
 }
 
+async function pdfKaydet() {
+    const btn = document.getElementById('btnPdfKaydet');
+    btn.disabled = true;
+    btn.textContent = '⏳ Hazırlanıyor...';
+
+    try {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ unit:'mm', format:'a4', orientation:'portrait' });
+        const sayfalar = document.querySelectorAll('.a4');
+
+        for(let i = 0; i < sayfalar.length; i++) {
+            const sayfa = sayfalar[i];
+            const canvas = await html2canvas(sayfa, {
+                scale: 2,
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: '#ffffff',
+                width: sayfa.scrollWidth,
+                height: sayfa.scrollHeight,
+            });
+
+            const imgData = canvas.toDataURL('image/jpeg', 0.95);
+            const pdfW = 210;
+            const pdfH = (canvas.height * pdfW) / canvas.width;
+
+            if(i > 0) pdf.addPage();
+            pdf.addImage(imgData, 'JPEG', 0, 0, pdfW, pdfH);
+        }
+
+        // Blob URL oluştur ve yeni sekmede aç
+        const pdfBlob = pdf.output('blob');
+        const blobUrl = URL.createObjectURL(pdfBlob);
+        window.open(blobUrl, '_blank');
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+
+    } catch(e) {
+        alert('PDF oluşturulamadı: ' + e.message);
+        console.error(e);
+    }
+
+    btn.disabled = false;
+    btn.textContent = '📥 PDF İndir';
+}
+
 window.onload = () => {
     const params = new URLSearchParams(window.location.search);
     if(params.get('print') === '1') {
@@ -445,5 +489,7 @@ window.onload = () => {
 };
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </body>
 </html>
