@@ -783,3 +783,93 @@ app.post('/api/login', async (req, res) => {
 app.listen(PORT, () => {
     console.log(`🚀 Sunucu ${PORT} portunda başarıyla ayağa kalktı.`);
 });
+
+// --- TÜRKAK API ---
+app.post('/api/turkak-token-test', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        if (!username || !password) 
+            return res.status(400).json({ error: "Kullanıcı adı ve şifre zorunludur!" });
+
+        const response = await fetch('https://api.turkak.org.tr/SSO/signin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ Username: username, Password: password })
+        });
+
+        if (!response.ok) 
+            return res.status(401).json({ error: "TÜRKAK kullanıcı adı veya şifre hatalı!" });
+
+        const data = await response.json();
+        const token = data.Token || data.token;
+
+        if (!token) 
+            return res.status(401).json({ error: "Token alınamadı. Bilgilerinizi kontrol edin." });
+
+        // Token'ı geçici olarak sakla (ayarlar tablosuna)
+        const zaman = new Date().toLocaleString('tr-TR');
+        await pool.query(
+            `INSERT INTO ayarlar (anahtar, deger) VALUES ($1, $2)
+             ON CONFLICT (anahtar) DO UPDATE SET deger = $2`,
+            ['turkak_token', token]
+        );
+        await pool.query(
+            `INSERT INTO ayarlar (anahtar, deger) VALUES ($1, $2)
+             ON CONFLICT (anahtar) DO UPDATE SET deger = $2`,
+            ['turkak_token_zaman', zaman]
+        );
+
+        res.json({ success: true, zaman });
+    } catch (err) { 
+        res.status(500).json({ error: "TÜRKAK sunucusuna ulaşılamadı: " + err.message }); 
+    }
+});
+
+// Token yenile (12 saatte bir çağrılır)
+app.post('/api/turkak-token-yenile', async (req, res) => {
+    try {
+        const result = await pool.query(
+            "SELECT deger FROM ayarlar WHERE anahtar IN ('turkak_username','turkak_password')"
+        );
+        const ayarlar = {};
+        result.rows.forEach(r => ayarlar[r.anahtar] = r.deger);
+
+        if (!ayarlar.turkak_username || !ayarlar.turkak_password)
+            return res.status(400).json({ error: "Türkak bilgileri kayıtlı değil!" });
+
+        const response = await fetch('https://api.turkak.org.tr/SSO/signin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                Username: ayarlar.turkak_username, 
+                Password: ayarlar.turkak_password 
+            })
+        });
+
+        const data = await response.json();
+        const token = data.Token || data.token;
+        if (!token) return res.status(401).json({ error: "Token yenilenemedi!" });
+
+        const zaman = new Date().toLocaleString('tr-TR');
+        await pool.query(
+            `INSERT INTO ayarlar (anahtar, deger) VALUES ('turkak_token', $1)
+             ON CONFLICT (anahtar) DO UPDATE SET deger = $1`, [token]);
+        await pool.query(
+            `INSERT INTO ayarlar (anahtar, deger) VALUES ('turkak_token_zaman', $1)
+             ON CONFLICT (anahtar) DO UPDATE SET deger = $1`, [zaman]);
+
+        res.json({ success: true, zaman });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Aktif token getir
+app.get('/api/turkak-token', async (req, res) => {
+    try {
+        const result = await pool.query(
+            "SELECT deger FROM ayarlar WHERE anahtar='turkak_token'"
+        );
+        if (!result.rows.length) 
+            return res.status(404).json({ error: "Token bulunamadı. Ayarlardan bağlantı kurun." });
+        res.json({ token: result.rows[0].deger });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
