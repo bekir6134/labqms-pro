@@ -370,8 +370,8 @@ async function pdfKaydet(mod) {
         const params = new URLSearchParams(window.location.search);
         const sertId = params.get('id');
 
-        // BURASI ÇOK ÖNEMLİ: Tarayıcıda puppeteer/chromium kullanılmaz!
-        // Sadece sunucuya (server.js) gidip "Bana 3 sayfalık PDF'i hazırla" diyoruz.
+        // KRİTİK: Tarayıcıda (HTML) asla puppeteer/launch kodu yazma!
+        // Buradan sadece server.js'teki API'yi çağırıyoruz.
         const response = await fetch('/api/sertifikalar/' + sertId + '/pdf');
         
         if (!response.ok) {
@@ -382,7 +382,7 @@ async function pdfKaydet(mod) {
         const blob = await response.blob();
 
         if (mod === 'base64') {
-            // E-İMZA PROGRAMI İÇİN
+            // E-İMZA PROGRAMI İÇİN: 3 sayfalık tam PDF'i base64 yapıp gönder
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onloadend = () => resolve(reader.result.split(',')[1]);
@@ -390,11 +390,11 @@ async function pdfKaydet(mod) {
                 reader.readAsDataURL(blob);
             });
         } else {
-            // MANUEL İNDİRME İÇİN
+            // MANUEL İNDİRME İÇİN:
             const blobUrl = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = blobUrl;
-            a.download = `Sertifika_${sertId}.pdf`;
+            a.download = `Sertifika_${sertId}_Tam.pdf`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
