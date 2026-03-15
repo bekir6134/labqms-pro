@@ -950,8 +950,22 @@ app.post('/api/turkak-token-yenile', async (req, res) => {
             })
         });
 
-        const data = await response.json();
-        const token = data.Token || data.token;
+        const rawText = await response.text();
+
+console.log('TÜRKAK token status:', response.status);
+console.log('TÜRKAK token raw response:', rawText);
+
+let data;
+try {
+    data = JSON.parse(rawText);
+} catch (e) {
+    return res.status(500).json({
+        error: `TÜRKAK token cevabı JSON değil. Status: ${response.status}`,
+        raw: rawText
+    });
+}
+
+const token = data.Token || data.token;
         if (!token) return res.status(401).json({ error: "Token yenilenemedi!" });
 
         const zaman = new Date().toLocaleString('tr-TR');
@@ -1567,7 +1581,17 @@ app.post('/api/turkak/akredite-no-ver-toplu', async (req, res) => {
                 }
             );
 
-            const data = await response.json();
+            const rawText = await response.text();
+
+console.log('TBDS save status:', response.status);
+console.log('TBDS save raw response:', rawText);
+
+let data;
+try {
+    data = JSON.parse(rawText);
+} catch (e) {
+    throw new Error(`TBDS save JSON değil. Status: ${response.status}, Cevap: ${rawText}`);
+}
 
             const turkakId =
                 data?.Item1?.[0]?.ID ||
@@ -1597,7 +1621,17 @@ app.post('/api/turkak/akredite-no-ver-toplu', async (req, res) => {
                 }
             );
 
-            const detay = await detayRes.json();
+            const detayText = await detayRes.text();
+
+console.log('TBDS detail status:', detayRes.status);
+console.log('TBDS detail raw response:', detayText);
+
+let detay;
+try {
+    detay = JSON.parse(detayText);
+} catch (e) {
+    throw new Error(`TBDS detail JSON değil. Status: ${detayRes.status}, Cevap: ${detayText}`);
+}
 
             const tbdsNo = detay?.TBDSNumber || null;
             const turkakNo = detay?.CertificationBodyDocumentNumber || null;
