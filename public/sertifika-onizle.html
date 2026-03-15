@@ -441,9 +441,23 @@ async function yukle() {
         if(s.olcum_pdf_url) {
             const sayfaIci = document.getElementById('sayfaIci');
             try {
+                // 1. Önce sunucudan gerçek PDF verisini (R2'den) çekiyoruz:
+                const pdfRes = await fetch('/api/sertifikalar/' + sertId + '/olcum-pdf');
+                if (!pdfRes.ok) throw new Error("Ölçüm PDF dosyası sunucudan getirilemedi!");
+                
+                const pdfJson = await pdfRes.json();
+                let gercekBase64 = pdfJson.olcum_pdf_url;
+                
+                // Ne olur ne olmaz, içinde 'data:...' takısı varsa temizleyelim
+                if(gercekBase64.includes('base64,')) {
+                    gercekBase64 = gercekBase64.split('base64,')[1];
+                }
+
                 const pdfjsLib = window['pdfjs-dist/build/pdf'];
                 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-                const pdfData = Uint8Array.from(atob(s.olcum_pdf_url), c => c.charCodeAt(0));
+                
+                // 2. Şimdi API'den gelen GERÇEK veriyi atob ile çözüyoruz:
+                const pdfData = Uint8Array.from(atob(gercekBase64), c => c.charCodeAt(0));
                 const pdfDoc  = await pdfjsLib.getDocument({data: pdfData}).promise;
 
                 for(let i = 1; i <= pdfDoc.numPages; i++) {
