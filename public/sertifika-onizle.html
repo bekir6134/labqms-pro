@@ -355,6 +355,10 @@ async function yukle() {
         }
 
         document.body.setAttribute('data-render-done', 'true');
+        // iframe'den parent'a render tamamlandı mesajı gönder
+        if(window.parent !== window) {
+            window.parent.postMessage({ type: 'RENDER_DONE', id: sertId }, '*');
+        }
 
     } catch(e) {
         document.getElementById('sayfaIci').innerHTML = '<div style="padding:60px;text-align:center;color:#ef4444;">Hata: ' + e.message + '</div>';
