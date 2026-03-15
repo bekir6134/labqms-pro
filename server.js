@@ -1313,9 +1313,13 @@ app.post('/api/sertifikalar/:id/olcum-pdf', async (req, res) => {
     try {
         const { pdf_base64, sayfa_sayisi } = req.body;
         if(!pdf_base64) return res.status(400).json({ error: 'PDF verisi eksik' });
+        // R2'ye yükle, DB'ye sadece key kaydet
+        const key = `olcum/${req.params.id}_olcum.pdf`;
+        const buffer = Buffer.from(pdf_base64, 'base64');
+        await r2Yukle(key, buffer);
         const result = await pool.query(
             `UPDATE sertifikalar SET olcum_pdf_url=$1, olcum_pdf_sayfa=$2 WHERE id=$3 RETURNING id, olcum_pdf_sayfa`,
-            [pdf_base64, sayfa_sayisi||0, req.params.id]
+            [key, sayfa_sayisi||0, req.params.id]
         );
         res.json(result.rows[0]);
     } catch(err) { res.status(500).json({ error: err.message }); }
