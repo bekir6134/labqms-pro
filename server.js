@@ -694,7 +694,8 @@ app.get('/api/sertifikalar/:id/pdf', async (req, res) => {
         if(!sertRow.rows.length) return res.status(404).json({ error: 'Sertifika bulunamadı' });
         const sert = sertRow.rows[0];
 
-        const onizleUrl = `${req.protocol}://${req.get('host')}/sertifika-onizle.html?id=${req.params.id}&print=1`;
+        // 1. ZIRH: Puppeteer internete çıkıp kaybolmasın diye direkt sunucunun kendi içine (localhost) yönlendiriyoruz.
+        const onizleUrl = `http://localhost:${PORT}/sertifika-onizle.html?id=${req.params.id}&print=1`;
         const execPath = process.env.CHROMIUM_PATH || require('child_process').execSync('which chromium || which chromium-browser || which google-chrome || echo ""').toString().trim() || await chromium.executablePath();
 
         browser = await puppeteer.launch({
@@ -704,6 +705,7 @@ app.get('/api/sertifikalar/:id/pdf', async (req, res) => {
         });
         const page = await browser.newPage();
         await page.setViewport({ width: 794, height: 1123 });
+        
         await page.goto(onizleUrl, { waitUntil: 'networkidle0', timeout: 30000 });
         await page.waitForSelector('.a4', { timeout: 10000 }).catch(()=>{});
         await new Promise(r => setTimeout(r, 1500));
@@ -714,38 +716,42 @@ app.get('/api/sertifikalar/:id/pdf', async (req, res) => {
 
         let sonPdfBuffer;
 
-        
-        // EĞER ÖLÇÜM PDF'İ VARSA R2'DEN (VEYA ESKİ KAYITLARDAN) ÇEKİP BİRLEŞTİR
+        // EĞER ÖLÇÜM PDF'İ VARSA R2'DEN ÇEKİP BİRLEŞTİR
         if(sert.olcum_pdf_url && sert.olcum_pdf_url.trim() !== '') {
-            let olcumBytes;
-            
-            // Eski kayıt koruması
-            if (sert.olcum_pdf_url.length > 500) {
-                let rawBase64 = sert.olcum_pdf_url;
-                if (rawBase64.includes('base64,')) rawBase64 = rawBase64.split('base64,')[1];
-                olcumBytes = Buffer.from(rawBase64, 'base64');
-            } else {
-                olcumBytes = await r2Indir(sert.olcum_pdf_url); 
+            try {
+                let olcumBytes;
+                
+                // Eski kayıt koruması
+                if (sert.olcum_pdf_url.length > 500) {
+                    let rawBase64 = sert.olcum_pdf_url;
+                    if (rawBase64.includes('base64,')) rawBase64 = rawBase64.split('base64,')[1];
+                    olcumBytes = Buffer.from(rawBase64, 'base64');
+                } else {
+                    olcumBytes = await r2Indir(sert.olcum_pdf_url); 
+                }
+
+                const birlesikDoc = await PDFDocument.create();
+
+                const s1s2Doc = await PDFDocument.load(s1s2Buffer);
+                const s1s2Pages = await birlesikDoc.copyPages(s1s2Doc, s1s2Doc.getPageIndices());
+                s1s2Pages.forEach(p => birlesikDoc.addPage(p));
+
+                const olcumDoc = await PDFDocument.load(olcumBytes);
+                const olcumPages = await birlesikDoc.copyPages(olcumDoc, olcumDoc.getPageIndices());
+                olcumPages.forEach(p => birlesikDoc.addPage(p));
+
+                const birlesikBytes = await birlesikDoc.save();
+                sonPdfBuffer = Buffer.from(birlesikBytes);
+                
+            } catch (mergeErr) {
+                // 2. ZIRH: Eğer R2'deki PDF bozuksa sistemi çökertme, hatayı yakala ve mesaj gönder!
+                console.error("PDF-LIB Birleştirme Hatası:", mergeErr);
+                throw new Error("Cloudflare'deki Ölçüm PDF dosyası bozuk veya okunamıyor. Lütfen operasyon ekranına dönüp bu cihaza ait Ölçüm PDF'ini silin ve tekrar yükleyin.");
             }
-
-            const birlesikDoc = await PDFDocument.create();
-
-            const s1s2Doc = await PDFDocument.load(s1s2Buffer);
-            const s1s2Pages = await birlesikDoc.copyPages(s1s2Doc, s1s2Doc.getPageIndices());
-            s1s2Pages.forEach(p => birlesikDoc.addPage(p));
-
-            const olcumDoc = await PDFDocument.load(olcumBytes);
-            const olcumPages = await birlesikDoc.copyPages(olcumDoc, olcumDoc.getPageIndices());
-            olcumPages.forEach(p => birlesikDoc.addPage(p));
-
-            const birlesikBytes = await birlesikDoc.save();
-            sonPdfBuffer = Buffer.from(birlesikBytes);
         } else {
             sonPdfBuffer = s1s2Buffer;
         }
 
-        // DİKKAT: Veritabanına PDF'i base64 olarak GÖMMÜYORUZ! (Sistem çökmesini engelleyen düzeltme)
-        
         const dosyaAdi = `sertifika-${sert.sertifika_no || req.params.id}.pdf`;
         const preview = req.query.preview === '1';
         res.setHeader('Content-Type', 'application/pdf');
@@ -754,6 +760,7 @@ app.get('/api/sertifikalar/:id/pdf', async (req, res) => {
 
     } catch(err) {
         if(browser) await browser.close().catch(()=>{});
+        console.error("API PDF Hatası:", err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -767,23 +774,20 @@ app.get('/api/sertifikalar/:id/qr', async (req, res) => {
     } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
-// === KRİTİK DÜZELTME ALANI 2: ÖLÇÜM PDF YÜKLEME ===
+// === KRİTİK DÜZELTME ALANI 2: ÖLÇÜM PDF YÜKLEME VE İNDİRME ===
 app.post('/api/sertifikalar/:id/olcum-pdf', async (req, res) => {
     try {
         let { pdf_base64, sayfa_sayisi } = req.body;
         if(!pdf_base64) return res.status(400).json({ error: 'PDF verisi eksik' });
         
-        // KRİTİK DÜZELTME: Arayüzden gelen "data:application..." takısını temizle
         if(pdf_base64.includes('base64,')) {
             pdf_base64 = pdf_base64.split('base64,')[1];
         }
         
-        // Base64 metnini Buffer'a çevir ve R2'ye at
         const pdfBuffer = Buffer.from(pdf_base64, 'base64');
         const r2Key = `olcum_pdfleri/sertifika_${req.params.id}_olcum.pdf`;
         await r2Yukle(r2Key, pdfBuffer);
 
-        // Veritabanına sadece R2'deki adı kaydet
         const result = await pool.query(
             `UPDATE sertifikalar SET olcum_pdf_url=$1, olcum_pdf_sayfa=$2 WHERE id=$3 RETURNING id, olcum_pdf_sayfa`,
             [r2Key, sayfa_sayisi||0, req.params.id]
@@ -799,7 +803,6 @@ app.get('/api/sertifikalar/:id/olcum-pdf', async (req, res) => {
         const row = result.rows[0];
         if(!row.olcum_pdf_url) return res.status(404).json({ error: 'PDF yok' });
         
-        // ESKİ KAYIT KONTROLÜ: R2'ye sorma, ama takısı varsa mutlaka temizle!
         if (row.olcum_pdf_url.length > 500) {
             let safBase64 = row.olcum_pdf_url;
             if(safBase64.includes('base64,')) {
@@ -808,14 +811,14 @@ app.get('/api/sertifikalar/:id/olcum-pdf', async (req, res) => {
             return res.json({ olcum_pdf_url: safBase64, olcum_pdf_sayfa: row.olcum_pdf_sayfa });
         }
 
-        // YENİ KAYIT İSE: R2'den indir ve HİÇBİR TAKI EKLEMEDEN (saf) gönder
         const buffer = await r2Indir(row.olcum_pdf_url);
         res.json({ 
-            olcum_pdf_url: buffer.toString('base64'), // Takıyı kaldırdık!
+            olcum_pdf_url: buffer.toString('base64'), 
             olcum_pdf_sayfa: row.olcum_pdf_sayfa 
         });
     } catch(err) { res.status(500).json({ error: err.message }); }
 });
+
 app.post('/api/sertifika-no-uret', async (req, res) => {
     try {
         const { sertifika_id } = req.body;
@@ -852,7 +855,6 @@ app.post('/api/imzali-pdf-yukle', async (req, res) => {
         let { sertifika_id, pdf_base64, dosya_adi } = req.body;
         if (!sertifika_id || !pdf_base64) return res.status(400).json({ error: 'sertifika_id ve pdf_base64 zorunlu' });
 
-        // KRİTİK DÜZELTME: Takıyı temizle
         if(pdf_base64.includes('base64,')) {
             pdf_base64 = pdf_base64.split('base64,')[1];
         }
@@ -873,7 +875,6 @@ app.post('/api/imzali-pdf-yukle', async (req, res) => {
         res.json({ ok: true, sertifika_id, eski_asama: mevcutAsama, yeni_asama: yeniAsama });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
-
 
 // === MAİL GÖNDERME İŞLEMLERİ ===
 app.post('/api/sertifika-mail/:id', async (req, res) => {
