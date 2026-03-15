@@ -10,12 +10,13 @@ const R2_HOST     = `${R2_ACCOUNT}.r2.cloudflarestorage.com`;
 
 function r2Request(method, key, body) {
     return new Promise((resolve, reject) => {
+        const encodedKey = key.split('/').map(encodeURIComponent).join('/');
         const opts = aws4.sign({
             service:  's3',
             region:   'auto',
             method,
             host:     R2_HOST,
-            path:     `/${R2_BUCKET}/${key}`,
+            path:     `/${R2_BUCKET}/${encodedKey}`,
             headers:  body ? { 'Content-Type': 'application/pdf', 'Content-Length': body.length } : {},
             body
         }, {
@@ -25,7 +26,7 @@ function r2Request(method, key, body) {
 
         const req = https.request({
             hostname: R2_HOST,
-            path:     `/${R2_BUCKET}/${key}`,
+            path:     `/${R2_BUCKET}/${encodedKey}`,
             method,
             headers:  opts.headers
         }, res => {
@@ -1547,7 +1548,7 @@ app.post('/api/imzali-pdf-yukle', async (req, res) => {
         else if (mevcutAsama === 'imzalandı') yeniAsama = 'onaylandı';
 
         // R2'ye yükle, DB'ye key kaydet
-        const imzaKey = `imzali/${sertifika_id}_${yeniAsama}.pdf`;
+        const imzaKey = `imzali/${sertifika_id}_${yeniAsama.replace(/[^a-zA-Z0-9_-]/g, '_')}.pdf`;
         await r2Yukle(imzaKey, Buffer.from(pdf_base64, 'base64'));
         await pool.query(
             'UPDATE sertifikalar SET sertifika_pdf=$1, asama=$2 WHERE id=$3',
