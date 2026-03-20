@@ -753,26 +753,11 @@
                 }
 
                 return `<div class="cihaz-satir">
-                    <div>
-                        <div class="col-label">Cihaz Adı</div>
-                        <div class="cihaz-ad">${c.cihaz_adi||'—'}</div>
-                    </div>
-                    <div>
-                        <div class="col-label">Marka</div>
-                        <div class="cihaz-marka">${marka||'—'}</div>
-                    </div>
-                    <div>
-                        <div class="col-label">Model</div>
-                        <div class="cihaz-model">${model||'—'}</div>
-                    </div>
-                    <div>
-                        <div class="col-label">Seri No</div>
-                        <div class="cihaz-seri">${c.seri_no||'—'}</div>
-                    </div>
-                    <div>
-                        <div class="col-label">Envanter No</div>
-                        <div class="cihaz-envanter">${c.envanter_no||'—'}</div>
-                    </div>
+                    <div><div class="cihaz-ad">${c.cihaz_adi||'—'}</div></div>
+                    <div><div class="cihaz-marka">${marka||'—'}</div></div>
+                    <div><div class="cihaz-model">${model||'—'}</div></div>
+                    <div><div class="cihaz-seri">${c.seri_no||'—'}</div></div>
+                    <div><div class="cihaz-envanter">${c.envanter_no||'—'}</div></div>
                     <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-start;">
                         ${btn}
                         ${tedarikci ? '<span style="font-size:0.71rem;color:#94a3b8;font-weight:600;">📦 Tedarikçi</span>' : ''}
