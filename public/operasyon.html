@@ -44,6 +44,10 @@
         .kanban-card .firma { color:#475569; font-size:0.76rem; margin-top:2px; }
         .kanban-card .meta { color:#94a3b8; font-size:0.72rem; margin-top:3px; }
         .kanban-empty { color:#94a3b8; font-size:0.75rem; text-align:center; padding:10px; }
+        .kanban-col.aktif { transform:translateY(-3px); box-shadow:0 6px 20px rgba(30,64,175,0.22); border:2px solid var(--primary); }
+        .kanban-col.aktif .kanban-head { font-weight:800; }
+        .kanban-col.aktif .kanban-count { background:rgba(255,255,255,0.35); font-weight:800; font-size:0.8rem; }
+        .kanban-col { transition:transform 0.15s, box-shadow 0.15s; }
 
         /* KART */
         .card { background:#fff; border-radius:12px; border:1px solid var(--border); box-shadow:0 2px 6px rgba(0,0,0,0.04); margin-bottom:16px; }
@@ -470,9 +474,6 @@
 <!-- ════ SEKME 2: SERTİFİKALAR ════ -->
 <div class="tab-panel" id="panel-sertifikalar">
 
-    <!-- DURUM KANBAN -->
-    <div class="kanban" id="sertKanban"></div>
-
     <!-- FİLTRE -->
     <div class="filter-wrap">
         <div class="filter-grid">
@@ -523,6 +524,9 @@
             <button class="btn-filtre-temizle" onclick="sertFiltreSifirla()">↩ Temizle</button>
         </div>
     </div>
+
+    <!-- DURUM KANBAN -->
+    <div class="kanban" id="sertKanban" style="margin-bottom:12px;"></div>
 
     <!-- TOPLU İŞLEM BARI -->
     <div class="toplu-bar" id="topluBar">
@@ -674,10 +678,11 @@
         el.innerHTML = SERT_ASAMALAR.map(asama => {
             const sayi = tumSertifikalar.filter(s => (s.asama||'hazırlanıyor') === asama).length;
             const aktif = asamaFiltre === asama;
-            return `<div class="kanban-col" onclick="sertKanbanFiltrele('${asama}')" style="cursor:pointer;${aktif ? 'box-shadow:0 0 0 2px var(--primary);' : ''}">
-                <div class="kanban-head kh-${asama}" style="text-align:center;" title="Bu durumu filtrele">
-                    ${SERT_ASAMA_LABEL[asama]} <span class="kanban-count">${sayi}</span>
+            return `<div class="kanban-col${aktif?' aktif':''}" onclick="sertKanbanFiltrele('${asama}')" style="cursor:pointer;">
+                <div class="kanban-head kh-${asama}" style="text-align:center;${aktif?'padding:11px 12px;':''}" title="Bu durumu filtrele">
+                    ${aktif?'✔ ':''}${SERT_ASAMA_LABEL[asama]} <span class="kanban-count">${sayi}</span>
                 </div>
+                ${aktif?'<div style="height:3px;background:var(--primary);"></div>':''}
             </div>`;
         }).join('');
     }
@@ -691,12 +696,15 @@
 
     function renderIEKanban(data) {
         const kanban = document.getElementById("ieKanban");
+        const asamaFiltre = document.getElementById("ie_filtre_asama").value;
         kanban.innerHTML = IE_ASAMALAR.map(asama => {
-            const kartlar = data.filter(r=>(r.asama||'kabul_edildi')===asama);
-            return `<div class="kanban-col">
-                <div class="kanban-head kh-${asama}" onclick="ieKanbanFiltrele('${asama}')" style="cursor:pointer;" title="Bu aşamayı filtrele">
-                    ${IE_ASAMA_LABEL[asama]} <span class="kanban-count">${kartlar.length}</span>
+            const kartlar = tumIsEmirleri.filter(r=>(r.asama||'kabul_edildi')===asama);
+            const aktif = asamaFiltre === asama;
+            return `<div class="kanban-col${aktif?' aktif':''}" style="cursor:pointer;">
+                <div class="kanban-head kh-${asama}" onclick="ieKanbanFiltrele('${asama}')" style="${aktif?'padding:11px 12px;':''}" title="Bu aşamayı filtrele">
+                    ${aktif?'✔ ':''}${IE_ASAMA_LABEL[asama]} <span class="kanban-count">${kartlar.length}</span>
                 </div>
+                ${aktif?'<div style="height:3px;background:var(--primary);"></div>':''}
             </div>`;
         }).join('');
     }
