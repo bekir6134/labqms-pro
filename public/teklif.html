@@ -483,17 +483,107 @@
     }
 
     // ── PDF GÖRÜNTÜLE ──
-    async function pdfGoruntule(id) {
-        showToast("⏳ PDF hazırlanıyor...");
-        try {
-            const res = await fetch(`/api/teklifler/${id}/pdf`);
-            if (!res.ok) { const e = await res.json(); throw new Error(e.error || 'Bilinmeyen hata'); }
-            const blob = await res.blob();
-            const url = URL.createObjectURL(blob);
-            window.open(url, '_blank');
-        } catch (err) {
-            showToast("❌ PDF oluşturulamadı: " + err.message, true);
-        }
+    function pdfGoruntule(id) {
+        const t = tumTeklifler.find(x => x.id === id);
+        if (!t) return;
+        const kalemler = Array.isArray(t.kalemler) ? t.kalemler : JSON.parse(t.kalemler || '[]');
+        const tarih = t.teklif_tarihi ? new Date(t.teklif_tarihi).toLocaleDateString('tr-TR') : '-';
+
+        const kalemlerHTML = kalemler.map((k, i) => `
+            <tr>
+                <td>${i + 1}</td>
+                <td><strong>${k.ad || ''}</strong></td>
+                <td style="font-size:9px;color:#475569;">${k.ozellik_not || '-'}</td>
+                <td style="font-size:9px;">${k.hizmet_sekli || '-'}</td>
+                <td><span style="padding:2px 5px;border-radius:3px;font-size:9px;font-weight:bold;background:${k.kapsam_durumu === 'Akredite' ? '#dcfce7' : '#fee2e2'};color:${k.kapsam_durumu === 'Akredite' ? '#166534' : '#dc2626'};">${k.kapsam_durumu || '-'}</span></td>
+                <td style="text-align:center;">${k.adet || 1}</td>
+                <td style="text-align:right;">${parseFloat(k.fiyat || 0).toLocaleString('tr-TR', {minimumFractionDigits:2})} ${k.pb || '₺'}</td>
+                <td style="text-align:right;font-weight:bold;">${(parseFloat(k.fiyat || 0) * (k.adet || 1)).toLocaleString('tr-TR', {minimumFractionDigits:2})} ${k.pb || '₺'}</td>
+            </tr>`).join('');
+
+        const araToplam = parseFloat(t.ara_toplam || 0);
+        const genelToplam = parseFloat(t.genel_toplam || 0);
+        const pb = t.para_birimi || '₺';
+
+        const html = `<!DOCTYPE html>
+<html lang="tr"><head><meta charset="UTF-8"><title>Teklif - ${t.teklif_no}</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, sans-serif; padding: 30px 36px; color: #1e293b; font-size: 11px; }
+.toolbar { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 20px; }
+.toolbar button { background: #1E40AF; color: white; border: none; padding: 9px 20px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; }
+.header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 2px solid #1E40AF; }
+.co-name { font-size: 17px; font-weight: bold; color: #1E40AF; }
+.co-sub { font-size: 9px; color: #64748b; margin-top: 3px; }
+.tno { font-size: 13px; font-weight: bold; color: #1E40AF; }
+.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+.info-box { background: #f8fafc; padding: 10px 12px; border-radius: 6px; border: 1px solid #e2e8f0; }
+.lbl { font-size: 8px; font-weight: bold; color: #64748b; text-transform: uppercase; margin-bottom: 2px; }
+.val { font-size: 11px; }
+table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+thead { background: #1E40AF; color: white; }
+th { padding: 7px 6px; text-align: left; font-size: 9px; }
+td { padding: 6px 6px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
+tbody tr:nth-child(even) { background: #f8fafc; }
+.totals { background: #1E40AF; color: white; padding: 14px 18px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+.t-lbl { font-size: 8px; opacity: 0.75; }
+.t-val { font-size: 12px; font-weight: bold; }
+.t-main { font-size: 15px; font-weight: 800; }
+.note-box { background: #fffbeb; border: 1px solid #fde68a; padding: 8px 12px; border-radius: 6px; margin-bottom: 12px; font-size: 10px; }
+.footer { margin-top: 24px; font-size: 8.5px; color: #94a3b8; text-align: center; }
+@media print {
+    .toolbar { display: none; }
+    body { padding: 18px 22px; }
+    @page { size: A4; margin: 10mm; }
+}
+</style></head><body>
+<div class="toolbar">
+    <button onclick="window.print()">🖨️ PDF Olarak Kaydet / Yazdır</button>
+</div>
+<div class="header">
+    <div>
+        <div class="co-name">KALİBRASYON LABORATUVARI</div>
+        <div class="co-sub">Kalibrasyon ve Test Hizmetleri</div>
+    </div>
+    <div style="text-align:right;">
+        <div class="tno">${t.teklif_no}</div>
+        <div style="font-size:9px;color:#64748b;">TEKLİF BELGESİ</div>
+    </div>
+</div>
+<div class="info-grid">
+    <div class="info-box">
+        <div class="lbl">Müşteri</div>
+        <div class="val" style="font-weight:bold;">${t.firma_adi || ''}${t.sube_adi ? ' / ' + t.sube_adi : ''}</div>
+    </div>
+    <div class="info-box">
+        <div class="lbl">Teklif Tarihi</div><div class="val">${tarih}</div>
+        <div class="lbl" style="margin-top:5px;">Geçerlilik Süresi</div><div class="val">${t.gecerlilik_gun || 30} Gün</div>
+    </div>
+</div>
+${t.teklif_notu ? `<div class="note-box"><strong>Not:</strong> ${t.teklif_notu}</div>` : ''}
+<table>
+    <thead><tr>
+        <th style="width:22px;">#</th>
+        <th>Cihaz / Hizmet Tanımı</th>
+        <th style="width:110px;">Özellik-Not</th>
+        <th style="width:120px;">Hizmet Şekli</th>
+        <th style="width:70px;">Kapsam</th>
+        <th style="width:38px;text-align:center;">Adet</th>
+        <th style="width:80px;text-align:right;">Birim Fiyat</th>
+        <th style="width:80px;text-align:right;">Toplam</th>
+    </tr></thead>
+    <tbody>${kalemlerHTML}</tbody>
+</table>
+<div class="totals">
+    <div><div class="t-lbl">Ara Toplam</div><div class="t-val">${araToplam.toLocaleString('tr-TR',{minimumFractionDigits:2})} ${pb}</div></div>
+    ${t.indirim_oran > 0 ? `<div><div class="t-lbl">İndirim (%${t.indirim_oran})</div><div class="t-val">− ${(araToplam * t.indirim_oran / 100).toLocaleString('tr-TR',{minimumFractionDigits:2})} ${pb}</div></div>` : ''}
+    <div style="text-align:right;"><div class="t-lbl">GENEL TOPLAM</div><div class="t-main">${genelToplam.toLocaleString('tr-TR',{minimumFractionDigits:2})} ${pb}</div></div>
+</div>
+<div class="footer">Bu teklif ${tarih} tarihinde düzenlenmiş olup ${t.gecerlilik_gun || 30} gün geçerlidir.</div>
+</body></html>`;
+
+        const blob = new Blob([html], { type: 'text/html; charset=utf-8' });
+        window.open(URL.createObjectURL(blob), '_blank');
     }
 
     function modalKapat() { document.getElementById("modal").classList.remove("open"); }
