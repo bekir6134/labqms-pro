@@ -128,7 +128,7 @@
         /* DETAY MODAL */
         #modal { display:none; position:fixed; z-index:2000; inset:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; }
         #modal.open { display:flex; }
-        .modal-box { background:#fff; border-radius:14px; width:90%; max-width:600px; max-height:85vh; overflow-y:auto; padding:26px; position:relative; }
+        .modal-box { background:#fff; border-radius:14px; width:92%; max-width:900px; max-height:90vh; overflow-y:auto; padding:26px; position:relative; }
         .modal-close { position:absolute; right:16px; top:16px; font-size:1.2rem; cursor:pointer; color:#64748b; border:none; background:none; }
 
         /* TOAST */
@@ -798,8 +798,13 @@
                         </select>
                     </div>
                     <div style="display:flex;gap:6px;align-items:center;">
-                        <button class="btn btn-detail" onclick="event.stopPropagation();ieDetay(${r.id})">👁️</button>
-                        <button class="btn btn-mail" style="font-size:0.72rem;padding:5px 8px;" onclick="event.stopPropagation();ieFisMailGonder(${r.id})" title="Bu fişe ait tüm sertifikaları mail gönder">📧 Mail</button>
+                        <div class="act-wrap" id="am-ie-${r.id}">
+                            <button class="act-btn" onclick="event.stopPropagation();menuToggle('ie-${r.id}',event)">İşlemler ▾</button>
+                            <div class="act-drop">
+                                <div class="act-drop-item" onclick="event.stopPropagation();ieDetay(${r.id});menuKapat()">👁️ Detayları Görüntüle</div>
+                                <div class="act-drop-item" onclick="event.stopPropagation();ieFisMailGonder(${r.id});menuKapat()">📧 Sertifikaları Mail Gönder</div>
+                            </div>
+                        </div>
                         <span class="ie-acc-arrow" id="arrow-${r.id}">▼</span>
                     </div>
                 </div>
@@ -1209,7 +1214,7 @@
                 : `<button class="btn btn-pdf-yukle" onclick="olcumPdfYukle(${s.id})" title="Değiştir">📎 Ölçüm PDF ✓</button>`;
 
             // Dropdown içindeki aşamaya göre öğeler
-            let dropItems = `<div class="act-drop-item" onclick="tamOnizle(${s.id});menuKapat()">👁️ Önizle</div>`;
+            let dropItems = `<div class="act-drop-item" onclick="tamOnizle(${s.id});menuKapat()">👁️ Sertifika Önizle</div>`;
             dropItems += `<div class="act-drop-item" onclick="sertDuzenle(${s.id});menuKapat()">✏️ Düzenle</div>`;
             if(asama==='hazırlanıyor' && pdfVar) {
                 dropItems += `<div class="act-drop-item" onclick="tekliImzala(${s.id});menuKapat()">✍️ İmzala</div>`;
@@ -1218,7 +1223,7 @@
                 dropItems += `<div class="act-drop-item" onclick="tekliOnayla(${s.id});menuKapat()">✅ Onayla</div>`;
             }
             if(asama==='onaylandı' || asama==='sertifika_gönderildi') {
-                dropItems += `<div class="act-drop-item" onclick="tekliMail(${s.id});menuKapat()">📧 Mail Gönder</div>`;
+                dropItems += `<div class="act-drop-item" onclick="tekliMail(${s.id});menuKapat()">📧 Sertifika Mail Gönder</div>`;
             }
             dropItems += `<hr><div class="act-drop-item" onclick="uygunsuzlukForm(${s.id});menuKapat()">⚠️ Uygunsuzluk</div>`;
             dropItems += `<div class="act-drop-item danger" onclick="icerikTemizle(${s.id});menuKapat()" title="Sertifikayı siler">🗑️ Temizle</div>`;
@@ -1946,20 +1951,18 @@
 
     function menuToggle(id, e) {
         e.stopPropagation();
-        // Diğer açık menüleri kapat
         document.querySelectorAll('.act-drop.open').forEach(d => d.classList.remove('open'));
         const wrap = document.getElementById('am-'+id);
+        if(!wrap) return;
         const drop = wrap.querySelector('.act-drop');
         if(drop.classList.contains('open')) { drop.classList.remove('open'); return; }
-        // Butona göre konumlandır
         const btn = wrap.querySelector('.act-btn');
         const rect = btn.getBoundingClientRect();
-        const dropWidth = 180;
+        const dropWidth = 200;
         let left = rect.right - dropWidth;
         if(left < 4) left = 4;
         let top = rect.bottom + 4;
-        // Ekranın altına taşarsa yukarı aç
-        if(top + 250 > window.innerHeight) top = rect.top - 250;
+        if(top + 280 > window.innerHeight) top = rect.top - 280;
         drop.style.left = left + 'px';
         drop.style.top  = top  + 'px';
         drop.style.width = dropWidth + 'px';
