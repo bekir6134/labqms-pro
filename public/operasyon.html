@@ -685,19 +685,6 @@
                 <div class="kanban-head kh-${asama}" onclick="ieKanbanFiltrele('${asama}')" style="cursor:pointer;" title="Bu aşamayı filtrele">
                     ${IE_ASAMA_LABEL[asama]} <span class="kanban-count">${kartlar.length}</span>
                 </div>
-                <div class="kanban-cards">
-                    ${kartlar.length===0 ? '<div class="kanban-empty">Boş</div>' :
-                    kartlar.map(r => {
-                        let cihazlar = [];
-            try { cihazlar = Array.isArray(r.cihazlar)?r.cihazlar:JSON.parse(r.cihazlar||'[]'); } catch(e) { cihazlar=[]; }
-                        return `<div class="kanban-card" onclick="ieDetay(${r.id})">
-                            <div class="ie">${r.ie_no}</div>
-                            <div class="firma">${r.firma_adi}</div>
-                            <div class="meta">📦 ${cihazlar.length} cihaz</div>
-                            ${r.teslim_tarihi?`<div class="meta">📅 ${new Date(r.teslim_tarihi).toLocaleDateString('tr-TR')}</div>`:''}
-                        </div>`;
-                    }).join('')}
-                </div>
             </div>`;
         }).join('');
     }
