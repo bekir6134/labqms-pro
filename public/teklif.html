@@ -604,10 +604,6 @@
                 <td style="text-align:right;font-weight:bold;">${fmt((k.fiyat||0)*(k.adet||1))} ${k.pb || pb}</td>
             </tr>`).join('');
 
-        const ekUcretlerHTML = (yolUcreti > 0 || konaklamaUcreti > 0) ? `
-            ${yolUcreti > 0 ? `<tr style="background:#f0f9ff;"><td colspan="6" style="font-size:10px;color:#0369a1;font-weight:600;">🚗 Yol Ücreti / Travel Fee</td><td></td><td style="text-align:right;font-weight:bold;color:#0369a1;">${fmt(yolUcreti)} ${pb}</td></tr>` : ''}
-            ${konaklamaUcreti > 0 ? `<tr style="background:#f0f9ff;"><td colspan="6" style="font-size:10px;color:#0369a1;font-weight:600;">🏨 Konaklama Ücreti / Accommodation Fee</td><td></td><td style="text-align:right;font-weight:bold;color:#0369a1;">${fmt(konaklamaUcreti)} ${pb}</td></tr>` : ''}
-        ` : '';
 
         const html = `<!DOCTYPE html>
 <html lang="tr"><head><meta charset="UTF-8"><title>Teklif ${t.teklif_no}</title>
@@ -715,7 +711,6 @@ ${t.teklif_notu ? `<div class="note-box"><strong>Not / Note:</strong> ${t.teklif
     </tr></thead>
     <tbody>
         ${kalemlerHTML}
-        ${ekUcretlerHTML}
     </tbody>
 </table>
 
