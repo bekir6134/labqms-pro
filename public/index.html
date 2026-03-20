@@ -82,6 +82,12 @@
     <div class="main-content">
         <header class="topbar">
             <div style="font-weight: 600; color: var(--primary);">LabQMS Pro Kalibrasyon Yönetim Sistemi</div>
+            <div style="display:flex; align-items:center; gap:12px;">
+                <span id="topbarKullanici" style="font-size:0.82rem; color:#64748b; font-weight:600;"></span>
+                <button onclick="cikisYap()" style="background:#fee2e2; color:#dc2626; border:none; padding:7px 16px; border-radius:8px; font-weight:700; font-size:0.82rem; cursor:pointer; display:flex; align-items:center; gap:6px;">
+                    🚪 Çıkış
+                </button>
+            </div>
         </header>
         <iframe name="ekran" id="ekran" src="dashboard.html"></iframe>
     </div>
@@ -120,7 +126,20 @@
             } catch(e) {}
         }
 
-        window.onload = labAdiniYukle;
+        function cikisYap() {
+            if (!confirm("Çıkış yapmak istediğinize emin misiniz?")) return;
+            localStorage.removeItem("labqms_user");
+            window.location.href = "login.html";
+        }
+
+        function topbarKullaniciGoster() {
+            const kullanici = JSON.parse(localStorage.getItem("labqms_user") || '{}');
+            if (kullanici.ad_soyad) {
+                document.getElementById("topbarKullanici").textContent = "👤 " + kullanici.ad_soyad;
+            }
+        }
+
+        window.onload = () => { labAdiniYukle(); topbarKullaniciGoster(); };
     </script>
 </body>
 </html>
