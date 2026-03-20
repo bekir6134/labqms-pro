@@ -267,7 +267,7 @@ app.get('/api/teklif-on-veriler', async (req, res) => {
 app.get('/api/teklifler', async (req, res) => {
     try {
         const result = await pool.query(`
-            SELECT t.*, m.firma_adi, m.sube_adi
+            SELECT t.*, m.firma_adi, m.sube_adi, m.adres, m.il, m.ilce, m.yetkililer, m.telefonlar
             FROM teklifler t
             LEFT JOIN musteriler m ON t.musteri_id = m.id
             ORDER BY t.olusturulma_tarihi DESC`);
