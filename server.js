@@ -426,6 +426,17 @@ app.delete('/api/referans-cihazlar/:id', async (req, res) => {
     }
 });
 
+app.post('/api/referans-takip', async (req, res) => {
+    try {
+        const { referans_id, islem_tipi, sertifika_no, izlenebilirlik, kal_tarihi, sonraki_kal_tarihi } = req.body;
+        const query = `INSERT INTO referans_takip (referans_id, islem_tipi, sertifika_no, izlenebilirlik, kal_tarihi, sonraki_kal_tarihi) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`;
+        const result = await pool.query(query, [referans_id, islem_tipi, sertifika_no, izlenebilirlik, kal_tarihi, sonraki_kal_tarihi]);
+        res.json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.post('/api/referans-takip-guncelle', async (req, res) => {
     try {
         const { id, sertifika_no, izlenebilirlik, kal_tarihi, sonraki_kal_tarihi } = req.body;
