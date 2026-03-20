@@ -188,6 +188,27 @@
                     <input type="number" id="adet" value="1" min="1">
                 </div>
             </div>
+            <div class="form-grid" style="grid-template-columns:2fr 1fr 1fr; gap:12px; margin-top:12px;">
+                <div>
+                    <label>Özellik-Not <span style="font-weight:400;color:#94a3b8;">(kapsam aralığı, tek set vb.)</span></label>
+                    <input type="text" id="ozellik_not" placeholder="Örn: Tek set, 0-150 mm aralığı...">
+                </div>
+                <div>
+                    <label>Hizmet Şekli</label>
+                    <select id="hizmet_sekli">
+                        <option value="Müşteri Yerinden">Müşteri Yerinden</option>
+                        <option value="Kalibrasyon Laboratuvarında">Kalibrasyon Laboratuvarında</option>
+                        <option value="Tedarikçi Firmada">Tedarikçi Firmada</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Kapsam Durumu</label>
+                    <select id="kapsam_durumu">
+                        <option value="Akredite">Akredite</option>
+                        <option value="Kapsam Dışı">Kapsam Dışı</option>
+                    </select>
+                </div>
+            </div>
             <div style="margin-top:12px; text-align:right;">
                 <button class="btn-add" onclick="teklifeEkle()">➕ Kaleme Ekle</button>
             </div>
@@ -197,16 +218,19 @@
         <table class="inner-table">
             <thead>
                 <tr>
-                    <th style="width:40px;">#</th>
+                    <th style="width:30px;">#</th>
                     <th>Cihaz / Hizmet</th>
-                    <th style="width:70px; text-align:center;">Adet</th>
-                    <th style="width:120px;">Birim Fiyat</th>
-                    <th style="width:130px;">Toplam</th>
-                    <th style="width:40px;"></th>
+                    <th>Özellik-Not</th>
+                    <th style="width:130px;">Hizmet Şekli</th>
+                    <th style="width:80px;">Kapsam</th>
+                    <th style="width:55px; text-align:center;">Adet</th>
+                    <th style="width:110px;">Birim Fiyat</th>
+                    <th style="width:110px;">Toplam</th>
+                    <th style="width:35px;"></th>
                 </tr>
             </thead>
             <tbody id="teklifBody">
-                <tr class="no-data-inner"><td colspan="6">Henüz kalem eklenmedi.</td></tr>
+                <tr class="no-data-inner"><td colspan="9">Henüz kalem eklenmedi.</td></tr>
             </tbody>
         </table>
 
@@ -349,12 +373,18 @@
         const fiyat = parseFloat(document.getElementById("birim_fiyat").value);
         const pb = document.getElementById("para_birimi").value;
         const adet = parseInt(document.getElementById("adet").value) || 1;
+        const ozellik_not = document.getElementById("ozellik_not").value.trim();
+        const hizmet_sekli = document.getElementById("hizmet_sekli").value;
+        const kapsam_durumu = document.getElementById("kapsam_durumu").value;
         if (!ad || !fiyat) { showToast("❌ Cihaz ve fiyat giriniz!", true); return; }
-        satirlar.push({ad, fiyat, pb, adet});
+        satirlar.push({ad, fiyat, pb, adet, ozellik_not, hizmet_sekli, kapsam_durumu});
         renderKalemler();
         document.getElementById("cihaz_adi").value = "";
         document.getElementById("birim_fiyat").value = "";
         document.getElementById("adet").value = "1";
+        document.getElementById("ozellik_not").value = "";
+        document.getElementById("hizmet_sekli").value = "Müşteri Yerinden";
+        document.getElementById("kapsam_durumu").value = "Akredite";
     }
 
     function kalemSil(i) { satirlar.splice(i,1); renderKalemler(); }
@@ -362,13 +392,16 @@
     function renderKalemler() {
         const tbody = document.getElementById("teklifBody");
         if (!satirlar.length) {
-            tbody.innerHTML='<tr class="no-data-inner"><td colspan="6">Henüz kalem eklenmedi.</td></tr>';
+            tbody.innerHTML='<tr class="no-data-inner"><td colspan="9">Henüz kalem eklenmedi.</td></tr>';
             toplamHesapla(); return;
         }
         tbody.innerHTML = satirlar.map((s,i) => `
             <tr>
                 <td><span class="row-num">${i+1}</span></td>
                 <td><strong>${s.ad}</strong></td>
+                <td><small style="color:#475569;">${s.ozellik_not || '-'}</small></td>
+                <td><small style="color:#475569;">${s.hizmet_sekli || '-'}</small></td>
+                <td><span style="font-size:0.72rem;font-weight:700;padding:2px 5px;border-radius:4px;background:${s.kapsam_durumu==='Akredite'?'#dcfce7':'#fee2e2'};color:${s.kapsam_durumu==='Akredite'?'#166534':'#dc2626'};">${s.kapsam_durumu||'-'}</span></td>
                 <td style="text-align:center;">${s.adet}</td>
                 <td class="price-green">${s.fiyat.toLocaleString('tr-TR',{minimumFractionDigits:2})} ${s.pb}</td>
                 <td class="price-green">${(s.fiyat*s.adet).toLocaleString('tr-TR',{minimumFractionDigits:2})} ${s.pb}</td>
@@ -441,7 +474,7 @@
                 <td class="price-green">${parseFloat(t.genel_toplam||0).toLocaleString('tr-TR',{minimumFractionDigits:2})} ${t.para_birimi||'₺'}</td>
                 <td><span class="durum-badge durum-${durum}">${durum}</span></td>
                 <td>
-                    <button class="btn-view" onclick="goruntule(${t.id})">👁️ Görüntüle</button>
+                    <button class="btn-view" onclick="pdfGoruntule(${t.id})">📄 PDF</button>
                     <button class="btn-edit" onclick="duzenle(${t.id})">✏️ Düzenle</button>
                     <button class="btn-del" onclick="sil(${t.id})">🗑️ Sil</button>
                 </td>
@@ -449,40 +482,18 @@
         }).join('');
     }
 
-    // ── GÖRÜNTÜLE ──
-    function goruntule(id) {
-        const t = tumTeklifler.find(x=>x.id===id);
-        if (!t) return;
-        const kalemler = Array.isArray(t.kalemler) ? t.kalemler : JSON.parse(t.kalemler||'[]');
-        const tarih = t.teklif_tarihi ? new Date(t.teklif_tarihi).toLocaleDateString('tr-TR') : '-';
-        document.getElementById("modalIcerik").innerHTML = `
-            <h2 style="margin:0 0 20px; color:var(--primary);">📄 ${t.teklif_no}</h2>
-            <div class="modal-section">
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
-                    <div><div class="modal-label">Firma</div><div class="modal-value">${t.firma_adi}${t.sube_adi?' / '+t.sube_adi:''}</div></div>
-                    <div><div class="modal-label">Teklif Tarihi</div><div class="modal-value">${tarih}</div></div>
-                    <div><div class="modal-label">Geçerlilik</div><div class="modal-value">${t.gecerlilik_gun||30} Gün</div></div>
-                    <div><div class="modal-label">Durum</div><div class="modal-value"><span class="durum-badge durum-${t.durum||'Taslak'}">${t.durum||'Taslak'}</span></div></div>
-                    ${t.teklif_notu?`<div class="full"><div class="modal-label">Not</div><div class="modal-value">${t.teklif_notu}</div></div>`:''}
-                </div>
-            </div>
-            <div class="modal-section">
-                <div class="modal-label" style="margin-bottom:8px;">Kalemler</div>
-                <table class="modal-table">
-                    <thead><tr><th>#</th><th>Cihaz</th><th>Adet</th><th>Birim</th><th>Toplam</th></tr></thead>
-                    <tbody>${kalemler.map((k,i)=>`<tr>
-                        <td>${i+1}</td><td>${k.ad}</td><td>${k.adet}</td>
-                        <td>${parseFloat(k.fiyat).toLocaleString('tr-TR',{minimumFractionDigits:2})} ${k.pb}</td>
-                        <td><strong>${(k.fiyat*k.adet).toLocaleString('tr-TR',{minimumFractionDigits:2})} ${k.pb}</strong></td>
-                    </tr>`).join('')}</tbody>
-                </table>
-            </div>
-            <div style="background:var(--primary); color:white; border-radius:10px; padding:15px 20px; display:flex; justify-content:space-between; align-items:center;">
-                <div><div style="font-size:0.75rem; opacity:0.75;">Ara Toplam</div><div style="font-weight:700;">${parseFloat(t.ara_toplam||0).toLocaleString('tr-TR',{minimumFractionDigits:2})} ${t.para_birimi}</div></div>
-                ${t.indirim_oran>0?`<div><div style="font-size:0.75rem; opacity:0.75;">İndirim (%${t.indirim_oran})</div><div style="font-weight:700;">− ${(t.ara_toplam*t.indirim_oran/100).toLocaleString('tr-TR',{minimumFractionDigits:2})} ${t.para_birimi}</div></div>`:''}
-                <div style="text-align:right;"><div style="font-size:0.75rem; opacity:0.75;">Genel Toplam</div><div style="font-size:1.3rem; font-weight:800;">${parseFloat(t.genel_toplam||0).toLocaleString('tr-TR',{minimumFractionDigits:2})} ${t.para_birimi}</div></div>
-            </div>`;
-        document.getElementById("modal").classList.add("open");
+    // ── PDF GÖRÜNTÜLE ──
+    async function pdfGoruntule(id) {
+        showToast("⏳ PDF hazırlanıyor...");
+        try {
+            const res = await fetch(`/api/teklifler/${id}/pdf`);
+            if (!res.ok) { const e = await res.json(); throw new Error(e.error || 'Bilinmeyen hata'); }
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+        } catch (err) {
+            showToast("❌ PDF oluşturulamadı: " + err.message, true);
+        }
     }
 
     function modalKapat() { document.getElementById("modal").classList.remove("open"); }
@@ -524,6 +535,9 @@
         document.getElementById("cihaz_adi").value = "";
         document.getElementById("birim_fiyat").value = "";
         document.getElementById("adet").value = "1";
+        document.getElementById("ozellik_not").value = "";
+        document.getElementById("hizmet_sekli").value = "Müşteri Yerinden";
+        document.getElementById("kapsam_durumu").value = "Akredite";
         satirlar = []; renderKalemler();
         document.getElementById("kaydetBtn").textContent = "💾 Teklifi Kaydet";
         firmaCihazlari = [];

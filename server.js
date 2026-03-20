@@ -311,6 +311,127 @@ app.post('/api/teklifler', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// Teklif PDF üret (Chromium headless)
+app.get('/api/teklifler/:id/pdf', async (req, res) => {
+    const { exec } = require('child_process');
+    const os = require('os');
+    const fs = require('fs');
+    try {
+        const result = await pool.query(
+            `SELECT t.*, m.firma_adi, m.sube_adi FROM teklifler t LEFT JOIN musteriler m ON t.musteri_id = m.id WHERE t.id = $1`,
+            [req.params.id]
+        );
+        if (!result.rows.length) return res.status(404).json({ error: 'Teklif bulunamadı' });
+        const t = result.rows[0];
+        const kalemler = Array.isArray(t.kalemler) ? t.kalemler : JSON.parse(t.kalemler || '[]');
+        const tarih = t.teklif_tarihi ? new Date(t.teklif_tarihi).toLocaleDateString('tr-TR') : '-';
+
+        const kalemlerHTML = kalemler.map((k, i) => `
+            <tr>
+                <td>${i + 1}</td>
+                <td><strong>${k.ad || ''}</strong></td>
+                <td style="font-size:9px;color:#475569;">${k.ozellik_not || '-'}</td>
+                <td style="font-size:9px;">${k.hizmet_sekli || '-'}</td>
+                <td><span style="padding:2px 5px;border-radius:3px;font-size:9px;font-weight:bold;background:${k.kapsam_durumu === 'Akredite' ? '#dcfce7' : '#fee2e2'};color:${k.kapsam_durumu === 'Akredite' ? '#166534' : '#dc2626'};">${k.kapsam_durumu || '-'}</span></td>
+                <td style="text-align:center;">${k.adet || 1}</td>
+                <td style="text-align:right;">${parseFloat(k.fiyat || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ${k.pb || '₺'}</td>
+                <td style="text-align:right;font-weight:bold;">${(parseFloat(k.fiyat || 0) * (k.adet || 1)).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ${k.pb || '₺'}</td>
+            </tr>`).join('');
+
+        const html = `<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, sans-serif; padding: 28px 32px; color: #1e293b; font-size: 11px; }
+.header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 2px solid #1E40AF; }
+.co-name { font-size: 17px; font-weight: bold; color: #1E40AF; }
+.co-sub { font-size: 9px; color: #64748b; margin-top: 3px; }
+.tno { font-size: 13px; font-weight: bold; color: #1E40AF; }
+.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+.info-box { background: #f8fafc; padding: 10px 12px; border-radius: 6px; border: 1px solid #e2e8f0; }
+.lbl { font-size: 8px; font-weight: bold; color: #64748b; text-transform: uppercase; margin-bottom: 2px; }
+.val { font-size: 11px; }
+table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+thead { background: #1E40AF; color: white; }
+th { padding: 7px 6px; text-align: left; font-size: 9px; }
+td { padding: 6px 6px; border-bottom: 1px solid #e2e8f0; font-size: 10px; vertical-align: middle; }
+tbody tr:nth-child(even) { background: #f8fafc; }
+.totals { background: #1E40AF; color: white; padding: 14px 18px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+.t-lbl { font-size: 8px; opacity: 0.75; }
+.t-val { font-size: 12px; font-weight: bold; }
+.t-main { font-size: 15px; font-weight: 800; }
+.note-box { background: #fffbeb; border: 1px solid #fde68a; padding: 8px 12px; border-radius: 6px; margin-bottom: 12px; font-size: 10px; }
+.footer { margin-top: 24px; font-size: 8.5px; color: #94a3b8; text-align: center; }
+</style></head><body>
+<div class="header">
+    <div>
+        <div class="co-name">KALİBRASYON LABORATUVARI</div>
+        <div class="co-sub">Kalibrasyon ve Test Hizmetleri</div>
+    </div>
+    <div style="text-align:right;">
+        <div class="tno">${t.teklif_no}</div>
+        <div style="font-size:9px;color:#64748b;">TEKLİF BELGESİ</div>
+    </div>
+</div>
+<div class="info-grid">
+    <div class="info-box">
+        <div class="lbl">Müşteri</div>
+        <div class="val" style="font-weight:bold;">${t.firma_adi || ''}${t.sube_adi ? ' / ' + t.sube_adi : ''}</div>
+    </div>
+    <div class="info-box">
+        <div class="lbl">Teklif Tarihi</div><div class="val">${tarih}</div>
+        <div class="lbl" style="margin-top:5px;">Geçerlilik Süresi</div><div class="val">${t.gecerlilik_gun || 30} Gün</div>
+    </div>
+</div>
+${t.teklif_notu ? `<div class="note-box"><strong>Not:</strong> ${t.teklif_notu}</div>` : ''}
+<table>
+    <thead><tr>
+        <th style="width:22px;">#</th>
+        <th>Cihaz / Hizmet Tanımı</th>
+        <th style="width:110px;">Özellik-Not</th>
+        <th style="width:115px;">Hizmet Şekli</th>
+        <th style="width:72px;">Kapsam</th>
+        <th style="width:38px;text-align:center;">Adet</th>
+        <th style="width:78px;text-align:right;">Birim Fiyat</th>
+        <th style="width:78px;text-align:right;">Toplam</th>
+    </tr></thead>
+    <tbody>${kalemlerHTML}</tbody>
+</table>
+<div class="totals">
+    <div><div class="t-lbl">Ara Toplam</div><div class="t-val">${parseFloat(t.ara_toplam || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ${t.para_birimi || '₺'}</div></div>
+    ${t.indirim_oran > 0 ? `<div><div class="t-lbl">İndirim (%${t.indirim_oran})</div><div class="t-val">− ${(t.ara_toplam * t.indirim_oran / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ${t.para_birimi || '₺'}</div></div>` : ''}
+    <div style="text-align:right;"><div class="t-lbl">GENEL TOPLAM</div><div class="t-main">${parseFloat(t.genel_toplam || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ${t.para_birimi || '₺'}</div></div>
+</div>
+<div class="footer">Bu teklif ${tarih} tarihinde düzenlenmiş olup ${t.gecerlilik_gun || 30} gün geçerlidir.</div>
+</body></html>`;
+
+        const tmpId = `${req.params.id}_${Date.now()}`;
+        const tmpHtml = path.join(os.tmpdir(), `teklif_${tmpId}.html`);
+        const tmpPdf  = path.join(os.tmpdir(), `teklif_${tmpId}.pdf`);
+        fs.writeFileSync(tmpHtml, html, 'utf8');
+
+        let chromiumPath = process.env.CHROMIUM_PATH || '';
+        if (!chromiumPath) {
+            try { chromiumPath = require('child_process').execSync('which chromium || which chromium-browser || which google-chrome', { timeout: 3000 }).toString().trim(); }
+            catch(e) { chromiumPath = 'chromium'; }
+        }
+
+        await new Promise((resolve, reject) => {
+            exec(`"${chromiumPath}" --headless --no-sandbox --disable-gpu --run-all-compositor-stages-before-draw --print-to-pdf="${tmpPdf}" "file://${tmpHtml}"`,
+                { timeout: 20000 }, (err) => { if (err) reject(err); else resolve(); });
+        });
+
+        const pdfBuffer = fs.readFileSync(tmpPdf);
+        try { fs.unlinkSync(tmpHtml); } catch(e) {}
+        try { fs.unlinkSync(tmpPdf);  } catch(e) {}
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="teklif_${t.teklif_no}.pdf"`);
+        res.send(pdfBuffer);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Firmaya göre müşteri cihazlarını getir (teklif için)
 app.get('/api/musteri-cihazlari-firma/:musteri_id', async (req, res) => {
     try {
