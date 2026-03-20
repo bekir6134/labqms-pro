@@ -425,7 +425,7 @@
                 <td><strong>${s.ad}</strong></td>
                 <td><small style="color:#475569;">${s.ozellik_not || '-'}</small></td>
                 <td><small style="color:#475569;">${s.hizmet_sekli || '-'}</small></td>
-                <td><span style="font-size:0.72rem;font-weight:700;padding:2px 5px;border-radius:4px;background:${s.kapsam_durumu==='Akredite'?'#dcfce7':'#fee2e2'};color:${s.kapsam_durumu==='Akredite'?'#166534':'#dc2626'};">${s.kapsam_durumu||'-'}</span></td>
+                <td><span style="font-size:0.72rem;font-weight:700;padding:2px 5px;border-radius:4px;background:${s.kapsam_durumu==='Akredite'?'#dcfce7':'#dbeafe'};color:${s.kapsam_durumu==='Akredite'?'#166534':'#1e40af'};">${s.kapsam_durumu||'-'}</span></td>
                 <td style="text-align:center;">${s.adet}</td>
                 <td class="price-green">${s.fiyat.toLocaleString('tr-TR',{minimumFractionDigits:2})} ${s.pb}</td>
                 <td class="price-green">${(s.fiyat*s.adet).toLocaleString('tr-TR',{minimumFractionDigits:2})} ${s.pb}</td>
@@ -564,7 +564,7 @@
                 <td><strong>${k.ad || ''}</strong></td>
                 <td style="font-size:9px;color:#475569;">${k.ozellik_not || '-'}</td>
                 <td style="font-size:9px;">${k.hizmet_sekli || '-'}</td>
-                <td><span style="padding:2px 5px;border-radius:3px;font-size:9px;font-weight:bold;background:${k.kapsam_durumu === 'Akredite' ? '#dcfce7' : '#fee2e2'};color:${k.kapsam_durumu === 'Akredite' ? '#166534' : '#dc2626'};">${k.kapsam_durumu || '-'}</span></td>
+                <td><span style="padding:2px 5px;border-radius:3px;font-size:9px;font-weight:bold;background:${k.kapsam_durumu === 'Akredite' ? '#dcfce7' : '#dbeafe'};color:${k.kapsam_durumu === 'Akredite' ? '#166534' : '#1e40af'};">${k.kapsam_durumu || '-'}</span></td>
                 <td style="text-align:center;">${k.adet || 1}</td>
                 <td style="text-align:right;">${fmt(k.fiyat)} ${k.pb || pb}</td>
                 <td style="text-align:right;font-weight:bold;">${fmt((k.fiyat||0)*(k.adet||1))} ${k.pb || pb}</td>
@@ -602,10 +602,10 @@ th { padding:6px 5px; text-align:left; font-size:8.5px; }
 td { padding:5px 5px; border-bottom:1px solid #e2e8f0; vertical-align:middle; font-size:10px; }
 tbody tr:nth-child(even) { background:#f8fafc; }
 .totals-box { margin-top:8px; border:1px solid #e2e8f0; border-radius:8px; overflow:hidden; }
-.totals-row { display:flex; justify-content:flex-end; gap:0; }
-.totals-item { padding:7px 16px; border-left:1px solid #e2e8f0; text-align:right; min-width:160px; }
-.totals-item:first-child { border-left:none; }
-.t-lbl { font-size:8px; color:#64748b; }
+.totals-row { display:flex; flex-direction:column; align-items:flex-end; }
+.totals-item { padding:5px 16px; border-top:1px solid #e2e8f0; text-align:right; width:100%; display:flex; justify-content:space-between; align-items:center; }
+.totals-item:first-child { border-top:none; }
+.t-lbl { font-size:9px; color:#64748b; }
 .t-val { font-size:11px; font-weight:bold; }
 .totals-final { background:#1E40AF; color:white; display:flex; justify-content:space-between; align-items:center; padding:10px 16px; }
 .t-main-lbl { font-size:9px; opacity:0.8; }
@@ -689,10 +689,10 @@ ${t.teklif_notu ? `<div class="note-box"><strong>Not / Note:</strong> ${t.teklif
     <div class="totals-row">
         <div class="totals-item"><div class="t-lbl">Kalibrasyon Ara Toplam / Subtotal</div><div class="t-val">${fmt(araToplam)} ${pb}</div></div>
         ${indOran > 0 ? `<div class="totals-item"><div class="t-lbl">İndirim / Discount (%${indOran})</div><div class="t-val" style="color:#dc2626;">− ${fmt(indTutar)} ${pb}</div></div>` : ''}
-        ${yolUcreti > 0 ? `<div class="totals-item"><div class="t-lbl">Yol / Travel</div><div class="t-val">${fmt(yolUcreti)} ${pb}</div></div>` : ''}
-        ${konaklamaUcreti > 0 ? `<div class="totals-item"><div class="t-lbl">Konaklama / Accommodation</div><div class="t-val">${fmt(konaklamaUcreti)} ${pb}</div></div>` : ''}
-        <div class="totals-item" style="background:#f8fafc;"><div class="t-lbl">KDV Hariç Toplam / Total Excl. VAT</div><div class="t-val">${fmt(kdvHaric)} ${pb}</div></div>
-        ${kdvOran > 0 ? `<div class="totals-item"><div class="t-lbl">KDV / VAT (%${kdvOran})</div><div class="t-val">${fmt(kdvTutar)} ${pb}</div></div>` : ''}
+        ${yolUcreti > 0 ? `<div class="totals-item"><div class="t-lbl">🚗 Yol Ücreti / Travel Fee</div><div class="t-val">${fmt(yolUcreti)} ${pb}</div></div>` : ''}
+        ${konaklamaUcreti > 0 ? `<div class="totals-item"><div class="t-lbl">🏨 Konaklama Ücreti / Accommodation Fee</div><div class="t-val">${fmt(konaklamaUcreti)} ${pb}</div></div>` : ''}
+        <div class="totals-item" style="background:#f0f9ff;"><div class="t-lbl" style="color:#0369a1;font-weight:bold;">KDV Hariç Toplam / Total Excl. VAT</div><div class="t-val" style="color:#0369a1;">${fmt(kdvHaric)} ${pb}</div></div>
+        ${kdvOran > 0 ? `<div class="totals-item"><div class="t-lbl">KDV (%${kdvOran}) / VAT</div><div class="t-val">${fmt(kdvTutar)} ${pb}</div></div>` : ''}
     </div>
     <div class="totals-final">
         <div><div class="t-main-lbl">GENEL TOPLAM (KDV DAHİL) / GRAND TOTAL (VAT INC.)</div></div>
