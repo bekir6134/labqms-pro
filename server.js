@@ -673,6 +673,50 @@ app.post('/api/referans-cihazlar', async (req, res) => {
     }
 });
 
+// TOPLU EXCEL İMPORT
+app.post('/api/referans-cihazlar-toplu', async (req, res) => {
+    try {
+        const { cihazlar } = req.body; // array
+        if (!Array.isArray(cihazlar) || !cihazlar.length) return res.status(400).json({ error: 'Veri yok' });
+
+        // Tüm kategorileri çek (isimle eşleştirme için)
+        const katRes = await pool.query('SELECT id, LOWER(TRIM(kategori_adi)) AS ad FROM kategoriler');
+        const katMap = {};
+        katRes.rows.forEach(k => { katMap[k.ad] = k.id; });
+
+        let basarili = 0, hatali = 0, hatalar = [];
+
+        for (const c of cihazlar) {
+            try {
+                if (!c.cihaz_adi) { hatali++; hatalar.push(`Satır atlandı: cihaz adı boş`); continue; }
+                const katAd = (c.kategori_adi || '').toLowerCase().trim();
+                const kategori_id = katMap[katAd] || null;
+
+                const ins = await pool.query(
+                    `INSERT INTO referans_cihazlar (kategori_id, cihaz_adi, marka, model, seri_no, envanter_no, olcme_araligi, kalibrasyon_kriteri, ara_kontrol_kriteri)
+                     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id`,
+                    [kategori_id, c.cihaz_adi, c.marka||null, c.model||null, c.seri_no||null, c.envanter_no||null, c.olcme_araligi||null, c.kalibrasyon_kriteri||null, c.ara_kontrol_kriteri||null]
+                );
+                const refId = ins.rows[0].id;
+
+                // Kalibrasyon takip kaydı (sertifika no veya kal tarihi varsa)
+                if (c.sertifika_no || c.kal_tarihi) {
+                    await pool.query(
+                        `INSERT INTO referans_takip (referans_id, islem_tipi, sertifika_no, izlenebilirlik, kal_tarihi, sonraki_kal_tarihi)
+                         VALUES ($1,$2,$3,$4,$5,$6)`,
+                        [refId, c.islem_tipi||'kalibrasyon', c.sertifika_no||null, c.izlenebilirlik||null, c.kal_tarihi||null, c.sonraki_kal_tarihi||null]
+                    );
+                }
+                basarili++;
+            } catch(e) {
+                hatali++;
+                hatalar.push(`"${c.cihaz_adi}": ${e.message}`);
+            }
+        }
+        res.json({ basarili, hatali, hatalar });
+    } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
 app.put('/api/referans-cihazlar/:id', async (req, res) => {
     try {
         const { kategori_id, cihaz_adi, marka, model, seri_no, envanter_no, olcme_araligi, kalibrasyon_kriteri, ara_kontrol_kriteri } = req.body;
