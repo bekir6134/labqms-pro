@@ -2580,6 +2580,94 @@ app.post('/api/imzali-pdf-yukle', async (req, res) => {
     }
 });
 
+// Toplu mail için veri hazırla (frontend yerel servise gönderecek)
+app.post('/api/sertifika-mail-toplu-veri', async (req, res) => {
+    try {
+        const { idler } = req.body;
+        const result = await pool.query(`
+            SELECT s.id, s.sertifika_no, s.cihaz_adi, s.imalatci, s.seri_no, s.envanter_no,
+                   s.kal_tarihi, s.sertifika_pdf, s.asama, s.musteri_id,
+                   m.firma_adi, m.sube_adi, m.sertifika_mailleri
+            FROM sertifikalar s
+            LEFT JOIN musteriler m ON s.musteri_id = m.id
+            WHERE s.id=ANY($1)`, [idler]);
+
+        const ayarRes = await pool.query(
+            "SELECT anahtar, deger FROM ayarlar WHERE anahtar IN ('lab_adi','smtp_host','smtp_port','smtp_user','smtp_pass','smtp_secure','smtp_from_name')"
+        );
+        const a = {};
+        ayarRes.rows.forEach(r => a[r.anahtar] = r.deger);
+
+        const labAdi = a.lab_adi || 'Kalibrasyon Laboratuvarı';
+        const baseUrl = process.env.BASE_URL || 'https://labqms-pro.up.railway.app';
+
+        const grupMap = {};
+        for (const s of result.rows) {
+            if (s.asama !== 'onaylandı' || !s.sertifika_pdf) continue;
+            const key = s.musteri_id || 'genel';
+            if (!grupMap[key]) grupMap[key] = { mailler: s.sertifika_mailleri || [], firma: s.sube_adi ? `${s.firma_adi} - ${s.sube_adi}` : s.firma_adi, sertifikalar: [] };
+            grupMap[key].sertifikalar.push(s);
+        }
+
+        const gruplar = Object.values(grupMap).filter(g => g.mailler.length).map(grup => {
+            const grupIdler = grup.sertifikalar.map(s => s.id);
+            const zipLink = `${baseUrl}/api/sertifika-pdf-zip?idler=${grupIdler.join(',')}`;
+            const satirlar = grup.sertifikalar.map(s => {
+                const kal = s.kal_tarihi ? new Date(s.kal_tarihi).toLocaleDateString('tr-TR') : '-';
+                const pdfLink = `${baseUrl}/api/sertifika-pdf-indir/${s.id}`;
+                return `<tr><td style="padding:10px;border-bottom:1px solid #e2e8f0;">${s.cihaz_adi||'-'}</td>
+                    <td style="padding:10px;border-bottom:1px solid #e2e8f0;">${s.imalatci||'-'}</td>
+                    <td style="padding:10px;border-bottom:1px solid #e2e8f0;">${s.seri_no||'-'}</td>
+                    <td style="padding:10px;border-bottom:1px solid #e2e8f0;">${s.envanter_no||'-'}</td>
+                    <td style="padding:10px;border-bottom:1px solid #e2e8f0;">${kal}</td>
+                    <td style="padding:10px;border-bottom:1px solid #e2e8f0;text-align:center;"><strong>${s.sertifika_no||'-'}</strong></td>
+                    <td style="padding:10px;border-bottom:1px solid #e2e8f0;text-align:center;">
+                        <a href="${pdfLink}" style="background:#1E40AF;color:white;padding:5px 12px;border-radius:4px;text-decoration:none;font-size:0.8rem;">⬇ İndir</a>
+                    </td></tr>`;
+            }).join('');
+            const html = `<div style="font-family:Arial,sans-serif;max-width:750px;margin:0 auto;padding:20px;">
+                <div style="background:#1E40AF;color:white;padding:20px;border-radius:8px 8px 0 0;">
+                    <h2 style="margin:0;">${labAdi}</h2><p style="margin:5px 0 0;">Kalibrasyon Sertifikaları</p>
+                </div>
+                <div style="background:#f8fafc;padding:20px;border:1px solid #e2e8f0;">
+                    <p>Sayın <strong>${grup.firma}</strong>,</p>
+                    <p>Aşağıda bilgileri yer alan cihazlarınıza ait kalibrasyon sertifikalarına ulaşabilirsiniz.</p>
+                    <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+                        <tr style="background:#1E40AF;color:white;">
+                            <th style="padding:10px;text-align:left;">Cihaz</th>
+                            <th style="padding:10px;text-align:left;">Marka</th>
+                            <th style="padding:10px;text-align:left;">Seri No</th>
+                            <th style="padding:10px;text-align:left;">Envanter No</th>
+                            <th style="padding:10px;text-align:left;">Kal. Tarihi</th>
+                            <th style="padding:10px;text-align:center;">Sertifika No</th>
+                            <th style="padding:10px;text-align:center;">PDF</th>
+                        </tr>
+                        ${satirlar}
+                    </table>
+                    <div style="text-align:center;margin-top:16px;">
+                        <a href="${zipLink}" style="background:#059669;color:white;padding:10px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">📦 Tümünü ZIP İndir</a>
+                    </div>
+                </div>
+                <div style="background:#e2e8f0;padding:12px;border-radius:0 0 8px 8px;text-align:center;font-size:0.8rem;color:#64748b;">
+                    ${labAdi} | Bu mail otomatik gönderilmiştir.
+                </div>
+            </div>`;
+            return { mailler: grup.mailler, konu: `Kalibrasyon Sertifikaları - ${grup.firma}`, html, adet: grupIdler.length };
+        });
+
+        res.json({ gruplar, smtp: { host: a.smtp_host, port: a.smtp_port, user: a.smtp_user, pass: a.smtp_pass, secure: a.smtp_secure, from_name: a.smtp_from_name } });
+    } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+// Toplu mail sonrası aşama güncelle
+app.post('/api/sertifika-mail-toplu-guncelle', async (req, res) => {
+    try {
+        const { idler } = req.body;
+        await pool.query("UPDATE sertifikalar SET asama='sertifika_gönderildi' WHERE id=ANY($1) AND asama='onaylandı'", [idler]);
+        res.json({ ok: true });
+    } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
 // Sertifika PDF indirme (mail linki için)
 app.get('/api/sertifika-pdf-indir/:id', async (req, res) => {
     try {

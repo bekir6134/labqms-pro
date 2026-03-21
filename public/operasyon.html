@@ -1569,15 +1569,45 @@
     async function topluMail() {
         const idler = secilenIdler();
         if(!idler.length) return showToast("❌ Sertifika seçin!", true);
-        const res = await fetch('/api/sertifika-mail-toplu', {
+
+        // Mail servisini kontrol et
+        try {
+            await fetch('http://localhost:5601/ping');
+        } catch(e) {
+            return showToast("❌ Mail servisi çalışmıyor! C:\\mail\\mail.bat'ı başlatın.", true);
+        }
+
+        // Railway'den sertifika + SMTP verilerini al
+        const veriRes = await fetch('/api/sertifika-mail-toplu-veri', {
             method:'POST', headers:{'Content-Type':'application/json'},
             body:JSON.stringify({idler})
         });
-        if(res.ok) {
-            const d = await res.json();
-            showToast(`📧 ${d.basarili} mail gönderildi!`);
+        if(!veriRes.ok) return showToast("❌ Veri alınamadı!", true);
+        const { gruplar, smtp } = await veriRes.json();
+
+        // Yerel mail servisine gönder
+        let basarili = 0;
+        for(const grup of gruplar) {
+            try {
+                const r = await fetch('http://localhost:5601/mailGonder', {
+                    method:'POST', headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({ smtp, mailler: grup.mailler, konu: grup.konu, html: grup.html })
+                });
+                if(r.ok) basarili += grup.adet;
+            } catch(e) {
+                showToast("❌ Mail gönderilemedi: " + e.message, true);
+            }
+        }
+
+        if(basarili > 0) {
+            // Aşamayı güncelle
+            await fetch('/api/sertifika-mail-toplu-guncelle', {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({idler})
+            });
+            showToast(`📧 ${basarili} sertifika maili gönderildi!`);
             await sertYukle();
-        } else showToast("❌ Mail gönderilemedi!", true);
+        }
     }
 
     async function sertAsamaGuncelle(idler, asama) {
