@@ -541,31 +541,31 @@
                     const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
                     if (rows.length < 2) { alert('Excel boş veya yalnızca başlık satırı var.'); return; }
 
-                    const KOLONLAR = ['cihaz_adi','kategori_adi','marka','model','seri_no','envanter_no',
-                        'olcme_araligi','kalibrasyon_kriteri','ara_kontrol_kriteri',
-                        'sertifika_no','izlenebilirlik','kal_tarihi','sonraki_kal_tarihi'];
-
-                    // İlk satır başlık mı yoksa veri mi?
-                    const ilkSatir = rows[0].map(h => String(h).toLowerCase().trim());
-                    const baslikliMi = KOLONLAR.some(k => ilkSatir.includes(k));
-                    const baslik = baslikliMi ? ilkSatir : null;
-                    const veriBaslangic = baslikliMi ? 1 : 0;
+                    // Her zaman 1. satır başlık, 2. satırdan itibaren veri — kolon sırası sabittir
+                    // A=cihaz_adi B=kategori_adi C=marka D=model E=seri_no F=envanter_no
+                    // G=olcme_araligi H=kalibrasyon_kriteri I=ara_kontrol_kriteri
+                    // J=sertifika_no K=izlenebilirlik L=kal_tarihi M=sonraki_kal_tarihi
 
                     excelVerisi = [];
-                    for (let i = veriBaslangic; i < rows.length; i++) {
-                        const row = rows[i];
-                        if (!row[0] && !row[1]) continue; // boş satır
-                        let obj = {};
-                        if (baslik) {
-                            baslik.forEach((h, j) => { obj[h] = row[j]; });
-                        } else {
-                            KOLONLAR.forEach((k, j) => { obj[k] = row[j]; });
-                        }
-                        // Tarih alanlarını dönüştür
-                        obj.kal_tarihi = tarihDonustur(obj.kal_tarihi);
-                        obj.sonraki_kal_tarihi = tarihDonustur(obj.sonraki_kal_tarihi);
-                        // Boş string → null
-                        Object.keys(obj).forEach(k => { if (obj[k] === '' || obj[k] === undefined) obj[k] = null; });
+                    for (let i = 1; i < rows.length; i++) {
+                        const r = rows[i];
+                        // Tamamen boş satırı atla
+                        if (!r.some(v => v !== '' && v !== null && v !== undefined)) continue;
+                        const obj = {
+                            cihaz_adi:            r[0]  ? String(r[0]).trim()  : null,
+                            kategori_adi:         r[1]  ? String(r[1]).trim()  : null,
+                            marka:                r[2]  ? String(r[2]).trim()  : null,
+                            model:                r[3]  ? String(r[3]).trim()  : null,
+                            seri_no:              r[4]  ? String(r[4]).trim()  : null,
+                            envanter_no:          r[5]  ? String(r[5]).trim()  : null,
+                            olcme_araligi:        r[6]  ? String(r[6]).trim()  : null,
+                            kalibrasyon_kriteri:  r[7]  ? String(r[7]).trim()  : null,
+                            ara_kontrol_kriteri:  r[8]  ? String(r[8]).trim()  : null,
+                            sertifika_no:         r[9]  ? String(r[9]).trim()  : null,
+                            izlenebilirlik:       r[10] ? String(r[10]).trim() : null,
+                            kal_tarihi:           tarihDonustur(r[11]),
+                            sonraki_kal_tarihi:   tarihDonustur(r[12])
+                        };
                         if (obj.cihaz_adi) excelVerisi.push(obj);
                     }
 
