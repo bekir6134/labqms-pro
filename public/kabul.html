@@ -504,14 +504,17 @@
         } else {
             secilenCihazlar.push({
                 musteri_cihaz_id: c.id,
-                cihaz_adi:  c.cihaz_adi,
-                marka:      c.marka||'',
-                model:      c.model||'',
-                seri_no:    c.seri_no||'',
-                envanter_no:c.envanter_no||'',
-                kategori_adi: c.kategori_adi||'',
-                durum:      'Sağlam',
-                aksesuar:   ''
+                cihaz_adi:       c.cihaz_adi,
+                marka:           c.marka||'',
+                model:           c.model||'',
+                seri_no:         c.seri_no||'',
+                envanter_no:     c.envanter_no||'',
+                kategori_adi:    c.kategori_adi||'',
+                kalibrasyon_yeri:c.kalibrasyon_yeri||'',
+                olcum_araligi:   c.olcum_araligi||'',
+                cozunurluk:      c.cozunurluk||'',
+                durum:           'Sağlam',
+                aksesuar:        ''
             });
         }
         renderCihazGrid(filtreliCihazlar);
@@ -664,7 +667,7 @@
         document.getElementById("h_model").value         = c.model || '';
         document.getElementById("h_seri_no").value       = c.seri_no || '';
         document.getElementById("h_envanter_no").value   = c.envanter_no || '';
-        document.getElementById("h_kal_yeri").value      = c.kal_yeri || '';
+        document.getElementById("h_kal_yeri").value      = c.kalibrasyon_yeri || '';
         document.getElementById("h_olcum_araligi").value = c.olcum_araligi || '';
         document.getElementById("h_cozunurluk").value    = c.cozunurluk || '';
         const kat = tumKategoriler.find(k => k.kategori_adi === c.kategori_adi);
@@ -761,14 +764,17 @@
             filtreliCihazlar = [...tumCihazlar];
             secilenCihazlar.push({
                 musteri_cihaz_id: yeni.id,
-                cihaz_adi:   yeni.cihaz_adi,
-                marka:       yeni.marka||'',
-                model:       yeni.model||'',
-                seri_no:     yeni.seri_no||'',
-                envanter_no: yeni.envanter_no||'',
-                kategori_adi: yeni.kategori_adi,
-                durum:       'Sağlam',
-                aksesuar:    ''
+                cihaz_adi:       yeni.cihaz_adi,
+                marka:           yeni.marka||'',
+                model:           yeni.model||'',
+                seri_no:         yeni.seri_no||'',
+                envanter_no:     yeni.envanter_no||'',
+                kategori_adi:    yeni.kategori_adi,
+                kalibrasyon_yeri:yeni.kalibrasyon_yeri||'',
+                olcum_araligi:   yeni.olcum_araligi||'',
+                cozunurluk:      yeni.cozunurluk||'',
+                durum:           'Sağlam',
+                aksesuar:        ''
             });
 
             renderCihazGrid(filtreliCihazlar);
@@ -886,14 +892,17 @@
         const cihazlar = Array.isArray(r.cihazlar)?r.cihazlar:JSON.parse(r.cihazlar||"[]");
         secilenCihazlar = cihazlar.map(c => ({
             musteri_cihaz_id: c.musteri_cihaz_id||null,
-            cihaz_adi:   c.cihaz_adi,
-            marka:       c.marka||(c.marka_model||'').split('/')[0].trim(),
-            model:       c.model||(c.marka_model||'').split('/')[1]?.trim()||'',
-            seri_no:     c.seri_no||'',
-            envanter_no: c.envanter_no||'',
-            kategori_adi:c.kategori_adi||'',
-            durum:       c.durum||'Sağlam',
-            aksesuar:    c.aksesuar||''
+            cihaz_adi:        c.cihaz_adi,
+            marka:            c.marka||(c.marka_model||'').split('/')[0].trim(),
+            model:            c.model||(c.marka_model||'').split('/')[1]?.trim()||'',
+            seri_no:          c.seri_no||'',
+            envanter_no:      c.envanter_no||'',
+            kategori_adi:     c.kategori_adi||'',
+            kalibrasyon_yeri: c.kalibrasyon_yeri||'',
+            olcum_araligi:    c.olcum_araligi||'',
+            cozunurluk:       c.cozunurluk||'',
+            durum:            c.durum||'Sağlam',
+            aksesuar:         c.aksesuar||''
         }));
         renderCihazGrid(filtreliCihazlar);
         renderSecilenler();
