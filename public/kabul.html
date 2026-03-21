@@ -172,11 +172,12 @@
 <div id="hizliModal">
     <div class="hizli-box">
         <div class="hizli-head">
-            <div class="hizli-title">⚡ Hızlı Cihaz Kaydı</div>
+            <div class="hizli-title" id="hizliModalBaslik">⚡ Hızlı Cihaz Kaydı</div>
             <button class="hizli-close" onclick="hizliModalKapat()">✕</button>
         </div>
         <div class="hizli-body">
-            <div style="background:#fffbeb;border:1px solid #fbbf24;border-radius:8px;padding:9px 13px;font-size:0.82rem;color:#92400e;margin-bottom:16px;">
+            <input type="hidden" id="h_duzenle_idx">
+            <div id="hizliModalBilgi" style="background:#fffbeb;border:1px solid #fbbf24;border-radius:8px;padding:9px 13px;font-size:0.82rem;color:#92400e;margin-bottom:16px;">
                 ⚡ Kayıt sonrası cihaz otomatik olarak kabul fişine eklenecektir.
             </div>
             <div class="fg fg2">
@@ -230,6 +231,7 @@
             <div style="display:flex;gap:8px;">
                 <button onclick="hizliModalKapat()" style="background:#f1f5f9;color:#475569;border:none;padding:9px 18px;border-radius:8px;font-weight:600;cursor:pointer;">İptal</button>
                 <button onclick="hizliCihazKaydet()" style="background:var(--primary);color:white;border:none;padding:9px 20px;border-radius:8px;font-weight:700;cursor:pointer;" id="hizliKaydetBtn">⚡ Kaydet & Fişe Ekle</button>
+                <button id="hizliGuncelleBtn" onclick="hizliCihazGuncelle()" style="display:none;background:#4338ca;color:white;border:none;padding:9px 20px;border-radius:8px;font-weight:700;cursor:pointer;">💾 Güncelle</button>
             </div>
         </div>
     </div>
@@ -538,7 +540,10 @@
                 </select>
             </td>
             <td><input type="text" placeholder="Kablo, kutu..." value="${c.aksesuar}" onchange="secilenGuncelle(${i},'aksesuar',this.value)" style="min-width:130px;"></td>
-            <td><button class="btn-del-row" onclick="cihazKaldir(${i})">✕</button></td>
+            <td style="white-space:nowrap;">
+                <button class="btn-edit" onclick="hizliDuzenleAc(${i})" style="margin-right:4px;" title="Düzenle">✏️</button>
+                <button class="btn-del-row" onclick="cihazKaldir(${i})" title="Kaldır">✕</button>
+            </td>
         </tr>`).join('');
     }
 
@@ -638,7 +643,78 @@
         // Formu temizle
         ['h_cihaz_adi','h_marka','h_model','h_seri_no','h_envanter_no','h_olcum_araligi','h_cozunurluk'].forEach(id => document.getElementById(id).value = '');
         document.getElementById("h_kal_yeri").value = ayarlarData.adres || '';
+        document.getElementById("h_duzenle_idx").value = '';
+        document.getElementById("hizliModalBaslik").textContent = '⚡ Hızlı Cihaz Kaydı';
+        document.getElementById("hizliModalBilgi").style.display = '';
+        document.getElementById("hizliKaydetBtn").style.display = '';
+        document.getElementById("hizliGuncelleBtn").style.display = 'none';
         document.getElementById("hizliModal").classList.add("open");
+    }
+
+    function hizliDuzenleAc(idx) {
+        const c = secilenCihazlar[idx];
+        if(!c) return;
+        // Kategori selecti doldur
+        const sel = document.getElementById("h_kategori_id");
+        sel.innerHTML = '<option value="">— Seçin —</option>' +
+            tumKategoriler.map(k => `<option value="${k.id}">${k.kategori_adi}</option>`).join('');
+        // Formu doldur
+        document.getElementById("h_cihaz_adi").value    = c.cihaz_adi || '';
+        document.getElementById("h_marka").value         = c.marka || '';
+        document.getElementById("h_model").value         = c.model || '';
+        document.getElementById("h_seri_no").value       = c.seri_no || '';
+        document.getElementById("h_envanter_no").value   = c.envanter_no || '';
+        document.getElementById("h_kal_yeri").value      = c.kal_yeri || '';
+        document.getElementById("h_olcum_araligi").value = c.olcum_araligi || '';
+        document.getElementById("h_cozunurluk").value    = c.cozunurluk || '';
+        const kat = tumKategoriler.find(k => k.kategori_adi === c.kategori_adi);
+        if(kat) document.getElementById("h_kategori_id").value = kat.id;
+        document.getElementById("h_duzenle_idx").value = idx;
+        document.getElementById("hizliModalBaslik").textContent = '✏️ Cihazı Düzenle';
+        document.getElementById("hizliModalBilgi").style.display = 'none';
+        document.getElementById("hizliKaydetBtn").style.display = 'none';
+        document.getElementById("hizliGuncelleBtn").style.display = '';
+        document.getElementById("hizliModal").classList.add("open");
+    }
+
+    async function hizliCihazGuncelle() {
+        const idx = parseInt(document.getElementById("h_duzenle_idx").value);
+        const c = secilenCihazlar[idx];
+        if(!c) return;
+        const cihazAdi  = document.getElementById("h_cihaz_adi").value.trim();
+        const kategoriId = document.getElementById("h_kategori_id").value;
+        if(!cihazAdi) return showToast("❌ Cihaz adı gerekli!", true);
+
+        const btn = document.getElementById("hizliGuncelleBtn");
+        btn.disabled = true; btn.textContent = "Güncelleniyor...";
+
+        const payload = {
+            cihaz_adi:      cihazAdi,
+            marka:          document.getElementById("h_marka").value.trim(),
+            model:          document.getElementById("h_model").value.trim(),
+            seri_no:        document.getElementById("h_seri_no").value.trim(),
+            envanter_no:    document.getElementById("h_envanter_no").value.trim(),
+            kalibrasyon_yeri: document.getElementById("h_kal_yeri").value,
+            olcum_araligi:  document.getElementById("h_olcum_araligi").value.trim(),
+            cozunurluk:     document.getElementById("h_cozunurluk").value.trim(),
+            musteri_id:     document.getElementById("secili_musteri_id").value,
+            kategori_id:    kategoriId || null
+        };
+
+        try {
+            if(c.musteri_cihaz_id) {
+                const res = await fetch(`/api/musteri-cihazlari/${c.musteri_cihaz_id}`, {
+                    method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload)
+                });
+                if(!res.ok) throw new Error();
+            }
+            const kat = tumKategoriler.find(k => k.id == kategoriId);
+            secilenCihazlar[idx] = { ...c, ...payload, kategori_adi: kat?.kategori_adi || c.kategori_adi };
+            renderSecilenler();
+            hizliModalKapat();
+            showToast(`✅ "${cihazAdi}" güncellendi!`);
+        } catch(e) { showToast("❌ Güncelleme başarısız!", true); }
+        btn.disabled = false; btn.textContent = "💾 Güncelle";
     }
 
     function hizliModalKapat() {
@@ -672,6 +748,7 @@
             const res = await fetch("/api/musteri-cihazlari", {
                 method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload)
             });
+            if(res.status === 409) { const err = await res.json(); return showToast("⚠️ " + err.error, true); }
             if(!res.ok) throw new Error();
             const yeni = await res.json();
 
