@@ -334,7 +334,7 @@
                     body: JSON.stringify({ ids })
                 });
                 const sonuc = await res.json();
-                toast(`${sonuc.silindi} kayıt silindi.`);
+                alert(`${sonuc.silindi} kayıt silindi.`);
                 secimiTemizle();
                 referansYukle();
             } catch(e) {
@@ -687,5 +687,6 @@
     </script>
     <!-- SheetJS -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="sort-utils.js"></script>
 </body>
 </html>
