@@ -110,6 +110,15 @@
 
         .search-box input { padding:9px 9px 9px 34px; background:#fff url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="%2364748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>') no-repeat 10px center; border:1px solid var(--border); border-radius:8px; width:240px; outline:none; font-size:0.84rem; }
 
+        /* KANBAN */
+        .kabul-kanban { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+        .kabul-kol { flex:1; min-width:120px; border:2px solid var(--border); border-radius:10px; padding:10px 14px; cursor:pointer; text-align:center; background:#fff; transition:0.18s; user-select:none; }
+        .kabul-kol:hover { border-color:#93c5fd; background:#f0f9ff; }
+        .kabul-kol.aktif { border-color:var(--primary); background:#eff6ff; transform:translateY(-3px); box-shadow:0 4px 14px rgba(30,64,175,0.15); position:relative; }
+        .kabul-kol.aktif::after { content:''; position:absolute; bottom:-2px; left:0; right:0; height:3px; background:var(--primary); border-radius:0 0 8px 8px; }
+        .kabul-kol-sayi { font-size:1.5rem; font-weight:800; color:var(--primary); }
+        .kabul-kol-label { font-size:0.72rem; font-weight:700; color:#64748b; margin-top:2px; }
+
         /* DROPDOWN MENÜ */
         .act-wrap { position:relative; display:inline-block; }
         .act-btn { background:#f8fafc; border:1px solid var(--border); padding:5px 11px; border-radius:6px; cursor:pointer; font-size:0.78rem; font-weight:600; color:var(--text); white-space:nowrap; }
@@ -364,7 +373,10 @@
             <input type="text" id="araInput" onkeyup="ara()" placeholder="IE no, firma ara...">
         </div>
     </div>
-    <div style="padding:18px;">
+    <div style="padding:16px 18px 0;">
+        <div class="kabul-kanban" id="kabulKanban"></div>
+    </div>
+    <div style="padding:0 18px 18px;">
         <table>
             <thead>
                 <tr>
@@ -393,6 +405,7 @@
 
     let musteriler = [], tumCihazlar = [], filtreliCihazlar = [];
     let tumKayitlar = [], tumKategoriler = [];
+    let aktifAsamaFiltre = "";
     let secilenCihazlar = []; // { musteri_cihaz_id, cihaz_adi, marka, model, seri_no, envanter_no, kategori_adi, durum, aksesuar }
 
     function showToast(msg, err=false) {
@@ -904,11 +917,42 @@
         btn.disabled = false; btn.textContent = "💾 Kabul Fişini Kaydet";
     }
 
+    // ── KANBAN ──
+    const KABUL_ASAMALAR = ['kabul_edildi','hazırlanıyor','tamamlandı','imzalandı','onaylandı','sertifika_gönderildi'];
+    const KABUL_ASAMA_IKON = { kabul_edildi:'📥', 'hazırlanıyor':'🔧', 'tamamlandı':'✔️', imzalandı:'✍️', 'onaylandı':'✅', sertifika_gönderildi:'📧' };
+
+    function renderKanban() {
+        const wrap = document.getElementById("kabulKanban");
+        wrap.innerHTML = KABUL_ASAMALAR.map(a => {
+            const sayi = tumKayitlar.filter(r => (r.asama||'kabul_edildi') === a).length;
+            const aktif = aktifAsamaFiltre === a;
+            return `<div class="kabul-kol${aktif?' aktif':''}" onclick="kanbanFiltrele('${a}')">
+                <div class="kabul-kol-sayi">${aktif?'✔ ':''}${sayi}</div>
+                <div class="kabul-kol-label">${KABUL_ASAMA_IKON[a]} ${ASAMA_LABEL[a]||a}</div>
+            </div>`;
+        }).join('');
+    }
+
+    function kanbanFiltrele(asama) {
+        aktifAsamaFiltre = aktifAsamaFiltre === asama ? "" : asama;
+        renderKanban();
+        uygulaFiltre();
+    }
+
+    function uygulaFiltre() {
+        let data = tumKayitlar;
+        if(aktifAsamaFiltre) data = data.filter(r => (r.asama||'kabul_edildi') === aktifAsamaFiltre);
+        const f = document.getElementById("araInput").value.toUpperCase();
+        if(f) data = data.filter(r => (r.ie_no||"").toUpperCase().includes(f) || (r.firma_adi||"").toUpperCase().includes(f));
+        renderListe(data);
+    }
+
     // ── LİSTE ──
     async function listele() {
         const res = await fetch("/api/is-emirleri");
         tumKayitlar = await res.json();
-        renderListe(tumKayitlar);
+        renderKanban();
+        uygulaFiltre();
     }
 
     function renderListe(data) {
@@ -1014,12 +1058,7 @@
         document.getElementById("kaydetBtn").textContent = "💾 Kabul Fişini Kaydet";
     }
 
-    function ara() {
-        const f = document.getElementById("araInput").value.toUpperCase();
-        renderListe(f ? tumKayitlar.filter(r =>
-            (r.ie_no||"").toUpperCase().includes(f) || (r.firma_adi||"").toUpperCase().includes(f)
-        ) : tumKayitlar);
-    }
+    function ara() { uygulaFiltre(); }
 
     let personeller = [], teklifler = [], ayarlarData = {};
 
