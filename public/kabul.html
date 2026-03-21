@@ -801,13 +801,18 @@
         const duzenleId = document.getElementById("duzenle_id").value;
         const cihazlar = secilenCihazlar.map(c => ({
             musteri_cihaz_id: c.musteri_cihaz_id,
-            cihaz_adi:   c.cihaz_adi,
-            marka_model: [c.marka, c.model].filter(Boolean).join(" / "),
-            seri_no:     c.seri_no,
-            envanter_no: c.envanter_no,
-            kategori_adi: c.kategori_adi,
-            durum:       c.durum,
-            aksesuar:    c.aksesuar
+            cihaz_adi:        c.cihaz_adi,
+            marka_model:      [c.marka, c.model].filter(Boolean).join(" / "),
+            marka:            c.marka,
+            model:            c.model,
+            seri_no:          c.seri_no,
+            envanter_no:      c.envanter_no,
+            kategori_adi:     c.kategori_adi,
+            kalibrasyon_yeri: c.kalibrasyon_yeri,
+            olcum_araligi:    c.olcum_araligi,
+            cozunurluk:       c.cozunurluk,
+            durum:            c.durum,
+            aksesuar:         c.aksesuar
         }));
 
         const payload = {
