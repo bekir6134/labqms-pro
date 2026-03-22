@@ -6,6 +6,15 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{--primary:#1E40AF;--border:#e2e8f0;--bg:#f8fafc;--success:#10B981;--text:#334155}
+#onayModal{display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.45);align-items:center;justify-content:center}
+#onayModal.open{display:flex!important}
+.onay-box{background:#fff;border-radius:16px;padding:28px 32px;width:92%;max-width:400px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.2)}
+.onay-icon{font-size:2.4rem;margin-bottom:10px}
+.onay-mesaj{font-size:0.95rem;color:var(--text);margin-bottom:20px;font-weight:500;line-height:1.5}
+.onay-btns{display:flex;gap:10px;justify-content:center}
+.onay-iptal{background:#f1f5f9;color:#475569;border:none;padding:10px 24px;border-radius:9px;font-weight:600;cursor:pointer;font-size:0.9rem}
+.onay-evet{background:linear-gradient(135deg,#1e3a8a,#1E40AF);color:#fff;border:none;padding:10px 24px;border-radius:9px;font-weight:700;cursor:pointer;font-size:0.9rem}
+.onay-evet.danger{background:linear-gradient(135deg,#991b1b,#dc2626)}
 *{box-sizing:border-box}
 body{font-family:'Inter',sans-serif;background:var(--bg);padding:24px;color:var(--text);margin:0}
 .accordion{background:#fff;border-radius:12px;border:1px solid var(--border);overflow:hidden;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
@@ -267,7 +276,7 @@ async function kaydet(){
         esas_alinan_sart:document.getElementById('esas_alinan_sart').value.trim(),
         sinif:document.getElementById('sinif').value
     };
-    if(!confirm(duzenleId?'Güncellemek istediğinize emin misiniz?':'Kaydetmek istediğinize emin misiniz?'))return;
+    if(!await onayModal(duzenleId?'Bu kaydı güncellemek istediğinize emin misiniz?':'Bu kaydı kaydetmek istediğinize emin misiniz?'))return;
     const btn=document.getElementById('saveBtn');btn.disabled=true;btn.textContent='Kaydediliyor...';
     const url=duzenleId?`/api/uygunsuzluk/${duzenleId}`:'/api/uygunsuzluk';
     const method=duzenleId?'PUT':'POST';
@@ -296,7 +305,7 @@ function duzenle(id){
 }
 
 async function sil(id){
-    if(!confirm('Bu kaydı silmek istediğinize emin misiniz?'))return;
+    if(!await onayModal('Bu kaydı silmek istediğinize emin misiniz?', true))return;
     const res=await fetch(`/api/uygunsuzluk/${id}`,{method:'DELETE'});
     if(res.ok){showToast('🗑️ Silindi!');listele()}else showToast('❌ Silinemedi!',true);
 }
@@ -389,7 +398,7 @@ async function dofKaydet(){
 }
 
 async function dofSil(id){
-    if(!confirm('Bu DÖF kaydını silmek istediğinize emin misiniz?'))return;
+    if(!await onayModal('Bu DÖF kaydını silmek istediğinize emin misiniz?', true))return;
     const res=await fetch(`/api/dof/${id}`,{method:'DELETE'});
     if(res.ok){showToast('🗑️ Silindi!');dofListele()}else showToast('❌ Silinemedi!',true);
 }
@@ -400,7 +409,35 @@ function dofFormTemizle(){
 }
 
 listele();
+
+function onayModal(mesaj, tehlikeli=false){
+    return new Promise(resolve=>{
+        document.getElementById('onayMesaj').textContent=mesaj;
+        const evetBtn=document.getElementById('onayEvet');
+        evetBtn.className='onay-evet'+(tehlikeli?' danger':'');
+        evetBtn.textContent=tehlikeli?'🗑️ Sil':'✅ Evet, Devam Et';
+        document.getElementById('onayModal').classList.add('open');
+        const kapat=(sonuc)=>{
+            document.getElementById('onayModal').classList.remove('open');
+            resolve(sonuc);
+        };
+        document.getElementById('onayIptal').onclick=()=>kapat(false);
+        document.getElementById('onayEvet').onclick=()=>kapat(true);
+    });
+}
 </script>
+
+<div id="onayModal">
+    <div class="onay-box">
+        <div class="onay-icon">⚠️</div>
+        <div class="onay-mesaj" id="onayMesaj"></div>
+        <div class="onay-btns">
+            <button class="onay-iptal" id="onayIptal">İptal</button>
+            <button class="onay-evet" id="onayEvet">✅ Evet, Devam Et</button>
+        </div>
+    </div>
+</div>
+
 <script src="sort-utils.js"></script>
 </body>
 </html>

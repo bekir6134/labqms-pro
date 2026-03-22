@@ -53,6 +53,15 @@ td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:0.85rem;ver
 #toast.show{visibility:visible}
 #toast.error{background:#ef4444}
 .excelModalWrap.open{display:flex!important}
+#onayModal{display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.45);align-items:center;justify-content:center}
+#onayModal.open{display:flex!important}
+.onay-box{background:#fff;border-radius:16px;padding:28px 32px;width:92%;max-width:400px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.2)}
+.onay-icon{font-size:2.4rem;margin-bottom:10px}
+.onay-mesaj{font-size:0.95rem;color:var(--text);margin-bottom:20px;font-weight:500;line-height:1.5}
+.onay-btns{display:flex;gap:10px;justify-content:center}
+.onay-iptal{background:#f1f5f9;color:#475569;border:none;padding:10px 24px;border-radius:9px;font-weight:600;cursor:pointer;font-size:0.9rem}
+.onay-evet{background:linear-gradient(135deg,#1e3a8a,#1E40AF);color:#fff;border:none;padding:10px 24px;border-radius:9px;font-weight:700;cursor:pointer;font-size:0.9rem}
+.onay-evet.danger{background:linear-gradient(135deg,#991b1b,#dc2626)}
 #dropZone.dragover{background:#dbeafe;border-color:#3b82f6}
 .modal-wrap{display:none;position:fixed;inset:0;z-index:4000;background:rgba(0,0,0,0.55);align-items:center;justify-content:center}
 .modal-wrap.open{display:flex!important}
@@ -300,7 +309,7 @@ async function revizeKaydet() {
 }
 
 async function revSil(revId, parentId) {
-    if(!confirm('Bu revizyonu silmek istediğinize emin misiniz?')) return;
+    if(!await onayModal('Bu revizyonu silmek istediğinize emin misiniz?', true)) return;
     const res = await fetch(`/api/kalite-dokuman/${revId}`, {method:'DELETE'});
     if(res.ok) {
         showToast('🗑️ Revizyon silindi!');
@@ -339,7 +348,7 @@ function secimiTemizle(){
 async function topluSil(){
     const ids=[...document.querySelectorAll('.dok-cb:checked')].map(c=>parseInt(c.value));
     if(!ids.length)return;
-    if(!confirm(`Seçilen ${ids.length} doküman silinecek. Emin misiniz?`))return;
+    if(!await onayModal(`Seçilen ${ids.length} doküman silinecek. Emin misiniz?`, true))return;
     const res=await fetch('/api/kalite-dokuman-toplu-sil',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids})});
     if(res.ok){showToast(`🗑️ ${ids.length} doküman silindi.`);secimiTemizle();listele();}
     else showToast('❌ Silinemedi!',true);
@@ -375,7 +384,7 @@ async function kaydet(){
         durum:document.getElementById('durum').value,
         aciklama:document.getElementById('aciklama').value.trim()
     };
-    if(!confirm(duzenleId?'Güncellemek istediğinize emin misiniz?':'Kaydetmek istediğinize emin misiniz?'))return;
+    if(!await onayModal(duzenleId?'Bu dokümanı güncellemek istediğinize emin misiniz?':'Bu dokümanı kaydetmek istediğinize emin misiniz?'))return;
     const btn=document.getElementById('saveBtn');btn.disabled=true;btn.textContent='Kaydediliyor...';
     const url=duzenleId?`/api/kalite-dokuman/${duzenleId}`:'/api/kalite-dokuman';
     const method=duzenleId?'PUT':'POST';
@@ -405,7 +414,7 @@ function duzenle(id){
 }
 
 async function sil(id){
-    if(!confirm('Bu dokümanı silmek istediğinize emin misiniz?'))return;
+    if(!await onayModal('Bu dokümanı silmek istediğinize emin misiniz?', true))return;
     const res=await fetch(`/api/kalite-dokuman/${id}`,{method:'DELETE'});
     if(res.ok){showToast('🗑️ Silindi!');listele()}else showToast('❌ Silinemedi!',true);
 }
@@ -421,6 +430,22 @@ function formTemizle(){
 }
 
 listele();
+
+function onayModal(mesaj, tehlikeli=false){
+    return new Promise(resolve=>{
+        document.getElementById('onayMesaj').textContent=mesaj;
+        const evetBtn=document.getElementById('onayEvet');
+        evetBtn.className='onay-evet'+(tehlikeli?' danger':'');
+        evetBtn.textContent=tehlikeli?'🗑️ Sil':'✅ Evet, Devam Et';
+        document.getElementById('onayModal').classList.add('open');
+        const kapat=(sonuc)=>{
+            document.getElementById('onayModal').classList.remove('open');
+            resolve(sonuc);
+        };
+        document.getElementById('onayIptal').onclick=()=>kapat(false);
+        document.getElementById('onayEvet').onclick=()=>kapat(true);
+    });
+}
 
 // ── EXCEL IMPORT ──────────────────────────────────────────────
 let excelVerisi = [];
@@ -602,6 +627,17 @@ function sablonIndir() {
                 </div>
             </div>
             <div id="importSonuc" style="display:none;margin-top:14px"></div>
+        </div>
+    </div>
+</div>
+
+<div id="onayModal">
+    <div class="onay-box">
+        <div class="onay-icon">⚠️</div>
+        <div class="onay-mesaj" id="onayMesaj"></div>
+        <div class="onay-btns">
+            <button class="onay-iptal" id="onayIptal">İptal</button>
+            <button class="onay-evet" id="onayEvet">✅ Evet, Devam Et</button>
         </div>
     </div>
 </div>
