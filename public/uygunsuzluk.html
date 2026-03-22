@@ -110,7 +110,7 @@ td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:0.85rem;ver
                 <input type="hidden" id="dof_duzenle_id">
                 <div class="fg fg2">
                     <div class="full"><label>Kök Sebep Analizi</label><textarea id="dof_kok_neden" style="min-height:55px" placeholder="Uygunsuzluğun temel kök sebebi..."></textarea></div>
-                    <div class="full"><label>Kapsam Etki Analizi</label><textarea id="dof_kapsam_etki" style="min-height:55px" placeholder="Uygunsuzluğun etkilediği kapsam ve alanlar..."></textarea></div>
+                    <div class="full"><label>Kaplam Etki Analizi</label><textarea id="dof_kapsam_etki" style="min-height:55px" placeholder="Uygunsuzluğun etkilediği kapsam ve alanlar..."></textarea></div>
                     <div class="full"><label>Yayılma Etki Analizi</label><textarea id="dof_yayilma_etki" style="min-height:55px" placeholder="Uygunsuzluğun yayılma riski ve etkilenen süreçler..."></textarea></div>
                     <div class="full"><label>Faaliyet Tanımı</label><textarea id="dof_faaliyet" style="min-height:50px" placeholder="Yapılacak düzeltici faaliyet..."></textarea></div>
                     <div><label>Sorumlu</label><input type="text" id="dof_sorumlu" placeholder="Ad Soyad"></div>
@@ -395,7 +395,7 @@ async function dofListele(){
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.83rem">
                 <div style="grid-column:1/-1"><span style="color:#64748b;font-weight:600">Kök Sebep Analizi:</span> ${d.kok_neden||'—'}</div>
-                ${d.kapsam_etki?`<div style="grid-column:1/-1"><span style="color:#64748b;font-weight:600">Kapsam Etki Analizi:</span> ${d.kapsam_etki}</div>`:''}
+                ${d.kapsam_etki?`<div style="grid-column:1/-1"><span style="color:#64748b;font-weight:600">Kaplam Etki Analizi:</span> ${d.kapsam_etki}</div>`:''}
                 ${d.yayilma_etki?`<div style="grid-column:1/-1"><span style="color:#64748b;font-weight:600">Yayılma Etki Analizi:</span> ${d.yayilma_etki}</div>`:''}
                 <div><span style="color:#64748b;font-weight:600">Sorumlu:</span> ${d.sorumlu||'—'}</div>
                 <div style="grid-column:1/-1"><span style="color:#64748b;font-weight:600">Faaliyet:</span> ${d.faaliyet_tanimi||'—'}</div>
