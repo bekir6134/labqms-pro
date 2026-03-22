@@ -370,7 +370,7 @@ function excelOku(file) {
                     revizyon_no:        String(r[3]||'').trim()||null,
                     yayin_tarihi:       tarihDonustur(r[4]),
                     gecerlilik_tarihi:  tarihDonustur(r[5]),
-                    durum:              String(r[6]||'').trim().toLowerCase()||'taslak',
+                    durum:              ({'yayında':'yayinda','yayinda':'yayinda','taslak':'taslak','iptal':'iptal','i̇ptal':'iptal'}[String(r[6]||'').trim().toLowerCase()])||'taslak',
                     aciklama:           String(r[7]||'').trim()||null
                 };
                 if (obj.baslik) excelVerisi.push(obj);

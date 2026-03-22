@@ -1373,6 +1373,9 @@ async function createKaliteTables() {
 app.listen(PORT, async () => {
     console.log(`🚀 Sunucu ${PORT} portunda başarıyla ayağa kalktı.`);
     await createKaliteTables().catch(e => console.error('Tablo oluşturma hatası:', e.message));
+    // Türkçe karakter normalizasyonu: "yayında" → "yayinda", "i̇ptal" → "iptal"
+    await pool.query(`UPDATE kalite_dokuman SET durum='yayinda' WHERE durum='yayında'`).catch(()=>{});
+    await pool.query(`UPDATE kalite_dokuman SET durum='iptal' WHERE durum='i̇ptal'`).catch(()=>{});
 });
 
 // ─── KALİTE SİSTEMİ API ROTALARI ────────────────────────────────────────────
