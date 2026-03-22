@@ -75,6 +75,86 @@ const pool = new Pool({
 });
 
 // TEST YOLU
+// Test: ölçüm PDF footer - ?id=SERTIFIKA_ID ile çağır
+app.get('/api/test-footer', async (req, res) => {
+    let browser;
+    try {
+        const id = req.params.id || req.query.id;
+        if (!id) return res.status(400).send('?id=SERTIFIKA_ID parametresi gerekli');
+
+        const row = await pool.query('SELECT olcum_pdf_url FROM sertifikalar WHERE id=$1', [id]);
+        if (!row.rows.length || !row.rows[0].olcum_pdf_url)
+            return res.status(404).send('Ölçüm PDF bulunamadı');
+
+        const olcumBytes = Buffer.from(row.rows[0].olcum_pdf_url, 'base64');
+
+        const ayarRows = await pool.query('SELECT anahtar, deger FROM ayarlar');
+        const ayar = ayarRows.rows.reduce((o, r) => { o[r.anahtar] = r.deger; return o; }, {});
+        const labAdi   = ayar.lab_adi   || 'LAB ADI';
+        const labAdres = ayar.adres     || '';
+        const labTel   = ayar.telefon   || '';
+        const labWeb   = ayar.website   || '';
+        const labMail  = ayar.email     || '';
+
+        const execPath = process.env.CHROMIUM_PATH ||
+            require('child_process').execSync('which chromium || which chromium-browser || which google-chrome || echo ""')
+            .toString().trim();
+
+        browser = await puppeteer.launch({
+            executablePath: execPath,
+            headless: 'new',
+            args: ['--no-sandbox','--disable-setuid-sandbox','--disable-dev-shm-usage','--disable-gpu','--no-zygote','--single-process'],
+        });
+
+        const footerHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+        <style>*{margin:0;padding:0;box-sizing:border-box}
+        body{width:794px;height:72px;background:white;font-family:Arial,sans-serif;padding:4px 15px 2px}
+        .line1{border-top:0.6px solid #aaa;padding-top:3px;display:flex;justify-content:space-between;font-size:7px;color:#555}
+        .line2{border-top:0.3px solid #ccc;margin-top:3px;padding-top:2px;font-size:6px;color:#555;line-height:1.45}
+        </style></head><body>
+        <div class="line1"><span>${labAdi}  ${labAdres}</span><span>${[labTel?'Tel: '+labTel:'',labWeb,labMail].filter(Boolean).join('  |  ')}</span></div>
+        <div class="line2">
+          Bu sertifika, laboratuvarin yazili izni olmadan kismen kopyalanip cogaltilamaz. | Imzasiz ve TURKAK Dogrulama Kare Kodu bulunmayan sertifikalar gecersizdir.<br>
+          Bu sertifikanin kullanimindan once asist.turkak.org.tr uzerinden kare kodu okutarak dogrulayiniz.<br>
+          This certificate shall not be reproduced other than in full except with the permission of the laboratory. | Certificates unsigned or without TURKAK QR code are invalid.<br>
+          Before using this certificate, verify it by scanning the QR code via asist.turkak.org.tr.
+        </div></body></html>`;
+
+        const footerPage = await browser.newPage();
+        await footerPage.setViewport({ width: 794, height: 72 });
+        await footerPage.setContent(footerHtml, { waitUntil: 'networkidle0' });
+        const footerBuffer = await footerPage.pdf({
+            width: '794px', height: '72px',
+            margin: { top: '0', right: '0', bottom: '0', left: '0' },
+            printBackground: true,
+        });
+        await browser.close(); browser = null;
+
+        const { PDFDocument } = require('pdf-lib');
+        const sonDoc = await PDFDocument.create();
+        const [embFooter] = await sonDoc.embedPdf(footerBuffer, [0]);
+        const embOlcumPages = await sonDoc.embedPdf(olcumBytes);
+        const pageW = 595.28, pageH = 841.89;
+        const footerH = 72 * (pageH / 1122.52);
+
+        for (const embOlcum of embOlcumPages) {
+            const pg = sonDoc.addPage([pageW, pageH]);
+            const { width: oW, height: oH } = embOlcum;
+            const scale = Math.min(pageW / oW, (pageH - footerH) / oH);
+            pg.drawPage(embOlcum, { x: (pageW - oW*scale)/2, y: footerH, width: oW*scale, height: oH*scale });
+            pg.drawPage(embFooter, { x: 0, y: 0, width: pageW, height: footerH });
+        }
+
+        const pdfBytes = await sonDoc.save();
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', 'inline; filename="test-footer.pdf"');
+        res.send(Buffer.from(pdfBytes));
+    } catch(err) {
+        if(browser) try { await browser.close(); } catch(e) {}
+        res.status(500).send('HATA: ' + err.message + '\n' + err.stack);
+    }
+});
+
 app.get('/api/test', async (req, res) => {
     try {
         const result = await pool.query('SELECT NOW()');
