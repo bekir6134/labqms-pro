@@ -1124,7 +1124,7 @@ app.get('/api/dashboard', async (req, res) => {
                 SELECT p.baslik, p.dok_no, p.revizyon_no, p.gecerlilik_tarihi as revizyon_tarihi
                 FROM kalite_dokuman p
                 WHERE p.parent_id IS NULL
-                AND p.gecerlilik_tarihi >= CURRENT_DATE - INTERVAL '30 days'
+                AND p.gecerlilik_tarihi >= CURRENT_DATE - INTERVAL '7 days'
                 AND EXISTS (SELECT 1 FROM kalite_dokuman c WHERE c.parent_id = p.id)
                 ORDER BY p.gecerlilik_tarihi DESC
                 LIMIT 10`)

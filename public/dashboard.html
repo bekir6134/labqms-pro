@@ -181,7 +181,7 @@
     <!-- YAKLAŞAN AKTİVİTELER -->
     <div class="card">
         <div class="card-head" style="display:flex;align-items:center;justify-content:space-between;">
-            <div class="card-title">⚠️ Yaklaşan Aktiviteler (30 Gün)</div>
+            <div class="card-title">🔔 Güncel Durum & Bildirimler</div>
             <span id="yaklasanRozet" style="display:none;background:#ef4444;color:#fff;border-radius:12px;padding:2px 9px;font-size:0.72rem;font-weight:700;animation:pulse 1.5s infinite;"></span>
         </div>
         <div class="card-body" id="yaklasanListesi">
@@ -311,7 +311,7 @@
             <div style="font-size:1.3rem;flex-shrink:0;">${kritikVar ? '🚨' : '⚠️'}</div>
             <div style="flex:1;">
                 <div style="font-weight:700;margin-bottom:6px;font-size:0.88rem;color:${kritikVar?'#dc2626':'#854d0e'};">
-                    ${kritikVar ? 'Kritik Bildirimler' : 'Yaklaşan Aktiviteler'} (${items.length})
+                    ${kritikVar ? 'Kritik Bildirimler' : 'Güncel Durum & Bildirimler'} (${items.length})
                 </div>
                 ${items.map(i => `<div class="bildirim-item" style="${i.kritik?'font-weight:600;color:#dc2626;':''}">
                     ${i.kritik ? '🔴' : '🟡'} ${i.text}
