@@ -2278,29 +2278,36 @@ app.get('/api/sertifikalar/:id/pdf', async (req, res) => {
 
             // Ölçüm PDF sayfaları ekle (yasal footer damgası ile)
             const olcumDoc = await PDFDocument.load(olcumBytes);
-            const helvetica = await olcumDoc.embedFont(StandardFonts.Helvetica);
-            const yasal1 = 'This certificate shall not be reproduced other than in full except with the permission of the laboratory.';
-            const yasal2 = 'Certificates that are unsigned and do not contain TURKAK Certificate Verification System\'s verification QR code are invalid.';
-            const yasal3 = 'Before using this certificate, verify it by scanning the QR code via asist.turkak.org.tr.';
-            const yasal1tr = 'Bu sertifika, laboratuvarin yazili izni olmadan kismen kopyalanip cogaltilamaz.';
-            const yasal2tr = 'Imzasiz ve TURKAK Dogrulama Kare Kodu bulunmayan sertifikalar gecersizdir.';
-            const yasal3tr = 'Bu sertifikanin kullanimindan once asist.turkak.org.tr baglantisi uzerinden kare kodu okutarak dogrulayiniz.';
-            for (const page of olcumDoc.getPages()) {
-                const { width, height } = page.getSize();
-                const fs = 5.5;
-                const gri = rgb(0.45, 0.45, 0.45);
-                const satirlar = [yasal1tr, yasal1, yasal2tr, yasal2, yasal3tr, yasal3];
-                const satirYuksekligi = fs + 2;
-                const toplamYukseklik = satirlar.length * satirYuksekligi + 4;
-                const baslangicY = toplamYukseklik + 4;
+            const olcumPages = await birlesikDoc.copyPages(olcumDoc, olcumDoc.getPageIndices());
+
+            // Fontu birlesikDoc'a göm (sayfa kopyalandıktan sonra çizim için)
+            const helvetica = await birlesikDoc.embedFont(StandardFonts.Helvetica);
+            const yasalSatirlar = [
+                'Bu sertifika, laboratuvarin yazili izni olmadan kismen kopyalanip cogaltilamaz.',
+                'This certificate shall not be reproduced other than in full except with the permission of the laboratory.',
+                'Imzasiz ve TURKAK Dogrulama Kare Kodu bulunmayan sertifikalar gecersizdir.',
+                'Certificates that are unsigned and do not contain TURKAK Certificate Verification System\'s verification QR code are invalid.',
+                'Bu sertifikanin kullanimindan once asist.turkak.org.tr uzerinden kare kodu okutarak dogrulayiniz.',
+                'Before using this certificate, verify it by scanning the QR code via asist.turkak.org.tr.',
+            ];
+            const fs = 6;
+            const satirAraligi = fs + 2.5;
+            const gri = rgb(0.35, 0.35, 0.35);
+
+            for (const page of olcumPages) {
+                birlesikDoc.addPage(page);
+                const { width } = page.getSize();
+                const toplamY = yasalSatirlar.length * satirAraligi + 6;
+                const cizgiY = toplamY + 3;
+                // Beyaz arka plan
+                page.drawRectangle({ x:15, y:0, width:width-30, height:cizgiY+4, color:rgb(1,1,1) });
                 // İnce çizgi
-                page.drawLine({ start:{x:20, y:baslangicY+2}, end:{x:width-20, y:baslangicY+2}, thickness:0.4, color:rgb(0.7,0.7,0.7) });
-                satirlar.forEach((satir, i) => {
-                    page.drawText(satir, { x:20, y: baslangicY - (i * satirYuksekligi) - fs, size:fs, font:helvetica, color:gri });
+                page.drawLine({ start:{x:15, y:cizgiY}, end:{x:width-15, y:cizgiY}, thickness:0.5, color:rgb(0.6,0.6,0.6) });
+                // Satırlar
+                yasalSatirlar.forEach((satir, i) => {
+                    page.drawText(satir, { x:15, y: toplamY - (i * satirAraligi), size:fs, font:helvetica, color:gri });
                 });
             }
-            const olcumPages = await birlesikDoc.copyPages(olcumDoc, olcumDoc.getPageIndices());
-            olcumPages.forEach(p => birlesikDoc.addPage(p));
 
             const birlesikBytes = await birlesikDoc.save();
             sonPdfBuffer = Buffer.from(birlesikBytes);
