@@ -1380,6 +1380,59 @@ async function createKaliteTables() {
     console.log('✅ Kalite sistemi tabloları hazır.');
 }
 
+// ── GROQ AI ASISTAN ──
+app.post('/api/ai/sor', async (req, res) => {
+    const { mesaj, gecmis = [] } = req.body;
+    if (!mesaj) return res.status(400).json({ hata: 'Mesaj boş olamaz.' });
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey) return res.status(500).json({ hata: 'GROQ_API_KEY tanımlı değil.' });
+
+    const sistem = `Sen LabQMS Pro adlı laboratuvar kalite yönetim sisteminin yapay zeka asistanısın.
+Kullanıcılar laboratuvar kalite yönetimi, ISO 17025, kalibrasyon, uygunsuzluk, DÖF (Düzeltici ve Önleyici Faaliyet),
+doküman yönetimi, sertifika süreçleri gibi konularda sana soru sorabilir.
+Kısa, net ve pratik cevaplar ver. Türkçe konuş.`;
+
+    const mesajlar = [
+        { role: 'system', content: sistem },
+        ...gecmis.slice(-6),
+        { role: 'user', content: mesaj }
+    ];
+
+    const body = JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: mesajlar,
+        max_tokens: 1024,
+        temperature: 0.7
+    });
+
+    const options = {
+        hostname: 'api.groq.com',
+        path: '/openai/v1/chat/completions',
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Length': Buffer.byteLength(body)
+        }
+    };
+
+    const apiReq = https.request(options, (apiRes) => {
+        let data = '';
+        apiRes.on('data', chunk => data += chunk);
+        apiRes.on('end', () => {
+            try {
+                const parsed = JSON.parse(data);
+                const cevap = parsed.choices?.[0]?.message?.content;
+                if (cevap) res.json({ cevap });
+                else res.status(500).json({ hata: 'Yanıt alınamadı.', detay: data });
+            } catch(e) { res.status(500).json({ hata: 'Parse hatası.' }); }
+        });
+    });
+    apiReq.on('error', e => res.status(500).json({ hata: e.message }));
+    apiReq.write(body);
+    apiReq.end();
+});
+
 app.listen(PORT, async () => {
     console.log(`🚀 Sunucu ${PORT} portunda başarıyla ayağa kalktı.`);
     await createKaliteTables().catch(e => console.error('Tablo oluşturma hatası:', e.message));
