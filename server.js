@@ -1444,6 +1444,8 @@ app.listen(PORT, async () => {
     // Uygunsuzluk yeni alanlar
     await pool.query(`ALTER TABLE uygunsuzluk ADD COLUMN IF NOT EXISTS esas_alinan_sart TEXT`).catch(()=>{});
     await pool.query(`ALTER TABLE uygunsuzluk ADD COLUMN IF NOT EXISTS sinif VARCHAR(20)`).catch(()=>{});
+    await pool.query(`ALTER TABLE dof ADD COLUMN IF NOT EXISTS kapsam_etki TEXT`).catch(()=>{});
+    await pool.query(`ALTER TABLE dof ADD COLUMN IF NOT EXISTS yayilma_etki TEXT`).catch(()=>{});
 });
 
 // ─── KALİTE SİSTEMİ API ROTALARI ────────────────────────────────────────────
@@ -1586,21 +1588,21 @@ app.get('/api/dof/:uygunsuzluk_id', async (req, res) => {
 });
 app.post('/api/dof', async (req, res) => {
     try {
-        const { uygunsuzluk_id, kok_neden, faaliyet_tanimi, sorumlu, termin, tamamlandi_tarihi, sonuc } = req.body;
+        const { uygunsuzluk_id, kok_neden, kapsam_etki, yayilma_etki, faaliyet_tanimi, sorumlu, termin, tamamlandi_tarihi, sonuc } = req.body;
         const r = await pool.query(
-            `INSERT INTO dof (uygunsuzluk_id,kok_neden,faaliyet_tanimi,sorumlu,termin,tamamlandi_tarihi,sonuc)
-             VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-            [uygunsuzluk_id, kok_neden, faaliyet_tanimi, sorumlu, termin||null, tamamlandi_tarihi||null, sonuc]
+            `INSERT INTO dof (uygunsuzluk_id,kok_neden,kapsam_etki,yayilma_etki,faaliyet_tanimi,sorumlu,termin,tamamlandi_tarihi,sonuc)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+            [uygunsuzluk_id, kok_neden, kapsam_etki, yayilma_etki, faaliyet_tanimi, sorumlu, termin||null, tamamlandi_tarihi||null, sonuc]
         );
         res.json(r.rows[0]);
     } catch(e) { res.status(500).json({ error: e.message }); }
 });
 app.put('/api/dof/:id', async (req, res) => {
     try {
-        const { kok_neden, faaliyet_tanimi, sorumlu, termin, tamamlandi_tarihi, sonuc } = req.body;
+        const { kok_neden, kapsam_etki, yayilma_etki, faaliyet_tanimi, sorumlu, termin, tamamlandi_tarihi, sonuc } = req.body;
         const r = await pool.query(
-            `UPDATE dof SET kok_neden=$1,faaliyet_tanimi=$2,sorumlu=$3,termin=$4,tamamlandi_tarihi=$5,sonuc=$6 WHERE id=$7 RETURNING *`,
-            [kok_neden, faaliyet_tanimi, sorumlu, termin||null, tamamlandi_tarihi||null, sonuc, req.params.id]
+            `UPDATE dof SET kok_neden=$1,kapsam_etki=$2,yayilma_etki=$3,faaliyet_tanimi=$4,sorumlu=$5,termin=$6,tamamlandi_tarihi=$7,sonuc=$8 WHERE id=$9 RETURNING *`,
+            [kok_neden, kapsam_etki, yayilma_etki, faaliyet_tanimi, sorumlu, termin||null, tamamlandi_tarihi||null, sonuc, req.params.id]
         );
         res.json(r.rows[0]);
     } catch(e) { res.status(500).json({ error: e.message }); }

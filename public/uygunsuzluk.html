@@ -109,7 +109,9 @@ td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:0.85rem;ver
                 <div style="font-weight:700;color:var(--primary);font-size:0.85rem;margin-bottom:12px">➕ Yeni Faaliyet Ekle</div>
                 <input type="hidden" id="dof_duzenle_id">
                 <div class="fg fg2">
-                    <div class="full"><label>Kök Neden</label><textarea id="dof_kok_neden" style="min-height:50px" placeholder="Uygunsuzluğun kök nedeni..."></textarea></div>
+                    <div class="full"><label>Kök Sebep Analizi</label><textarea id="dof_kok_neden" style="min-height:55px" placeholder="Uygunsuzluğun temel kök sebebi..."></textarea></div>
+                    <div class="full"><label>Kapsam Etki Analizi</label><textarea id="dof_kapsam_etki" style="min-height:55px" placeholder="Uygunsuzluğun etkilediği kapsam ve alanlar..."></textarea></div>
+                    <div class="full"><label>Yayılma Etki Analizi</label><textarea id="dof_yayilma_etki" style="min-height:55px" placeholder="Uygunsuzluğun yayılma riski ve etkilenen süreçler..."></textarea></div>
                     <div class="full"><label>Faaliyet Tanımı</label><textarea id="dof_faaliyet" style="min-height:50px" placeholder="Yapılacak düzeltici faaliyet..."></textarea></div>
                     <div><label>Sorumlu</label><input type="text" id="dof_sorumlu" placeholder="Ad Soyad"></div>
                     <div><label>Termin</label><input type="date" id="dof_termin"></div>
@@ -392,7 +394,9 @@ async function dofListele(){
                 </div>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.83rem">
-                <div><span style="color:#64748b;font-weight:600">Kök Neden:</span> ${d.kok_neden||'—'}</div>
+                <div style="grid-column:1/-1"><span style="color:#64748b;font-weight:600">Kök Sebep Analizi:</span> ${d.kok_neden||'—'}</div>
+                ${d.kapsam_etki?`<div style="grid-column:1/-1"><span style="color:#64748b;font-weight:600">Kapsam Etki Analizi:</span> ${d.kapsam_etki}</div>`:''}
+                ${d.yayilma_etki?`<div style="grid-column:1/-1"><span style="color:#64748b;font-weight:600">Yayılma Etki Analizi:</span> ${d.yayilma_etki}</div>`:''}
                 <div><span style="color:#64748b;font-weight:600">Sorumlu:</span> ${d.sorumlu||'—'}</div>
                 <div style="grid-column:1/-1"><span style="color:#64748b;font-weight:600">Faaliyet:</span> ${d.faaliyet_tanimi||'—'}</div>
                 <div><span style="color:#64748b;font-weight:600">Termin:</span> ${ter}</div>
@@ -410,6 +414,8 @@ async function dofDuzenle(id){
     const d=data.find(x=>x.id===id);if(!d)return;
     document.getElementById('dof_duzenle_id').value=d.id;
     document.getElementById('dof_kok_neden').value=d.kok_neden||'';
+    document.getElementById('dof_kapsam_etki').value=d.kapsam_etki||'';
+    document.getElementById('dof_yayilma_etki').value=d.yayilma_etki||'';
     document.getElementById('dof_faaliyet').value=d.faaliyet_tanimi||'';
     document.getElementById('dof_sorumlu').value=d.sorumlu||'';
     document.getElementById('dof_termin').value=d.termin?d.termin.substring(0,10):'';
@@ -423,6 +429,8 @@ async function dofKaydet(){
     const payload={
         uygunsuzluk_id:aktifUygunsuzlukId,
         kok_neden:document.getElementById('dof_kok_neden').value.trim(),
+        kapsam_etki:document.getElementById('dof_kapsam_etki').value.trim(),
+        yayilma_etki:document.getElementById('dof_yayilma_etki').value.trim(),
         faaliyet_tanimi:document.getElementById('dof_faaliyet').value.trim(),
         sorumlu:document.getElementById('dof_sorumlu').value.trim(),
         termin:document.getElementById('dof_termin').value||null,
@@ -445,7 +453,7 @@ async function dofSil(id){
 }
 
 function dofFormTemizle(){
-    ['dof_duzenle_id','dof_kok_neden','dof_faaliyet','dof_sorumlu','dof_termin','dof_tamamlandi','dof_sonuc'].forEach(id=>document.getElementById(id).value='');
+    ['dof_duzenle_id','dof_kok_neden','dof_kapsam_etki','dof_yayilma_etki','dof_faaliyet','dof_sorumlu','dof_termin','dof_tamamlandi','dof_sonuc'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('dofSaveBtn').textContent='💾 Ekle';
 }
 
