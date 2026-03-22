@@ -1423,6 +1423,13 @@ app.post('/api/kalite-dokuman-toplu', async (req, res) => {
         res.json({ basarili, hatali, hatalar });
     } catch(e) { res.status(500).json({ error: e.message }); }
 });
+app.delete('/api/kalite-dokuman-toplu-sil', async (req, res) => {
+    try {
+        const { ids } = req.body;
+        await pool.query('DELETE FROM kalite_dokuman WHERE id=ANY($1)', [ids]);
+        res.json({ success: true });
+    } catch(e) { res.status(500).json({ error: e.message }); }
+});
 app.delete('/api/kalite-dokuman/:id', async (req, res) => {
     try {
         await pool.query('DELETE FROM kalite_dokuman WHERE id=$1', [req.params.id]);

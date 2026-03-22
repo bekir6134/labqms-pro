@@ -106,15 +106,29 @@ td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:0.85rem;ver
 <div class="card">
     <div class="card-header">
         <div class="card-title">📋 Doküman Listesi</div>
-        <div style="display:flex;gap:8px;align-items:center">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <button onclick="excelModalAc()" style="background:#f0fdf4;color:#166534;border:1px solid #86efac;padding:7px 14px;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.83rem">📊 Excel ile Toplu Aktar</button>
-            <div class="search-box"><input type="text" id="araInput" onkeyup="ara()" placeholder="Ara..."></div>
+            <select id="turFiltre" onchange="uygulaFiltre()" style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.84rem;font-family:inherit;background:#fff">
+                <option value="">Tüm Türler</option>
+                <option>Prosedür</option><option>Talimat</option><option>Form</option><option>El Kitabı</option><option>Diğer</option>
+            </select>
+            <select id="durumFiltre" onchange="uygulaFiltre()" style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.84rem;font-family:inherit;background:#fff">
+                <option value="">Tüm Durumlar</option>
+                <option value="taslak">Taslak</option><option value="yayinda">Yayında</option><option value="iptal">İptal</option>
+            </select>
+            <div class="search-box"><input type="text" id="araInput" onkeyup="uygulaFiltre()" placeholder="Ara..."></div>
         </div>
     </div>
     <div class="kanban" id="kanban"></div>
+    <div id="topluBar" style="display:none;background:#1e3a8a;color:#fff;border-radius:10px;padding:10px 18px;margin:0 18px 12px;align-items:center;gap:12px;flex-wrap:wrap">
+        <span id="topluSayiYazi" style="font-weight:700;font-size:0.95rem"></span>
+        <button onclick="topluSil()" style="background:#ef4444;color:#fff;border:none;padding:7px 18px;border-radius:7px;font-weight:700;cursor:pointer">🗑️ Seçilenleri Sil</button>
+        <button onclick="secimiTemizle()" style="background:#475569;color:#fff;border:none;padding:7px 14px;border-radius:7px;font-weight:600;cursor:pointer">✖ İptal</button>
+    </div>
     <div style="padding:0 18px 18px">
         <table><thead><tr>
-            <th>Dok. No</th><th>Başlık</th><th>Tür</th><th>Rev.</th><th>Yayın Tarihi</th><th>Durum</th><th>İşlemler</th>
+            <th style="width:36px"><input type="checkbox" id="tumunuSecCB" onchange="tumunuSec(this)"></th>
+            <th>Dok. No</th><th>Başlık</th><th>Tür</th><th>Rev.</th><th>Yayın Tarihi</th><th>Revizyon Tarihi</th><th>Durum</th><th>İşlemler</th>
         </tr></thead><tbody id="liste"></tbody></table>
     </div>
 </div>
@@ -145,11 +159,14 @@ function kanbanFiltrele(a){aktifFiltre=aktifFiltre===a?'':a;renderKanban();uygul
 function uygulaFiltre(){
     let d=tumKayitlar;
     if(aktifFiltre)d=d.filter(r=>(r.durum||'taslak')===aktifFiltre);
+    const tur=document.getElementById('turFiltre')?.value||'';
+    if(tur)d=d.filter(r=>(r.tur||'')===tur);
+    const durum=document.getElementById('durumFiltre')?.value||'';
+    if(durum)d=d.filter(r=>(r.durum||'taslak')===durum);
     const f=document.getElementById('araInput').value.toUpperCase();
     if(f)d=d.filter(r=>(r.dok_no||'').toUpperCase().includes(f)||(r.baslik||'').toUpperCase().includes(f));
     renderListe(d);
 }
-function ara(){uygulaFiltre()}
 
 async function listele(){
     const r=await fetch('/api/kalite-dokuman');
@@ -159,16 +176,19 @@ async function listele(){
 
 function renderListe(data){
     const tb=document.getElementById('liste');
-    if(!data.length){tb.innerHTML='<tr class="empty-row"><td colspan="7">Kayıt yok.</td></tr>';return}
+    if(!data.length){tb.innerHTML='<tr class="empty-row"><td colspan="9">Kayıt yok.</td></tr>';return}
     tb.innerHTML=data.map(r=>{
         const durum=r.durum||'taslak';
         const tar=r.yayin_tarihi?new Date(r.yayin_tarihi).toLocaleDateString('tr-TR'):'-';
+        const revTar=r.gecerlilik_tarihi?new Date(r.gecerlilik_tarihi).toLocaleDateString('tr-TR'):'-';
         return `<tr>
+            <td><input type="checkbox" class="dok-cb" value="${r.id}" onchange="checkboxDegis()"></td>
             <td style="font-weight:700;color:var(--primary)">${r.dok_no||'—'}</td>
             <td>${r.baslik}</td>
             <td>${r.tur||'—'}</td>
             <td>${r.revizyon_no||'—'}</td>
             <td>${tar}</td>
+            <td>${revTar}</td>
             <td><span class="badge ${DUR_RENK[durum]||''}">${DUR_LABEL[durum]||durum}</span></td>
             <td>
                 <div class="act-wrap" id="am-${r.id}">
@@ -181,6 +201,40 @@ function renderListe(data){
             </td>
         </tr>`;
     }).join('');
+}
+
+function checkboxDegis(){
+    const secili=[...document.querySelectorAll('.dok-cb:checked')];
+    const bar=document.getElementById('topluBar');
+    if(secili.length>0){
+        bar.style.display='flex';
+        document.getElementById('topluSayiYazi').textContent=`${secili.length} kayıt seçildi`;
+    } else { bar.style.display='none'; }
+    const hepsi=document.querySelectorAll('.dok-cb');
+    const tumCB=document.getElementById('tumunuSecCB');
+    tumCB.checked=secili.length===hepsi.length&&hepsi.length>0;
+    tumCB.indeterminate=secili.length>0&&secili.length<hepsi.length;
+}
+
+function tumunuSec(cb){
+    document.querySelectorAll('.dok-cb').forEach(c=>c.checked=cb.checked);
+    checkboxDegis();
+}
+
+function secimiTemizle(){
+    document.querySelectorAll('.dok-cb').forEach(c=>c.checked=false);
+    document.getElementById('tumunuSecCB').checked=false;
+    document.getElementById('tumunuSecCB').indeterminate=false;
+    document.getElementById('topluBar').style.display='none';
+}
+
+async function topluSil(){
+    const ids=[...document.querySelectorAll('.dok-cb:checked')].map(c=>parseInt(c.value));
+    if(!ids.length)return;
+    if(!confirm(`Seçilen ${ids.length} doküman silinecek. Emin misiniz?`))return;
+    const res=await fetch('/api/kalite-dokuman-toplu-sil',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids})});
+    if(res.ok){showToast(`🗑️ ${ids.length} doküman silindi.`);secimiTemizle();listele();}
+    else showToast('❌ Silinemedi!',true);
 }
 
 function menuToggle(id,e){
