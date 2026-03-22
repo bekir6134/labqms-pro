@@ -1094,7 +1094,7 @@ app.delete('/api/is-emirleri/:id', async (req, res) => {
 // --- DASHBOARD İSTATİSTİKLERİ ---
 app.get('/api/dashboard', async (req, res) => {
     try {
-        const [kabulEdilenler, hazırlananlar, tamamlananlar, buYil, musteriler, referanslar, takvimleri] = await Promise.all([
+        const [kabulEdilenler, hazırlananlar, tamamlananlar, buYil, musteriler, referanslar, takvimleri, revizyonlar] = await Promise.all([
             pool.query(`SELECT COUNT(*) FROM is_emirleri WHERE asama='kabul_edildi'`),
             pool.query(`SELECT COUNT(*) FROM is_emirleri WHERE asama IN ('hazırlanıyor','tamamlandı','imzalandı')`),
             pool.query(`SELECT COUNT(*) FROM is_emirleri WHERE asama='onaylandı' OR asama='sertifika_gönderildi'`),
@@ -1118,7 +1118,16 @@ app.get('/api/dashboard', async (req, res) => {
                 FROM takvim t
                 LEFT JOIN personeller p ON t.atanan_id = p.id
                 WHERE t.baslangic = CURRENT_DATE + INTERVAL '1 day'
-                ORDER BY t.baslangic ASC`)
+                ORDER BY t.baslangic ASC`),
+            // Son 30 günde revize edilen dokümanlar
+            pool.query(`
+                SELECT p.baslik, p.dok_no, p.revizyon_no, p.gecerlilik_tarihi as revizyon_tarihi
+                FROM kalite_dokuman p
+                WHERE p.parent_id IS NULL
+                AND p.gecerlilik_tarihi >= CURRENT_DATE - INTERVAL '30 days'
+                AND EXISTS (SELECT 1 FROM kalite_dokuman c WHERE c.parent_id = p.id)
+                ORDER BY p.gecerlilik_tarihi DESC
+                LIMIT 10`)
         ]);
         res.json({
             kabul_edildi: parseInt(kabulEdilenler.rows[0].count),
@@ -1127,7 +1136,8 @@ app.get('/api/dashboard', async (req, res) => {
             bu_yil: parseInt(buYil.rows[0].count),
             musteri_sayisi: parseInt(musteriler.rows[0].count),
             yaklasan_aktiviteler: referanslar.rows,
-            yaklasan_etkinlikler: takvimleri.rows
+            yaklasan_etkinlikler: takvimleri.rows,
+            son_revizyonlar: revizyonlar.rows
         });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -1415,9 +1425,9 @@ app.post('/api/kalite-dokuman/:id/revize', async (req, res) => {
              VALUES ($1,$2,$3,$4,$5,$6,'iptal',$7,$8)`,
             [p.dok_no, p.baslik, p.tur, p.revizyon_no, p.yayin_tarihi||null, p.gecerlilik_tarihi||null, p.aciklama, p.id]
         );
-        // Ana kaydı yeni revizyon no ve tarihle güncelle
+        // Ana kaydı yeni revizyon no ve revizyon tarihiyle güncelle
         const r = await pool.query(
-            `UPDATE kalite_dokuman SET revizyon_no=$1, yayin_tarihi=$2 WHERE id=$3 RETURNING *`,
+            `UPDATE kalite_dokuman SET revizyon_no=$1, gecerlilik_tarihi=$2 WHERE id=$3 RETURNING *`,
             [revizyon_no, yayin_tarihi||null, p.id]
         );
         res.json(r.rows[0]);

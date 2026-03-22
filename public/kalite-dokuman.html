@@ -190,7 +190,7 @@ function renderListe(data){
         return `<tr style="cursor:pointer" onclick="accordionToggle(${r.id},event)">
             <td onclick="event.stopPropagation()"><input type="checkbox" class="dok-cb" value="${r.id}" onchange="checkboxDegis()"></td>
             <td style="font-weight:700;color:var(--primary)">${r.dok_no||'—'}</td>
-            <td>${r.baslik} ${revSayisi>0?`<span style="background:#dbeafe;color:#1e40af;font-size:0.7rem;padding:2px 7px;border-radius:8px;font-weight:700;margin-left:4px">${revSayisi} revizyon</span>`:''}</td>
+            <td>${r.baslik}</td>
             <td>${r.tur||'—'}</td>
             <td>${r.revizyon_no||'—'}</td>
             <td>${tar}</td>

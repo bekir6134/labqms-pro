@@ -272,7 +272,7 @@
             document.getElementById("k3").textContent = d.onay_bekleyen;
             document.getElementById("k4").textContent = d.bu_yil;
             document.getElementById("k5").textContent = d.musteri_sayisi;
-            renderYaklasan(d.yaklasan_aktiviteler || []);
+            renderYaklasan(d.yaklasan_aktiviteler || [], d.son_revizyonlar || []);
             renderBildirimler(d.yaklasan_aktiviteler || [], d.yaklasan_etkinlikler || []);
         } catch(e) { console.error(e); }
     }
@@ -320,11 +320,11 @@
             <button onclick="this.parentElement.style.display='none'" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:1rem;flex-shrink:0;align-self:flex-start;">✕</button>`;
     }
 
-    function renderYaklasan(liste) {
+    function renderYaklasan(liste, revizyonlar) {
         const el = document.getElementById("yaklasanListesi");
         const rozet = document.getElementById("yaklasanRozet");
 
-        if (!liste.length) {
+        if (!liste.length && !revizyonlar.length) {
             el.innerHTML = '<div style="color:#94a3b8;font-size:0.85rem;text-align:center;padding:10px;">Yaklaşan aktivite yok 🎉</div>';
             rozet.style.display = 'none';
             return;
@@ -356,6 +356,18 @@
             }
         }
 
+        const revHtml = revizyonlar.map(r => {
+            const tarih = r.revizyon_tarihi ? new Date(r.revizyon_tarihi).toLocaleDateString('tr-TR') : '-';
+            return `<div class="yakl-item">
+                <span style="font-size:1.1rem;">📄</span>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-weight:600;font-size:0.83rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.baslik}</div>
+                    <div style="color:#94a3b8;font-size:0.75rem;">${r.dok_no||''} · ${r.revizyon_no||''} · ${tarih}</div>
+                </div>
+                <span class="gun-badge gun-yellow">Revize Edildi</span>
+            </div>`;
+        }).join('');
+
         el.innerHTML = liste.map(r => {
             const gun = parseInt(r.kalan_gun);
             const tarih = new Date(r.sonraki_kal_tarihi).toLocaleDateString('tr-TR');
@@ -370,7 +382,7 @@
                 </div>
                 <span class="gun-badge ${cls}">${gunText}</span>
             </div>`;
-        }).join('');
+        }).join('') + revHtml;
     }
 
     // ── SON İŞ EMİRLERİ ──
