@@ -1386,23 +1386,41 @@ app.get('/api/kalite-dokuman', async (req, res) => {
 });
 app.post('/api/kalite-dokuman', async (req, res) => {
     try {
-        const { dok_no, baslik, tur, revizyon_no, yayin_tarihi, gecerlilik_tarihi, durum, sorumlu, aciklama } = req.body;
+        const { dok_no, baslik, tur, revizyon_no, yayin_tarihi, gecerlilik_tarihi, durum, aciklama } = req.body;
         const r = await pool.query(
-            `INSERT INTO kalite_dokuman (dok_no,baslik,tur,revizyon_no,yayin_tarihi,gecerlilik_tarihi,durum,sorumlu,aciklama)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
-            [dok_no, baslik, tur, revizyon_no, yayin_tarihi||null, gecerlilik_tarihi||null, durum||'taslak', sorumlu, aciklama]
+            `INSERT INTO kalite_dokuman (dok_no,baslik,tur,revizyon_no,yayin_tarihi,gecerlilik_tarihi,durum,aciklama)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+            [dok_no, baslik, tur, revizyon_no, yayin_tarihi||null, gecerlilik_tarihi||null, durum||'taslak', aciklama]
         );
         res.json(r.rows[0]);
     } catch(e) { res.status(500).json({ error: e.message }); }
 });
 app.put('/api/kalite-dokuman/:id', async (req, res) => {
     try {
-        const { dok_no, baslik, tur, revizyon_no, yayin_tarihi, gecerlilik_tarihi, durum, sorumlu, aciklama } = req.body;
+        const { dok_no, baslik, tur, revizyon_no, yayin_tarihi, gecerlilik_tarihi, durum, aciklama } = req.body;
         const r = await pool.query(
-            `UPDATE kalite_dokuman SET dok_no=$1,baslik=$2,tur=$3,revizyon_no=$4,yayin_tarihi=$5,gecerlilik_tarihi=$6,durum=$7,sorumlu=$8,aciklama=$9 WHERE id=$10 RETURNING *`,
-            [dok_no, baslik, tur, revizyon_no, yayin_tarihi||null, gecerlilik_tarihi||null, durum, sorumlu, aciklama, req.params.id]
+            `UPDATE kalite_dokuman SET dok_no=$1,baslik=$2,tur=$3,revizyon_no=$4,yayin_tarihi=$5,gecerlilik_tarihi=$6,durum=$7,aciklama=$8 WHERE id=$9 RETURNING *`,
+            [dok_no, baslik, tur, revizyon_no, yayin_tarihi||null, gecerlilik_tarihi||null, durum, aciklama, req.params.id]
         );
         res.json(r.rows[0]);
+    } catch(e) { res.status(500).json({ error: e.message }); }
+});
+app.post('/api/kalite-dokuman-toplu', async (req, res) => {
+    try {
+        const { kayitlar } = req.body;
+        let basarili = 0, hatali = 0, hatalar = [];
+        for (const k of kayitlar) {
+            try {
+                if (!k.baslik) { hatalar.push(`Başlık boş: ${JSON.stringify(k)}`); hatali++; continue; }
+                await pool.query(
+                    `INSERT INTO kalite_dokuman (dok_no,baslik,tur,revizyon_no,yayin_tarihi,gecerlilik_tarihi,durum,aciklama)
+                     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+                    [k.dok_no||null, k.baslik, k.tur||null, k.revizyon_no||null, k.yayin_tarihi||null, k.gecerlilik_tarihi||null, k.durum||'taslak', k.aciklama||null]
+                );
+                basarili++;
+            } catch(e) { hatalar.push(k.baslik + ': ' + e.message); hatali++; }
+        }
+        res.json({ basarili, hatali, hatalar });
     } catch(e) { res.status(500).json({ error: e.message }); }
 });
 app.delete('/api/kalite-dokuman/:id', async (req, res) => {

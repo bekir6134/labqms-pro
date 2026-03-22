@@ -52,6 +52,8 @@ td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:0.85rem;ver
 #toast{visibility:hidden;min-width:240px;background:var(--success);color:#fff;text-align:center;border-radius:8px;padding:13px;position:fixed;z-index:9999;right:24px;top:24px;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,0.15)}
 #toast.show{visibility:visible}
 #toast.error{background:#ef4444}
+.excelModalWrap.open{display:flex!important}
+#dropZone.dragover{background:#dbeafe;border-color:#3b82f6}
 </style>
 </head>
 <body>
@@ -87,10 +89,9 @@ td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:0.85rem;ver
                 </select>
             </div>
         </div>
-        <div class="fg fg3">
+        <div class="fg fg2">
             <div><label>Yayın Tarihi</label><input type="date" id="yayin_tarihi"></div>
             <div><label>Geçerlilik Tarihi</label><input type="date" id="gecerlilik_tarihi"></div>
-            <div><label>Sorumlu</label><input type="text" id="sorumlu" placeholder="Ad Soyad"></div>
         </div>
         <div class="fg">
             <div class="full"><label>Açıklama</label><textarea id="aciklama" placeholder="Kısa açıklama..."></textarea></div>
@@ -105,12 +106,15 @@ td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:0.85rem;ver
 <div class="card">
     <div class="card-header">
         <div class="card-title">📋 Doküman Listesi</div>
-        <div class="search-box"><input type="text" id="araInput" onkeyup="ara()" placeholder="Ara..."></div>
+        <div style="display:flex;gap:8px;align-items:center">
+            <button onclick="excelModalAc()" style="background:#f0fdf4;color:#166534;border:1px solid #86efac;padding:7px 14px;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.83rem">📊 Excel ile Toplu Aktar</button>
+            <div class="search-box"><input type="text" id="araInput" onkeyup="ara()" placeholder="Ara..."></div>
+        </div>
     </div>
     <div class="kanban" id="kanban"></div>
     <div style="padding:0 18px 18px">
         <table><thead><tr>
-            <th>Dok. No</th><th>Başlık</th><th>Tür</th><th>Rev.</th><th>Yayın Tarihi</th><th>Sorumlu</th><th>Durum</th><th>İşlemler</th>
+            <th>Dok. No</th><th>Başlık</th><th>Tür</th><th>Rev.</th><th>Yayın Tarihi</th><th>Durum</th><th>İşlemler</th>
         </tr></thead><tbody id="liste"></tbody></table>
     </div>
 </div>
@@ -155,7 +159,7 @@ async function listele(){
 
 function renderListe(data){
     const tb=document.getElementById('liste');
-    if(!data.length){tb.innerHTML='<tr class="empty-row"><td colspan="8">Kayıt yok.</td></tr>';return}
+    if(!data.length){tb.innerHTML='<tr class="empty-row"><td colspan="7">Kayıt yok.</td></tr>';return}
     tb.innerHTML=data.map(r=>{
         const durum=r.durum||'taslak';
         const tar=r.yayin_tarihi?new Date(r.yayin_tarihi).toLocaleDateString('tr-TR'):'-';
@@ -165,7 +169,6 @@ function renderListe(data){
             <td>${r.tur||'—'}</td>
             <td>${r.revizyon_no||'—'}</td>
             <td>${tar}</td>
-            <td>${r.sorumlu||'—'}</td>
             <td><span class="badge ${DUR_RENK[durum]||''}">${DUR_LABEL[durum]||durum}</span></td>
             <td>
                 <div class="act-wrap" id="am-${r.id}">
@@ -208,7 +211,6 @@ async function kaydet(){
         yayin_tarihi:document.getElementById('yayin_tarihi').value||null,
         gecerlilik_tarihi:document.getElementById('gecerlilik_tarihi').value||null,
         durum:document.getElementById('durum').value,
-        sorumlu:document.getElementById('sorumlu').value.trim(),
         aciklama:document.getElementById('aciklama').value.trim()
     };
     if(!confirm(duzenleId?'Güncellemek istediğinize emin misiniz?':'Kaydetmek istediğinize emin misiniz?'))return;
@@ -231,7 +233,6 @@ function duzenle(id){
     document.getElementById('yayin_tarihi').value=r.yayin_tarihi?r.yayin_tarihi.substring(0,10):'';
     document.getElementById('gecerlilik_tarihi').value=r.gecerlilik_tarihi?r.gecerlilik_tarihi.substring(0,10):'';
     document.getElementById('durum').value=r.durum||'taslak';
-    document.getElementById('sorumlu').value=r.sorumlu||'';
     document.getElementById('aciklama').value=r.aciklama||'';
     document.getElementById('saveBtn').textContent='💾 Güncelle';
     const c=document.getElementById('accContent');
@@ -248,7 +249,7 @@ async function sil(id){
 }
 
 function formTemizle(){
-    ['duzenle_id','dok_no','baslik','revizyon_no','yayin_tarihi','gecerlilik_tarihi','sorumlu','aciklama'].forEach(id=>document.getElementById(id).value='');
+    ['duzenle_id','dok_no','baslik','revizyon_no','yayin_tarihi','gecerlilik_tarihi','aciklama'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('tur').value='';
     document.getElementById('durum').value='taslak';
     document.getElementById('saveBtn').textContent='💾 Kaydet';
@@ -258,7 +259,165 @@ function formTemizle(){
 }
 
 listele();
+
+// ── EXCEL IMPORT ──────────────────────────────────────────────
+let excelVerisi = [];
+
+function excelModalAc() {
+    excelVerisi = [];
+    document.getElementById('excelDosya').value = '';
+    document.getElementById('excelOnizle').style.display = 'none';
+    document.getElementById('importSonuc').style.display = 'none';
+    document.getElementById('dropZone').style.display = 'block';
+    document.getElementById('excelModal').classList.add('open');
+}
+function excelModalKapat() { document.getElementById('excelModal').classList.remove('open'); }
+
+function excelDrop(e) {
+    e.preventDefault();
+    document.getElementById('dropZone').classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file) excelOku(file);
+}
+function excelSec(input) { if (input.files[0]) excelOku(input.files[0]); }
+
+function tarihDonustur(val) {
+    if (!val) return null;
+    if (typeof val === 'number') {
+        const d = new Date(Math.round((val - 25569) * 86400 * 1000));
+        return d.toISOString().substring(0, 10);
+    }
+    const s = String(val).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    if (/^\d{2}\.\d{2}\.\d{4}$/.test(s)) { const [g,a,y]=s.split('.'); return `${y}-${a}-${g}`; }
+    return s || null;
+}
+
+function excelOku(file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const wb = XLSX.read(data, { type: 'array', cellDates: false });
+            const ws = wb.Sheets[wb.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+            if (rows.length < 2) { alert('Excel boş veya yalnızca başlık satırı var.'); return; }
+            // A=dok_no B=baslik C=tur D=revizyon_no E=yayin_tarihi F=gecerlilik_tarihi G=durum H=aciklama
+            excelVerisi = [];
+            for (let i = 1; i < rows.length; i++) {
+                const r = rows[i];
+                const obj = {
+                    dok_no:             String(r[0]||'').trim()||null,
+                    baslik:             String(r[1]||'').trim(),
+                    tur:                String(r[2]||'').trim()||null,
+                    revizyon_no:        String(r[3]||'').trim()||null,
+                    yayin_tarihi:       tarihDonustur(r[4]),
+                    gecerlilik_tarihi:  tarihDonustur(r[5]),
+                    durum:              String(r[6]||'').trim().toLowerCase()||'taslak',
+                    aciklama:           String(r[7]||'').trim()||null
+                };
+                if (obj.baslik) excelVerisi.push(obj);
+            }
+            document.getElementById('excelDosyaAdi').textContent = `📄 ${file.name}`;
+            document.getElementById('excelSatirSayisi').textContent = `${excelVerisi.length} kayıt bulundu`;
+            document.getElementById('excelOnizle').style.display = 'block';
+            document.getElementById('importSonuc').style.display = 'none';
+        } catch(err) { alert('Excel okunamadı: ' + err.message); }
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+async function excelImport() {
+    if (!excelVerisi.length) return;
+    const btn = document.getElementById('excelImportBtn');
+    btn.disabled = true; btn.textContent = '⏳ Aktarılıyor...';
+    try {
+        const res = await fetch('/api/kalite-dokuman-toplu', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ kayitlar: excelVerisi })
+        });
+        const sonuc = await res.json();
+        const wrap = document.getElementById('importSonuc');
+        wrap.style.display = 'block';
+        wrap.innerHTML = `
+            <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:12px 16px;font-size:0.85rem">
+                <div style="color:#166534;font-weight:700">✅ ${sonuc.basarili} kayıt başarıyla aktarıldı.</div>
+                ${sonuc.hatali > 0 ? `<div style="color:#92400e;margin-top:4px">⚠️ ${sonuc.hatali} kayıt aktarılamadı.</div>` : ''}
+                <div style="margin-top:10px"><button onclick="excelModalKapat();listele()" style="background:var(--primary);color:#fff;border:none;padding:9px 20px;border-radius:8px;font-weight:700;cursor:pointer">✅ Tamam, Listeyi Yenile</button></div>
+            </div>`;
+        document.getElementById('excelOnizle').style.display = 'none';
+        document.getElementById('dropZone').style.display = 'none';
+    } catch(e) { alert('Aktarım sırasında hata: ' + e.message); }
+    btn.disabled = false; btn.textContent = '⬆️ Sisteme Aktar';
+}
+
+function sablonIndir() {
+    const wb = XLSX.utils.book_new();
+    const ws_data = [
+        ['Doküman No','Başlık','Tür','Revizyon No','Yayın Tarihi','Geçerlilik Tarihi','Durum','Açıklama'],
+        ['KY-PR-001','Örnek Prosedür','Prosedür','Rev.0','2026-01-01','2027-01-01','yayinda','Kısa açıklama']
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(ws_data);
+    ws['!cols'] = Array(8).fill({ wch: 22 });
+    XLSX.utils.book_append_sheet(wb, ws, 'Dokümanlar');
+    XLSX.writeFile(wb, 'dokuman_sablon.xlsx');
+}
 </script>
+
+<!-- EXCEL IMPORT MODAL -->
+<div id="excelModal" style="display:none;position:fixed;inset:0;z-index:4000;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;" class="excelModalWrap">
+    <div style="background:#fff;border-radius:16px;width:94%;max-width:800px;max-height:92vh;overflow-y:auto;">
+        <div style="padding:16px 24px;border-bottom:1px solid var(--border);background:#f8fafc;display:flex;justify-content:space-between;align-items:center;border-radius:16px 16px 0 0;position:sticky;top:0;z-index:5;">
+            <span style="font-weight:700;color:var(--primary);font-size:0.97rem">📊 Excel ile Toplu Doküman Aktarımı</span>
+            <button onclick="excelModalKapat()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:#64748b">✕</button>
+        </div>
+        <div style="padding:22px 24px;">
+            <div style="font-weight:700;color:var(--primary);font-size:0.87rem;margin-bottom:10px">📋 Excel Kolon Düzeni</div>
+            <p style="font-size:0.82rem;color:#64748b;margin:0 0 10px">Excel dosyanızın <strong>ilk satırı başlık satırı</strong> olmalıdır. Sütunlar sırasıyla şöyle olmalıdır:</p>
+            <table style="width:100%;border-collapse:collapse;font-size:0.83rem;margin-bottom:16px">
+                <thead><tr><th style="background:#1e40af;color:#fff;padding:9px 12px;text-align:left">Sütun</th><th style="background:#1e40af;color:#fff;padding:9px 12px;text-align:left">Alan Adı</th><th style="background:#1e40af;color:#fff;padding:9px 12px;text-align:left">Açıklama</th><th style="background:#1e40af;color:#fff;padding:9px 12px;text-align:left">Zorunlu</th></tr></thead>
+                <tbody>
+                    <tr><td style="padding:8px 12px;border-bottom:1px solid var(--border)">A</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">Doküman No</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">Örn: KY-PR-001</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">Hayır</td></tr>
+                    <tr style="background:#f8fafc"><td style="padding:8px 12px;border-bottom:1px solid var(--border)">B</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">Başlık</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">Doküman adı</td><td style="padding:8px 12px;border-bottom:1px solid var(--border);color:#dc2626;font-weight:700">Evet</td></tr>
+                    <tr><td style="padding:8px 12px;border-bottom:1px solid var(--border)">C</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">Tür</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">Prosedür / Talimat / Form / El Kitabı / Diğer</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">Hayır</td></tr>
+                    <tr style="background:#f8fafc"><td style="padding:8px 12px;border-bottom:1px solid var(--border)">D</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">Revizyon No</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">Örn: Rev.0</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">Hayır</td></tr>
+                    <tr><td style="padding:8px 12px;border-bottom:1px solid var(--border)">E</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">Yayın Tarihi</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">YYYY-AA-GG veya GG.AA.YYYY</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">Hayır</td></tr>
+                    <tr style="background:#f8fafc"><td style="padding:8px 12px;border-bottom:1px solid var(--border)">F</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">Geçerlilik Tarihi</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">YYYY-AA-GG veya GG.AA.YYYY</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">Hayır</td></tr>
+                    <tr><td style="padding:8px 12px;border-bottom:1px solid var(--border)">G</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">Durum</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">taslak / yayinda / iptal</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">Hayır</td></tr>
+                    <tr style="background:#f8fafc"><td style="padding:8px 12px">H</td><td style="padding:8px 12px">Açıklama</td><td style="padding:8px 12px">Kısa açıklama metni</td><td style="padding:8px 12px">Hayır</td></tr>
+                </tbody>
+            </table>
+
+            <button onclick="sablonIndir()" style="background:#f0fdf4;color:#166534;border:1px solid #86efac;padding:9px 18px;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.84rem;margin-bottom:18px">📥 Boş Şablon İndir (.xlsx)</button>
+
+            <div id="dropZone" onclick="document.getElementById('excelDosya').click()"
+                ondragover="event.preventDefault();this.classList.add('dragover')"
+                ondragleave="this.classList.remove('dragover')"
+                ondrop="excelDrop(event)"
+                style="border:2px dashed #93c5fd;border-radius:12px;padding:32px;text-align:center;cursor:pointer;background:#f0f9ff;transition:0.2s">
+                <div style="font-size:2rem;margin-bottom:8px">📂</div>
+                <div style="font-weight:700;color:#1e40af;font-size:0.92rem">Excel dosyanızı buraya sürükleyin</div>
+                <div style="font-size:0.8rem;color:#64748b;margin-top:4px">veya tıklayarak seçin (.xlsx, .xls)</div>
+            </div>
+            <input type="file" id="excelDosya" accept=".xlsx,.xls" style="display:none" onchange="excelSec(this)">
+
+            <div id="excelOnizle" style="display:none;margin-top:14px">
+                <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:11px 16px;font-size:0.85rem;color:#1e40af;display:flex;justify-content:space-between;align-items:center">
+                    <span id="excelDosyaAdi"></span>
+                    <span id="excelSatirSayisi" style="font-weight:700"></span>
+                </div>
+                <div style="display:flex;justify-content:flex-end;margin-top:12px;gap:10px">
+                    <button onclick="excelModalKapat()" style="background:#f1f5f9;color:#475569;border:none;padding:10px 20px;border-radius:8px;font-weight:600;cursor:pointer">İptal</button>
+                    <button onclick="excelImport()" id="excelImportBtn" style="background:linear-gradient(135deg,#1e3a8a,#1E40AF);color:#fff;border:none;padding:10px 22px;border-radius:8px;font-weight:700;cursor:pointer">⬆️ Sisteme Aktar</button>
+                </div>
+            </div>
+            <div id="importSonuc" style="display:none;margin-top:14px"></div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script src="sort-utils.js"></script>
 </body>
 </html>
