@@ -45,7 +45,7 @@
     /* HEADER */
     .s1-header { display:grid; grid-template-columns:34mm 105mm 37mm; gap:0; margin-bottom:0; }
     .logo-kutu { display:flex; align-items:center; justify-content:center; min-height:24mm; color:#aaa; font-size:7pt; text-align:center; padding:4px; }
-    .qr-kutu   { border:0.5pt solid var(--sinir); display:flex; align-items:center; justify-content:center; min-height:18mm; color:#bbb; font-size:6pt; text-align:center; padding:4px; margin-top:1mm; }
+    .qr-kutu   { border:0.5pt solid var(--sinir); display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:30mm; color:#bbb; font-size:6pt; text-align:center; padding:4px; margin-top:1mm; }
     .orta-blok { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0 4mm; }
     .lab-adi   { font-size:11pt; font-weight:700; color:var(--lacivert); text-align:center; line-height:1.3; }
     .lab-adres { font-size:7pt; color:var(--orta); text-align:center; margin-top:2mm; }
@@ -210,7 +210,7 @@ async function yukle() {
                 <div style="display:flex;flex-direction:column;gap:1mm;">
                     <div class="logo-kutu">${ayar.lab_logo ? `<img src="${ayar.lab_logo}" style="max-width:30mm;max-height:22mm;object-fit:contain;">` : 'LAB LOGOSU'}</div>
                     <div class="qr-kutu">
-                        ${qrData?.qr ? `<img src="${qrData.qr}" style="width:18mm;height:18mm;"><div style="font-size:5pt;color:var(--orta);text-align:center;margin-top:1mm;">Sertifikayı görüntüle</div>` : '<div style="font-size:6pt;color:#bbb;">QR</div>'}
+                        ${qrData?.qr ? `<img src="${qrData.qr}" style="width:30mm;height:30mm;"><div style="font-size:5pt;color:var(--orta);text-align:center;margin-top:1.5mm;">Sertifikayı görüntüle</div>` : '<div style="font-size:6pt;color:#bbb;">QR</div>'}
                     </div>
                 </div>
                 <div class="orta-blok">

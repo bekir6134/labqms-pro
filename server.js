@@ -2310,8 +2310,8 @@ app.get('/api/sertifikalar/:id/pdf', async (req, res) => {
 app.get('/api/sertifikalar/:id/qr', async (req, res) => {
     try {
         const host = `${req.protocol}://${req.get('host')}`;
-        // QR → direkt PDF indir
-        const url  = `${host}/api/sertifikalar/${req.params.id}/pdf`;
+        // QR → onaylanan/imzalı PDF'i aç
+        const url  = `${host}/api/sertifikalar/${req.params.id}/onaylanan-pdf`;
         const qrDataUrl = await QRCode.toDataURL(url, {
             width: 120, margin: 1,
             color: { dark: '#000000', light: '#ffffff' }
@@ -2654,6 +2654,26 @@ try {
     } catch(err){
         console.error("Türkak işlem hatası:",err);
         res.status(500).json({ error: err.message });
+    }
+});
+
+// Onaylanan PDF'i tarayıcıda aç (QR linki)
+app.get('/api/sertifikalar/:id/onaylanan-pdf', async (req, res) => {
+    try {
+        const result = await pool.query(
+            'SELECT sertifika_pdf, sertifika_no, asama FROM sertifikalar WHERE id=$1',
+            [req.params.id]
+        );
+        if (!result.rows.length) return res.status(404).send('Sertifika bulunamadı');
+        const s = result.rows[0];
+        if (!s.sertifika_pdf) return res.status(404).send('Onaylanan PDF henüz yok');
+        const buffer = await r2Indir(s.sertifika_pdf);
+        const dosyaAdi = `sertifika_${s.sertifika_no || req.params.id}.pdf`;
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="${dosyaAdi}"`);
+        res.send(buffer);
+    } catch(err) {
+        res.status(500).send(err.message);
     }
 });
 
