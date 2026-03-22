@@ -54,6 +54,8 @@ td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:0.85rem;ver
 #toast.error{background:#ef4444}
 .excelModalWrap.open{display:flex!important}
 #dropZone.dragover{background:#dbeafe;border-color:#3b82f6}
+.modal-wrap{display:none;position:fixed;inset:0;z-index:4000;background:rgba(0,0,0,0.55);align-items:center;justify-content:center}
+.modal-wrap.open{display:flex!important}
 </style>
 </head>
 <body>
@@ -184,26 +186,107 @@ function renderListe(data){
         const durum=r.durum||'taslak';
         const tar=r.yayin_tarihi?new Date(r.yayin_tarihi).toLocaleDateString('tr-TR'):'-';
         const revTar=r.gecerlilik_tarihi?new Date(r.gecerlilik_tarihi).toLocaleDateString('tr-TR'):'-';
-        return `<tr>
-            <td><input type="checkbox" class="dok-cb" value="${r.id}" onchange="checkboxDegis()"></td>
+        const revSayisi = parseInt(r.revizyon_sayisi)||0;
+        return `<tr style="cursor:pointer" onclick="accordionToggle(${r.id},event)">
+            <td onclick="event.stopPropagation()"><input type="checkbox" class="dok-cb" value="${r.id}" onchange="checkboxDegis()"></td>
             <td style="font-weight:700;color:var(--primary)">${r.dok_no||'—'}</td>
-            <td>${r.baslik}</td>
+            <td>${r.baslik} ${revSayisi>0?`<span style="background:#dbeafe;color:#1e40af;font-size:0.7rem;padding:2px 7px;border-radius:8px;font-weight:700;margin-left:4px">${revSayisi} revizyon</span>`:''}</td>
             <td>${r.tur||'—'}</td>
             <td>${r.revizyon_no||'—'}</td>
             <td>${tar}</td>
             <td>${revTar}</td>
             <td><span class="badge ${DUR_RENK[durum]||''}">${DUR_LABEL[durum]||durum}</span></td>
-            <td>
+            <td onclick="event.stopPropagation()">
                 <div class="act-wrap" id="am-${r.id}">
                     <button class="act-btn" onclick="menuToggle(${r.id},event)">İşlemler ▾</button>
                     <div class="act-drop">
+                        <div class="act-drop-item" onclick="revizeModalAc(${r.id});menuKapat()">🔄 Revize Oluştur</div>
+                        <hr>
                         <div class="act-drop-item" onclick="duzenle(${r.id});menuKapat()">✏️ Düzenle</div>
                         <div class="act-drop-item danger" onclick="sil(${r.id});menuKapat()">🗑️ Sil</div>
                     </div>
                 </div>
             </td>
+        </tr>
+        <tr id="acc-${r.id}" style="display:none">
+            <td colspan="9" style="padding:0;background:#f8fafc">
+                <div id="acc-icerik-${r.id}" style="padding:12px 24px 16px"></div>
+            </td>
         </tr>`;
     }).join('');
+}
+
+async function accordionToggle(id, e) {
+    if(e.target.closest('.act-wrap')) return;
+    const row = document.getElementById('acc-'+id);
+    const icerik = document.getElementById('acc-icerik-'+id);
+    const acik = row.style.display !== 'none';
+    if(acik) { row.style.display='none'; return; }
+    icerik.innerHTML = '<div style="color:#64748b;font-size:0.83rem;padding:8px 0">⏳ Yükleniyor...</div>';
+    row.style.display = 'table-row';
+    const res = await fetch(`/api/kalite-dokuman/${id}/revizyonlar`);
+    const revizyonlar = await res.json();
+    if(!revizyonlar.length) {
+        icerik.innerHTML = '<div style="color:#94a3b8;font-size:0.83rem;padding:8px 0">Henüz revizyon yok.</div>';
+        return;
+    }
+    icerik.innerHTML = `
+        <div style="font-size:0.78rem;font-weight:700;color:#64748b;margin-bottom:8px">📋 Revizyon Geçmişi</div>
+        <table style="width:100%;border-collapse:collapse;font-size:0.82rem">
+            <thead><tr style="background:#e2e8f0">
+                <th style="padding:7px 10px;text-align:left">Rev. No</th>
+                <th style="padding:7px 10px;text-align:left">Yayın Tarihi</th>
+                <th style="padding:7px 10px;text-align:left">Revizyon Tarihi</th>
+                <th style="padding:7px 10px;text-align:left">Durum</th>
+            </tr></thead>
+            <tbody>${revizyonlar.map(r=>{
+                const tar = r.yayin_tarihi?new Date(r.yayin_tarihi).toLocaleDateString('tr-TR'):'-';
+                const revTar = r.gecerlilik_tarihi?new Date(r.gecerlilik_tarihi).toLocaleDateString('tr-TR'):'-';
+                const durum = r.durum||'taslak';
+                return `<tr style="background:#fff;border-bottom:1px solid var(--border)">
+                    <td style="padding:7px 10px;font-weight:700;color:var(--primary)">${r.revizyon_no||'—'}</td>
+                    <td style="padding:7px 10px">${tar}</td>
+                    <td style="padding:7px 10px">${revTar}</td>
+                    <td style="padding:7px 10px"><span class="badge ${DUR_RENK[durum]||''}">${DUR_LABEL[durum]||durum}</span></td>
+                </tr>`;
+            }).join('')}</tbody>
+        </table>`;
+}
+
+function sonrakiRevNo(revNo) {
+    if(!revNo) return 'Rev.1';
+    const m = revNo.match(/(\d+)(?!.*\d)/);
+    if(!m) return revNo + '.1';
+    return revNo.slice(0, m.index) + (parseInt(m[0])+1);
+}
+
+function revizeModalAc(id) {
+    const dok = tumKayitlar.find(r=>r.id===id);
+    if(!dok) return;
+    document.getElementById('revize_parent_id').value = id;
+    document.getElementById('revize_rev_no').value = sonrakiRevNo(dok.revizyon_no);
+    document.getElementById('revize_tarih').value = new Date().toISOString().substring(0,10);
+    document.getElementById('revizeModal').classList.add('open');
+}
+function revizeModalKapat() { document.getElementById('revizeModal').classList.remove('open'); }
+
+async function revizeKaydet() {
+    const id = document.getElementById('revize_parent_id').value;
+    const revizyon_no = document.getElementById('revize_rev_no').value.trim();
+    const yayin_tarihi = document.getElementById('revize_tarih').value;
+    if(!revizyon_no) return showToast('❌ Revizyon no zorunludur!', true);
+    const btn = document.getElementById('revizeKaydetBtn');
+    btn.disabled=true; btn.textContent='Kaydediliyor...';
+    const res = await fetch(`/api/kalite-dokuman/${id}/revize`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({revizyon_no, yayin_tarihi})
+    });
+    if(res.ok) {
+        showToast('✅ Revizyon oluşturuldu!');
+        revizeModalKapat();
+        await listele();
+    } else showToast('❌ Hata oluştu!', true);
+    btn.disabled=false; btn.textContent='💾 Revize Kaydet';
 }
 
 function checkboxDegis(){
@@ -421,6 +504,33 @@ function sablonIndir() {
     XLSX.writeFile(wb, 'dokuman_sablon.xlsx');
 }
 </script>
+
+<!-- REVİZE MODAL -->
+<div id="revizeModal" class="modal-wrap">
+    <div style="background:#fff;border-radius:16px;width:94%;max-width:460px;">
+        <div style="padding:16px 24px;border-bottom:1px solid var(--border);background:#f8fafc;display:flex;justify-content:space-between;align-items:center;border-radius:16px 16px 0 0">
+            <span style="font-weight:700;color:var(--primary)">🔄 Revizyon Oluştur</span>
+            <button onclick="revizeModalKapat()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:#64748b">✕</button>
+        </div>
+        <div style="padding:22px 24px">
+            <input type="hidden" id="revize_parent_id">
+            <div class="fg fg2" style="margin-bottom:14px">
+                <div>
+                    <label>Yeni Revizyon No</label>
+                    <input type="text" id="revize_rev_no" placeholder="Rev.1">
+                </div>
+                <div>
+                    <label>Yayın Tarihi</label>
+                    <input type="date" id="revize_tarih">
+                </div>
+            </div>
+            <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:6px">
+                <button onclick="revizeModalKapat()" style="background:#f1f5f9;color:#475569;border:none;padding:10px 20px;border-radius:8px;font-weight:600;cursor:pointer">İptal</button>
+                <button class="btn-save" onclick="revizeKaydet()" id="revizeKaydetBtn">💾 Revize Kaydet</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- EXCEL IMPORT MODAL -->
 <div id="excelModal" style="display:none;position:fixed;inset:0;z-index:4000;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;" class="excelModalWrap">

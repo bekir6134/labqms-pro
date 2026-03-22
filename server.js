@@ -1376,6 +1376,8 @@ app.listen(PORT, async () => {
     // Türkçe karakter normalizasyonu: "yayında" → "yayinda", "i̇ptal" → "iptal"
     await pool.query(`UPDATE kalite_dokuman SET durum='yayinda' WHERE durum='yayında'`).catch(()=>{});
     await pool.query(`UPDATE kalite_dokuman SET durum='iptal' WHERE durum='i̇ptal'`).catch(()=>{});
+    // Revizyon yapısı için parent_id kolonu ekle
+    await pool.query(`ALTER TABLE kalite_dokuman ADD COLUMN IF NOT EXISTS parent_id INTEGER REFERENCES kalite_dokuman(id) ON DELETE CASCADE`).catch(()=>{});
 });
 
 // ─── KALİTE SİSTEMİ API ROTALARI ────────────────────────────────────────────
@@ -1383,8 +1385,36 @@ app.listen(PORT, async () => {
 // --- DOKÜMAN YÖNETİMİ ---
 app.get('/api/kalite-dokuman', async (req, res) => {
     try {
-        const r = await pool.query('SELECT * FROM kalite_dokuman ORDER BY olusturma_tarihi DESC');
+        const r = await pool.query(`
+            SELECT d.*,
+                (SELECT COUNT(*) FROM kalite_dokuman r WHERE r.parent_id = d.id) AS revizyon_sayisi
+            FROM kalite_dokuman d
+            WHERE d.parent_id IS NULL
+            ORDER BY d.olusturma_tarihi DESC`);
         res.json(r.rows);
+    } catch(e) { res.status(500).json({ error: e.message }); }
+});
+app.get('/api/kalite-dokuman/:id/revizyonlar', async (req, res) => {
+    try {
+        const r = await pool.query(
+            'SELECT * FROM kalite_dokuman WHERE parent_id=$1 ORDER BY olusturma_tarihi ASC',
+            [req.params.id]
+        );
+        res.json(r.rows);
+    } catch(e) { res.status(500).json({ error: e.message }); }
+});
+app.post('/api/kalite-dokuman/:id/revize', async (req, res) => {
+    try {
+        const parent = await pool.query('SELECT * FROM kalite_dokuman WHERE id=$1', [req.params.id]);
+        if (!parent.rows.length) return res.status(404).json({ error: 'Doküman bulunamadı' });
+        const p = parent.rows[0];
+        const { revizyon_no, yayin_tarihi } = req.body;
+        const r = await pool.query(
+            `INSERT INTO kalite_dokuman (dok_no,baslik,tur,revizyon_no,yayin_tarihi,gecerlilik_tarihi,durum,aciklama,parent_id)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+            [p.dok_no, p.baslik, p.tur, revizyon_no, yayin_tarihi||null, p.gecerlilik_tarihi||null, p.durum, p.aciklama, p.id]
+        );
+        res.json(r.rows[0]);
     } catch(e) { res.status(500).json({ error: e.message }); }
 });
 app.post('/api/kalite-dokuman', async (req, res) => {
