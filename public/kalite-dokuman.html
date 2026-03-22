@@ -91,7 +91,7 @@ td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:0.85rem;ver
         </div>
         <div class="fg fg2">
             <div><label>Yayın Tarihi</label><input type="date" id="yayin_tarihi"></div>
-            <div><label>Geçerlilik Tarihi</label><input type="date" id="gecerlilik_tarihi"></div>
+            <div><label>Revizyon Tarihi</label><input type="date" id="gecerlilik_tarihi"></div>
         </div>
         <div class="fg">
             <div class="full"><label>Açıklama</label><textarea id="aciklama" placeholder="Kısa açıklama..."></textarea></div>
@@ -355,7 +355,7 @@ async function excelImport() {
 function sablonIndir() {
     const wb = XLSX.utils.book_new();
     const ws_data = [
-        ['Doküman No','Başlık','Tür','Revizyon No','Yayın Tarihi','Geçerlilik Tarihi','Durum','Açıklama'],
+        ['Doküman No','Başlık','Tür','Revizyon No','Yayın Tarihi','Revizyon Tarihi','Durum','Açıklama'],
         ['KY-PR-001','Örnek Prosedür','Prosedür','Rev.0','2026-01-01','2027-01-01','yayinda','Kısa açıklama']
     ];
     const ws = XLSX.utils.aoa_to_sheet(ws_data);
@@ -383,7 +383,7 @@ function sablonIndir() {
                     <tr><td style="padding:8px 12px;border-bottom:1px solid var(--border)">C</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">Tür</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">Prosedür / Talimat / Form / El Kitabı / Diğer</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">Hayır</td></tr>
                     <tr style="background:#f8fafc"><td style="padding:8px 12px;border-bottom:1px solid var(--border)">D</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">Revizyon No</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">Örn: Rev.0</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">Hayır</td></tr>
                     <tr><td style="padding:8px 12px;border-bottom:1px solid var(--border)">E</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">Yayın Tarihi</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">YYYY-AA-GG veya GG.AA.YYYY</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">Hayır</td></tr>
-                    <tr style="background:#f8fafc"><td style="padding:8px 12px;border-bottom:1px solid var(--border)">F</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">Geçerlilik Tarihi</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">YYYY-AA-GG veya GG.AA.YYYY</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">Hayır</td></tr>
+                    <tr style="background:#f8fafc"><td style="padding:8px 12px;border-bottom:1px solid var(--border)">F</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">Revizyon Tarihi</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">YYYY-AA-GG veya GG.AA.YYYY</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">Hayır</td></tr>
                     <tr><td style="padding:8px 12px;border-bottom:1px solid var(--border)">G</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">Durum</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">taslak / yayinda / iptal</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">Hayır</td></tr>
                     <tr style="background:#f8fafc"><td style="padding:8px 12px">H</td><td style="padding:8px 12px">Açıklama</td><td style="padding:8px 12px">Kısa açıklama metni</td><td style="padding:8px 12px">Hayır</td></tr>
                 </tbody>
