@@ -2285,12 +2285,10 @@ app.get('/api/sertifikalar/:id/pdf', async (req, res) => {
             const s1s2Pages = await birlesikDoc.copyPages(s1s2Doc, s1s2Doc.getPageIndices());
             s1s2Pages.forEach(p => birlesikDoc.addPage(p));
 
-            // Ölçüm PDF sayfaları ekle (yasal footer damgası ile)
-            // Yöntem: temp doc üzerinde işle → kaydet → yeniden yükle → birleştir
-            const olcumDoc = await PDFDocument.load(olcumBytes, { ignoreEncryption: true });
-            const tempDoc = await PDFDocument.create();
-            const tempFont = await tempDoc.embedFont(StandardFonts.Helvetica);
-            const tempPages = await tempDoc.copyPages(olcumDoc, olcumDoc.getPageIndices());
+            // Ölçüm PDF sayfaları: her sayfayı yeni A4'e XObject olarak göm + footer ekle
+            const footerH = 58; // points (~20mm)
+            const pageW = 595.28, pageH = 841.89; // A4
+            const footerFont = await birlesikDoc.embedFont(StandardFonts.Helvetica);
 
             const yasalSatirlar = [
                 'Bu sertifika, laboratuvarin yazili izni olmadan kismen kopyalanip cogaltilamaz.  |  Imzasiz ve TURKAK Dogrulama Kare Kodu bulunmayan sertifikalar gecersizdir.',
@@ -2298,53 +2296,49 @@ app.get('/api/sertifikalar/:id/pdf', async (req, res) => {
                 'This certificate shall not be reproduced other than in full except with the permission of the laboratory.  |  Certificates unsigned or without TURKAK QR code are invalid.',
                 'Before using this certificate, verify it by scanning the QR code via asist.turkak.org.tr.',
             ];
-            const fs = 5.8;
-            const satirAraligi = fs + 2.2;
-            const gri = rgb(0.35, 0.35, 0.35);
-            const labelGri = rgb(0.5, 0.5, 0.5);
+            const ffs = 5.8, satirAraligi = ffs + 2.2;
+            const gri = rgb(0.3, 0.3, 0.3), labelGri = rgb(0.45, 0.45, 0.45);
 
-            for (const pg of tempPages) {
-                tempDoc.addPage(pg);
-                const { width } = pg.getSize();
+            // Ölçüm PDF'ini birlesikDoc'a göm
+            const embeddedOlcumPages = await birlesikDoc.embedPdf(olcumBytes);
 
-                // Footer toplam yükseklik: lab bilgi satırı + ayraç + yasal satırlar + alt boşluk
-                const labBilgiYukseklik = 9;
-                const yasalYukseklik = yasalSatirlar.length * satirAraligi;
-                const toplamFooterY = labBilgiYukseklik + 5 + yasalYukseklik + 4;
+            for (const embPage of embeddedOlcumPages) {
+                const newPage = birlesikDoc.addPage([pageW, pageH]);
+                const contentH = pageH - footerH;
+                const { width: oW, height: oH } = embPage;
+                const scale = Math.min(pageW / oW, contentH / oH);
+                const scaledW = oW * scale;
+                const scaledH = oH * scale;
+                const xOff = (pageW - scaledW) / 2;
 
-                // Beyaz arka plan
-                pg.drawRectangle({ x:0, y:0, width, height:toplamFooterY + 2, color:rgb(1,1,1) });
+                // Ölçüm içeriğini üst alana çiz
+                newPage.drawPage(embPage, { x: xOff, y: footerH, width: scaledW, height: scaledH });
 
-                // Üst ayraç çizgisi
-                const cizgiY = toplamFooterY;
-                pg.drawLine({ start:{x:15, y:cizgiY}, end:{x:width-15, y:cizgiY}, thickness:0.5, color:rgb(0.65,0.65,0.65) });
+                // Footer arka plan
+                newPage.drawRectangle({ x:0, y:0, width:pageW, height:footerH, color:rgb(1,1,1) });
 
-                // Lab bilgi satırı (adres sol, tel/web/mail sağ)
-                const labBilgiY = cizgiY - 7;
-                if(labAdi || labAdres) {
-                    pg.drawText(`${labAdi}  ${labAdres}`.trim(), { x:15, y:labBilgiY, size:6, font:tempFont, color:labelGri });
-                }
+                // Üst çizgi
+                newPage.drawLine({ start:{x:15, y:footerH-1}, end:{x:pageW-15, y:footerH-1}, thickness:0.5, color:rgb(0.6,0.6,0.6) });
+
+                // Lab bilgi satırı
+                const labBilgiY = footerH - 10;
+                const solMetin = `${labAdi}  ${labAdres}`.trim();
+                if(solMetin) newPage.drawText(solMetin, { x:15, y:labBilgiY, size:6, font:footerFont, color:labelGri });
                 const sagMetin = [labTel ? `Tel: ${labTel}` : '', labWeb, labMail].filter(Boolean).join('  |  ');
                 if(sagMetin) {
-                    const sagGenislik = tempFont.widthOfTextAtSize(sagMetin, 6);
-                    pg.drawText(sagMetin, { x:width - sagGenislik - 15, y:labBilgiY, size:6, font:tempFont, color:labelGri });
+                    const sagW = footerFont.widthOfTextAtSize(sagMetin, 6);
+                    newPage.drawText(sagMetin, { x:Math.max(15, pageW - sagW - 15), y:labBilgiY, size:6, font:footerFont, color:labelGri });
                 }
 
-                // İkinci ayraç
-                const cizgi2Y = labBilgiY - 3;
-                pg.drawLine({ start:{x:15, y:cizgi2Y}, end:{x:width-15, y:cizgi2Y}, thickness:0.3, color:rgb(0.8,0.8,0.8) });
+                // İkinci çizgi
+                const cizgi2Y = labBilgiY - 4;
+                newPage.drawLine({ start:{x:15, y:cizgi2Y}, end:{x:pageW-15, y:cizgi2Y}, thickness:0.3, color:rgb(0.8,0.8,0.8) });
 
                 // Yasal satırlar
                 yasalSatirlar.forEach((satir, i) => {
-                    const satirY = cizgi2Y - fs - (i * satirAraligi) - 1;
-                    pg.drawText(satir, { x:15, y:satirY, size:fs, font:tempFont, color:gri });
+                    newPage.drawText(satir, { x:15, y: cizgi2Y - ffs - (i * satirAraligi) - 1, size:ffs, font:footerFont, color:gri });
                 });
             }
-
-            const tempBytes = await tempDoc.save();
-            const tempDocFinal = await PDFDocument.load(tempBytes);
-            const olcumPages = await birlesikDoc.copyPages(tempDocFinal, tempDocFinal.getPageIndices());
-            olcumPages.forEach(p => birlesikDoc.addPage(p));
 
             const birlesikBytes = await birlesikDoc.save();
             sonPdfBuffer = Buffer.from(birlesikBytes);
