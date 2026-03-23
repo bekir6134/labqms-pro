@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LabQMS Pro - Laboratuvar Yönetim Sistemi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --primary: #1E40AF; --sidebar-bg: #0f172a; --sidebar-hover: #1e293b; 
+            --text-main: #334155; --border: #e2e8f0; --bg-main: #f1f5f9; 
+        }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-main); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* SIDEBAR */
+        .sidebar { width: 260px; min-width: 260px; background-color: var(--sidebar-bg); color: #f8fafc; display: flex; flex-direction: column; z-index: 1000; }
+        .sidebar-header { padding: 20px; font-size: 1.5rem; font-weight: 700; border-bottom: 1px solid #334155; display: flex; align-items: center; gap: 10px; color: white; }
+        #toast { visibility:hidden; min-width:260px; background:#1E40AF; color:#fff; text-align:center; border-radius:10px; padding:14px 20px; position:fixed; z-index:9999; right:24px; top:24px; font-weight:600; font-size:0.9rem; box-shadow:0 4px 16px rgba(0,0,0,0.2); opacity:0; transition:opacity 0.3s; }
+        #toast.show { visibility:visible; opacity:1; }
+        .sidebar-menu { list-style: none; padding: 15px 0; margin: 0; flex-grow: 1; overflow-y: auto; }
+        
+        .menu-item { padding: 12px 20px; display: flex; align-items: center; gap: 12px; color: #94a3b8; text-decoration: none; font-weight: 500; transition: 0.2s; cursor: pointer; font-size: 0.9rem; }
+        .menu-item:hover { background-color: var(--sidebar-hover); color: #fff; }
+        .menu-item.active { background-color: var(--sidebar-hover); color: #fff; border-left: 4px solid #60A5FA; }
+
+        /* GRUP BAŞLIĞI (tıklanabilir) */
+        .menu-group-header { padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; color: #94a3b8; font-weight: 500; cursor: pointer; transition: 0.2s; font-size: 0.9rem; user-select: none; }
+        .menu-group-header:hover { background-color: var(--sidebar-hover); color: #fff; }
+        .menu-group-header.active { color: #fff; }
+        .menu-group-header .arrow { font-size: 0.7rem; transition: transform 0.2s; }
+        .menu-group-header.open .arrow { transform: rotate(180deg); }
+
+        /* ALT MENÜ */
+        .submenu { display: none; background-color: #0a1628; }
+        .submenu.open { display: block; }
+        .submenu .menu-item { padding: 10px 20px 10px 44px; font-size: 0.85rem; color: #64748b; }
+        .submenu .menu-item:hover { color: #cbd5e1; background-color: #1e293b; }
+        .submenu .menu-item.active { color: #fff; border-left: 4px solid #60A5FA; background-color: #1e293b; }
+
+        /* BÖLÜM AYRAÇ */
+        .menu-divider { border: none; border-top: 1px solid #1e293b; margin: 8px 0; }
+
+        /* ANA İÇERİK */
+        .main-content { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; width: calc(100% - 260px); }
+        .topbar { background-color: #fff; height: 60px; padding: 0 30px; display: flex; align-items: center; border-bottom: 1px solid var(--border); }
+        #ekran { width: 100%; height: 100%; border: none; flex-grow: 1; background-color: var(--bg-main); }
+
+        /* HAMBURGER */
+        .hamburger { display: none; background: none; border: none; cursor: pointer; padding: 6px 8px; border-radius: 8px; flex-direction: column; gap: 5px; }
+        .hamburger span { display: block; width: 22px; height: 2px; background: var(--primary); border-radius: 2px; transition: 0.3s; }
+        .hamburger:hover { background: #eff6ff; }
+
+        /* OVERLAY */
+        #sidebarOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 999; }
+        #sidebarOverlay.open { display: block; }
+
+        /* MOBİL */
+        @media (max-width: 768px) {
+            .sidebar { position: fixed; left: 0; top: 0; height: 100vh; transform: translateX(-100%); transition: transform 0.28s ease; z-index: 1000; }
+            .sidebar.open { transform: translateX(0); }
+            .main-content { width: 100%; }
+            .hamburger { display: flex; margin-right: 12px; }
+            .topbar { padding: 0 16px; justify-content: space-between; }
+            .topbar > div:first-child { font-size: 0.82rem; }
+        }
+    </style>
+</head>
+<body>
+<div id="toast"></div>
+
+    <aside class="sidebar">
+        <div class="sidebar-header" style="flex-direction:column; align-items:flex-start; gap:4px;">
+            <div>🔬 LabQMS<span style="color: #60A5FA;">Pro</span></div>
+            <div id="sidebarLabAdi" style="font-size:0.72rem; font-weight:500; color:#60A5FA; letter-spacing:0.3px; opacity:0.85; display:none;"></div>
+        </div>
+        <div class="sidebar-menu">
+            <a href="dashboard.html" target="ekran" class="menu-item active" onclick="aktifYap(this)"><span>📊</span> Dashboard</a>
+            <a href="musteriler.html" target="ekran" class="menu-item" onclick="aktifYap(this)"><span>🏢</span> Müşteriler (CRM)</a>
+            <a href="teklif.html" target="ekran" class="menu-item" onclick="aktifYap(this)"><span>📄</span> Teklif ve Fiyatlar</a>
+            <a href="referans-cihazlar.html" target="ekran" class="menu-item" onclick="aktifYap(this)"><span>📏</span> Referans Cihazlar</a>
+            <a href="kabul.html" target="ekran" class="menu-item" onclick="aktifYap(this)"><span>📥</span> Cihaz Kabul</a>
+            <a href="operasyon.html" target="ekran" class="menu-item" onclick="aktifYap(this)"><span>🔄</span> Operasyon Merkezi</a>
+            <a href="metotlar.html" target="ekran" class="menu-item" onclick="aktifYap(this)"><span>🧪</span> Kalibrasyon Metotları</a>
+            <a href="musteri-cihazlari.html" target="ekran" class="menu-item" onclick="aktifYap(this)"><span>📱</span> Müşteri Cihazları</a>
+
+            <hr class="menu-divider">
+
+            <!-- YÖNETİCİ PANELİ - ALT MENÜ -->
+            <div class="menu-group-header" onclick="toggleSubmenu()">
+                <span style="display:flex; align-items:center; gap:12px;"><span>⚙️</span> Yönetici Paneli</span>
+                <span class="arrow" id="adminArrow">▼</span>
+            </div>
+            <div class="submenu" id="adminSubmenu">
+                <a href="kategoriler.html" target="ekran" class="menu-item" onclick="aktifYap(this)"><span>📁</span> Kategori Yönetimi</a>
+                <a href="cihaz-kutuphanesi.html" target="ekran" class="menu-item" onclick="aktifYap(this)"><span>🗂️</span> Cihaz Kütüphanesi</a>
+                <a href="talimatlar.html" target="ekran" class="menu-item" onclick="aktifYap(this)"><span>📜</span> Kalibrasyon Talimatları</a>
+                <a href="cevre-kosullari.html" target="ekran" class="menu-item" onclick="aktifYap(this)"><span>🌡️</span> Çevre Koşulları</a>
+                <a href="personel.html" target="ekran" class="menu-item" onclick="aktifYap(this)"><span>👤</span> Personel ve Yetkiler</a>
+                <a href="ayarlar.html" target="ekran" class="menu-item" onclick="aktifYap(this)"><span>🔧</span> Sistem Ayarları</a>
+            </div>
+
+            <!-- KALİTE SİSTEMİ - ALT MENÜ -->
+            <div class="menu-group-header" onclick="toggleKaliteSubmenu()">
+                <span style="display:flex; align-items:center; gap:12px;"><span>🏅</span> Kalite Sistemi</span>
+                <span class="arrow" id="kaliteArrow">▼</span>
+            </div>
+            <div class="submenu" id="kaliteSubmenu">
+                <a href="kalite-dokuman.html" target="ekran" class="menu-item" onclick="aktifYap(this)"><span>📂</span> Doküman Yönetimi</a>
+                <a href="uygunsuzluk.html" target="ekran" class="menu-item" onclick="aktifYap(this)"><span>⚠️</span> Uygunsuzluk & DÖF</a>
+                <a href="ic-denetim.html" target="ekran" class="menu-item" onclick="aktifYap(this)"><span>🔍</span> İç Denetim</a>
+                <a href="risk-kaydi.html" target="ekran" class="menu-item" onclick="aktifYap(this)"><span>📊</span> Risk & Fırsat</a>
+                <a href="musteri-sikayet.html" target="ekran" class="menu-item" onclick="aktifYap(this)"><span>💬</span> Müşteri Şikayeti</a>
+                <a href="dis-tedarikci.html" target="ekran" class="menu-item" onclick="aktifYap(this)"><span>🤝</span> Dış Tedarikçi</a>
+                <a href="yeterlilik-testi.html" target="ekran" class="menu-item" onclick="aktifYap(this)"><span>🧪</span> Yeterlilik Testi</a>
+                <a href="ygg.html" target="ekran" class="menu-item" onclick="aktifYap(this)"><span>📋</span> Yön. Gözden Geçirme</a>
+            </div>
+        </div>
+    </aside>
+
+    <div id="sidebarOverlay" onclick="sidebarKapat()"></div>
+
+    <div class="main-content">
+        <header class="topbar">
+            <button class="hamburger" onclick="sidebarToggle()" aria-label="Menü">
+                <span></span><span></span><span></span>
+            </button>
+            <div style="font-weight: 600; color: var(--primary);">LabQMS Pro Kalibrasyon Yönetim Sistemi</div>
+            <div style="display:flex; align-items:center; gap:12px;">
+                <span id="topbarKullanici" style="font-size:0.82rem; color:#64748b; font-weight:600;"></span>
+                <button onclick="cikisYap()" style="background:#fee2e2; color:#dc2626; border:none; padding:7px 16px; border-radius:8px; font-weight:700; font-size:0.82rem; cursor:pointer; display:flex; align-items:center; gap:6px;">
+                    🚪 Çıkış
+                </button>
+            </div>
+        </header>
+        <iframe name="ekran" id="ekran" src="dashboard.html"></iframe>
+    </div>
+
+    <script>
+        // Giriş kontrolü
+        if (!localStorage.getItem("labqms_user")) {
+            window.location.href = "login.html";
+        }
+
+        function sidebarToggle() {
+            document.querySelector('.sidebar').classList.toggle('open');
+            document.getElementById('sidebarOverlay').classList.toggle('open');
+        }
+        function sidebarKapat() {
+            document.querySelector('.sidebar').classList.remove('open');
+            document.getElementById('sidebarOverlay').classList.remove('open');
+        }
+
+        function aktifYap(secilen) {
+            document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
+            secilen.classList.add('active');
+            if (window.innerWidth <= 768) sidebarKapat();
+        }
+
+        function toggleSubmenu() {
+            const submenu = document.getElementById("adminSubmenu");
+            const arrow = document.getElementById("adminArrow");
+            const isOpen = submenu.classList.contains("open");
+            submenu.classList.toggle("open");
+            arrow.innerText = isOpen ? "▼" : "▲";
+        }
+        function toggleKaliteSubmenu() {
+            const submenu = document.getElementById("kaliteSubmenu");
+            const arrow = document.getElementById("kaliteArrow");
+            const isOpen = submenu.classList.contains("open");
+            submenu.classList.toggle("open");
+            arrow.innerText = isOpen ? "▼" : "▲";
+        }
+        function labAdiGuncelle(ad) {
+            const el = document.getElementById("sidebarLabAdi");
+            if (ad) { el.textContent = ad; el.style.display = "block"; }
+            else { el.style.display = "none"; }
+        }
+
+        async function labAdiniYukle() {
+            try {
+                const res = await fetch('/api/ayarlar');
+                const data = await res.json();
+                if (data.lab_adi) labAdiGuncelle(data.lab_adi);
+            } catch(e) {}
+        }
+
+        function cikisYap() {
+            const kullanici = JSON.parse(localStorage.getItem("labqms_user") || '{}');
+            const ad = kullanici.ad_soyad || 'Kullanıcı';
+            showToast(`👋 Güle güle, ${ad}!`);
+            setTimeout(() => {
+                localStorage.removeItem("labqms_user");
+                window.location.href = "login.html";
+            }, 1500);
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById("toast");
+            t.textContent = msg;
+            t.classList.add("show");
+        }
+
+        function topbarKullaniciGoster() {
+            const kullanici = JSON.parse(localStorage.getItem("labqms_user") || '{}');
+            if (kullanici.ad_soyad) {
+                document.getElementById("topbarKullanici").textContent = "👤 " + kullanici.ad_soyad;
+            }
+        }
+
+        window.onload = () => { labAdiniYukle(); topbarKullaniciGoster(); };
+    </script>
+</body>
+</html>
