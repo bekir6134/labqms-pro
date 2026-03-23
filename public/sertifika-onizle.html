@@ -340,7 +340,11 @@ async function yukle() {
 
                     const hd = document.createElement('div');
                     hd.style.cssText = 'padding:4mm 15mm 2mm;border-bottom:1pt solid #222;display:flex;justify-content:space-between;align-items:center;';
-                    hd.innerHTML = '<span style="font-size:8pt;font-weight:700;color:#1E3A5F;position:absolute;left:50%;transform:translateX(-50%);text-align:center;">' + labAdi + '</span><span style="font-size:8pt;font-weight:700;color:#1E3A5F;margin-left:auto;white-space:nowrap;">' + sertNo + '</span>';
+                    const _kw = 'DANIŞMANLIK', _ki = labAdi.indexOf(_kw);
+                    const labAdiHtml = _ki !== -1
+                        ? labAdi.slice(0, _ki + _kw.length) + '<br>' + labAdi.slice(_ki + _kw.length).trim()
+                        : labAdi;
+                    hd.innerHTML = '<span style="font-size:8pt;font-weight:700;color:#1E3A5F;position:absolute;left:50%;transform:translateX(-50%);text-align:center;">' + labAdiHtml + '</span><span style="font-size:8pt;font-weight:700;color:#1E3A5F;margin-left:auto;white-space:nowrap;">' + sertNo + '</span>';
                     hd.style.position = 'relative';
                     sayfaDiv.appendChild(hd);
 
