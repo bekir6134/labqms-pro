@@ -319,8 +319,8 @@
                             <div class="act-wrap" id="am-${p.id}">
                                 <button class="act-btn" onclick="menuToggle(${p.id},event)">İşlemler ▾</button>
                                 <div class="act-drop">
-                                    <div class="act-drop-item" onclick="personelDuzenle(${p.id});menuKapat()">✏️ Düzenle</div>
-                                    <div class="act-drop-item danger" onclick="personelSil(${p.id});menuKapat()">🗑️ Sil</div>
+                                    ${yetkiVar('personel_duzenle') ? `<div class="act-drop-item" onclick="personelDuzenle(${p.id});menuKapat()">✏️ Düzenle</div>` : ''}
+                                    ${yetkiVar('personel_sil') ? `<div class="act-drop-item danger" onclick="personelSil(${p.id});menuKapat()">🗑️ Sil</div>` : ''}
                                 </div>
                             </div>
                         </td>

@@ -1208,7 +1208,7 @@
 
             // Dropdown içindeki aşamaya göre öğeler
             let dropItems = `<div class="act-drop-item" onclick="tamOnizle(${s.id});menuKapat()">👁️ Sertifika Önizle</div>`;
-            dropItems += `<div class="act-drop-item" onclick="sertDuzenle(${s.id});menuKapat()">✏️ Düzenle</div>`;
+            if(yetkiVar('operasyon_duzenle')) dropItems += `<div class="act-drop-item" onclick="sertDuzenle(${s.id});menuKapat()">✏️ Düzenle</div>`;
             if(asama==='hazırlanıyor' && pdfVar) {
                 dropItems += `<div class="act-drop-item" onclick="tekliImzala(${s.id});menuKapat()">✍️ İmzala</div>`;
             }
@@ -1219,7 +1219,7 @@
                 dropItems += `<div class="act-drop-item" onclick="tekliMail(${s.id});menuKapat()">📧 Sertifika Mail Gönder</div>`;
             }
             dropItems += `<hr><div class="act-drop-item" onclick="uygunsuzlukForm(${s.id});menuKapat()">⚠️ Uygunsuzluk</div>`;
-            dropItems += `<div class="act-drop-item danger" onclick="icerikTemizle(${s.id});menuKapat()" title="Sertifikayı siler">🗑️ Temizle</div>`;
+            if(yetkiVar('operasyon_sil')) dropItems += `<div class="act-drop-item danger" onclick="icerikTemizle(${s.id});menuKapat()" title="Sertifikayı siler">🗑️ Temizle</div>`;
 
             const butonlar = `${olcumPdfBtn}<div class="act-wrap" id="am-${s.id}"><button class="act-btn" onclick="menuToggle(${s.id},event)">İşlemler ▾</button><div class="act-drop">${dropItems}</div></div>`;
 
