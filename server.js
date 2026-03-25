@@ -2547,9 +2547,14 @@ app.post('/api/sertifikalar/:id/olcum-pdf', async (req, res) => {
         const key = `olcum/${req.params.id}_olcum.pdf`;
         const buffer = Buffer.from(pdf_base64, 'base64');
         await r2Yukle(key, buffer);
+        // Mevcut aşamayı kontrol et; hazırlanıyor ise tamamlandı'ya geç
+        const mevcut = await pool.query('SELECT asama FROM sertifikalar WHERE id=$1', [req.params.id]);
+        const yeniAsama = (mevcut.rows[0]?.asama || 'hazırlanıyor') === 'hazırlanıyor' ? 'tamamlandı' : null;
         const result = await pool.query(
-            `UPDATE sertifikalar SET olcum_pdf_url=$1, olcum_pdf_sayfa=$2 WHERE id=$3 RETURNING id, olcum_pdf_sayfa`,
-            [key, sayfa_sayisi||0, req.params.id]
+            yeniAsama
+                ? `UPDATE sertifikalar SET olcum_pdf_url=$1, olcum_pdf_sayfa=$2, asama=$4 WHERE id=$3 RETURNING id, olcum_pdf_sayfa, asama`
+                : `UPDATE sertifikalar SET olcum_pdf_url=$1, olcum_pdf_sayfa=$2 WHERE id=$3 RETURNING id, olcum_pdf_sayfa, asama`,
+            yeniAsama ? [key, sayfa_sayisi||0, req.params.id, yeniAsama] : [key, sayfa_sayisi||0, req.params.id]
         );
         res.json(result.rows[0]);
     } catch(err) { res.status(500).json({ error: err.message }); }
