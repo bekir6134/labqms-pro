@@ -225,6 +225,7 @@
             <div class="pdf-sayfa-info" id="pdfSayfaBilgi"></div>
             <div style="display:flex;gap:8px;align-items:center;">
                 <input type="file" id="pdfDosyaInput" accept=".pdf" style="display:none;" onchange="pdfDosyaSecildi()">
+                <input type="file" id="topluPdfInput" accept=".pdf" multiple style="display:none;" onchange="topluPdfEslestirVeYukle()">
                 <label id="pdfYukleBtnLabel" for="pdfDosyaInput" style="background:#e0e7ff;color:#4338ca;padding:8px 14px;border-radius:8px;font-weight:700;font-size:0.83rem;cursor:pointer;display:none;">
                     📎 PDF Seç & Yükle
                 </label>
@@ -533,6 +534,7 @@
     <div class="toplu-bar" id="topluBar">
         <div class="secili-info" id="topluBilgi">0 sertifika seçildi</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn-toplu" onclick="document.getElementById('topluPdfInput').click()" id="btnTopluPdfYukle" style="background:#f0fdf4;color:#166534;">📂 Toplu PDF Yükle</button>
             <button class="btn-toplu" onclick="topluKapsamDisiNo()" id="btnTopluKDNo" style="background:#fef9c3;color:#854d0e;">🔢 Kapsam Dışı No Ver</button>
             <button class="btn-toplu" onclick="topluAkrediteNo()" id="btnTopluAkrNo" style="background:#e0f2fe;color:#0369a1;">🏛️ Akredite No Ver</button>
             <button class="btn-toplu" onclick="topluImzala()" id="btnTopluImzala">✍️ Seçilenleri İmzala</button>
@@ -1272,6 +1274,7 @@
         const tamamlandi = asama === "tamamlandı";
         const imzali = asama === "imzalandı";
         const onayliSec = asama === "onaylandı";
+        document.getElementById("btnTopluPdfYukle").style.display = hazir ? "" : "none";
         document.getElementById("btnTopluKDNo").style.display   = hazir ? "" : "none";
         document.getElementById("btnTopluAkrNo").style.display  = hazir ? "" : "none";
         document.getElementById("btnTopluImzala").style.display = tamamlandi ? "" : "none";
@@ -1612,6 +1615,73 @@
 }
 
     
+
+    async function topluPdfEslestirVeYukle() {
+        const dosyalar = [...document.getElementById('topluPdfInput').files];
+        document.getElementById('topluPdfInput').value = '';
+        if(!dosyalar.length) return;
+
+        const normalize = s => s.toLowerCase()
+            .replace(/\.pdf$/i,'')
+            .replace(/[\/\\\-_]/g,' ')
+            .replace(/\s+/g,' ')
+            .trim();
+
+        const hazirSertler = tumSertifikalar.filter(s => (s.asama||'hazırlanıyor') === 'hazırlanıyor');
+
+        const eslesme   = [];
+        const eslesmedi = [];
+
+        for(const dosya of dosyalar) {
+            const dosyaNorm = normalize(dosya.name);
+            const sert = hazirSertler.find(s => s.sertifika_no && normalize(s.sertifika_no) === dosyaNorm);
+            if(sert) eslesme.push({ sertId: sert.id, dosya });
+            else     eslesmedi.push(dosya.name);
+        }
+
+        if(!eslesme.length) {
+            return showToast(`❌ Hiçbir dosya eşleşmedi! (${dosyalar.length} dosya kontrol edildi)`, true);
+        }
+
+        const onayMesaj = `${eslesme.length} sertifikaya PDF yüklenecek${eslesmedi.length ? ', ' + eslesmedi.length + ' dosya eşleşmedi' : ''}. Devam edilsin mi?`;
+        if(!confirm(onayMesaj)) return;
+
+        let basarili = 0, hatali = 0;
+        const btn = document.getElementById('btnTopluPdfYukle');
+        btn.disabled = true;
+
+        for(const { sertId, dosya } of eslesme) {
+            showToast(`📤 Yükleniyor... (${basarili + hatali + 1}/${eslesme.length})`);
+            try {
+                const base64 = await new Promise((res, rej) => {
+                    const r = new FileReader();
+                    r.onload  = e => res(e.target.result.split(',')[1]);
+                    r.onerror = rej;
+                    r.readAsDataURL(dosya);
+                });
+                const pdfData = atob(base64);
+                const pdfArr  = new Uint8Array(pdfData.length);
+                for(let i = 0; i < pdfData.length; i++) pdfArr[i] = pdfData.charCodeAt(i);
+                const pdfDoc  = await pdfjsLib.getDocument({ data: pdfArr }).promise;
+                const sayfa   = pdfDoc.numPages;
+
+                const resp = await fetch(`/api/sertifikalar/${sertId}/olcum-pdf`, {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({ pdf_base64: base64, sayfa_sayisi: sayfa })
+                });
+                if(resp.ok) basarili++; else hatali++;
+            } catch(e) { hatali++; }
+        }
+
+        btn.disabled = false;
+        await sertYukle();
+
+        let msg = `✅ ${basarili} PDF yüklendi`;
+        if(hatali)          msg += `, ${hatali} yükleme hatası`;
+        if(eslesmedi.length) msg += `, ${eslesmedi.length} dosya eşleşmedi`;
+        showToast(msg, hatali > 0);
+    }
 
     async function topluTbdsAktif() {
         const idler = secilenIdler();
