@@ -2079,6 +2079,60 @@ app.get('/api/turkak-token', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// TBDS müşteri listesi + otomatik eşleştirme
+app.get('/api/turkak/musteri-listesi', async (req, res) => {
+    try {
+        const tokenResult = await pool.query("SELECT deger FROM ayarlar WHERE anahtar='turkak_token'");
+        if (!tokenResult.rows.length) return res.status(400).json({ error: "Türkak token bulunamadı. Önce bağlantı testi yapın." });
+        const token = tokenResult.rows[0].deger;
+
+        const tbdsRes = await fetch('https://api.turkak.org.tr/TBDS/api/v1/CalibrationService/CalibrationCertificateGetData/', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!tbdsRes.ok) return res.status(tbdsRes.status).json({ error: "TBDS'e erişilemedi: " + tbdsRes.status });
+        const tbdsData = await tbdsRes.json();
+
+        const musteriResult = await pool.query('SELECT id, firma_adi, turkak_id FROM musteriler ORDER BY firma_adi');
+        const musteriler = musteriResult.rows;
+
+        const liste = (Array.isArray(tbdsData) ? tbdsData : []).map(item => {
+            const tbdsAd = (item.Name || '').toLowerCase();
+            let enIyi = null, enIyiSkor = 0;
+            for (const m of musteriler) {
+                const mAd = (m.firma_adi || '').toLowerCase();
+                if (mAd.includes(tbdsAd.slice(0, 6)) || tbdsAd.includes(mAd.slice(0, 6))) {
+                    const skor = tbdsAd === mAd ? 100 : (mAd.includes(tbdsAd) || tbdsAd.includes(mAd) ? 80 : 50);
+                    if (skor > enIyiSkor) { enIyiSkor = skor; enIyi = m; }
+                }
+            }
+            return {
+                tbds_id: item.ID,
+                tbds_ad: item.Name,
+                eslesen_id: enIyi ? enIyi.id : null,
+                eslesen_ad: enIyi ? enIyi.firma_adi : null,
+                zaten_eslesmis: enIyi ? !!enIyi.turkak_id : false
+            };
+        });
+
+        res.json({ liste, musteriler: musteriler.map(m => ({ id: m.id, firma_adi: m.firma_adi })) });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// TBDS müşteri eşleştirme — turkak_id yaz
+app.post('/api/turkak/musteri-eslestir', async (req, res) => {
+    try {
+        const { eslesmeler } = req.body; // [{ musteri_id, turkak_id }]
+        if (!eslesmeler || !eslesmeler.length) return res.status(400).json({ error: "Eşleşme listesi boş" });
+        let guncellenen = 0;
+        for (const e of eslesmeler) {
+            if (!e.musteri_id || !e.turkak_id) continue;
+            await pool.query('UPDATE musteriler SET turkak_id=$1 WHERE id=$2', [e.turkak_id, e.musteri_id]);
+            guncellenen++;
+        }
+        res.json({ success: true, guncellenen });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // --- ÇEVRE KOŞULLARI ---
 app.get('/api/cevre-kosullari', async (req, res) => {
     try {
