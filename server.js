@@ -2758,12 +2758,16 @@ app.post('/api/turkak/akredite-no-ver-toplu', async (req, res) => {
 
         const token = tokenResult.rows[0].deger;
 
+        let basariliSayac = 0, beklemede = 0, hataliSayac = 0;
+
         for(const id of idler){
 
             const s = await pool.query(`
-                SELECT s.*, m.turkak_id AS musteri_turkak_id
+                SELECT s.*, m.turkak_id AS musteri_turkak_id,
+                       p.ad_soyad AS kal_yapan_adi
                 FROM sertifikalar s
                 LEFT JOIN musteriler m ON s.musteri_id = m.id
+                LEFT JOIN personeller p ON s.kal_yapan_id = p.id
                 WHERE s.id=$1
             `,[id]);
 
@@ -2773,15 +2777,18 @@ app.post('/api/turkak/akredite-no-ver-toplu', async (req, res) => {
 
             if(!sertifika.musteri_turkak_id){
                 console.log("Müşteri Türkak ID yok:", id);
+                hataliSayac++;
                 continue;
             }
 
             const payload = [{
                 CustomerID: sertifika.musteri_turkak_id,
                 CalibrationDate: sertifika.kal_tarihi,
-                FirstReleaseDateOfTheDocument: sertifika.yayin_tarihi,
-                MachineOrDeviceType: sertifika.cihaz_adi,
-                DeviceSerialNumber: sertifika.seri_no
+                FirstReleaseDateOfTheDocument: sertifika.yayin_tarihi || sertifika.kal_tarihi,
+                MachineOrDeviceType: sertifika.cihaz_adi || null,
+                DeviceSerialNumber: sertifika.seri_no || null,
+                PersonnelPerformingCalibration: sertifika.kal_yapan_adi || null,
+                CalibrationLocation: sertifika.kal_yeri || null
             }];
 
             const response = await fetch(
@@ -2818,13 +2825,12 @@ try {
 
             if(!turkakId){
                 console.log("Türkak ID alınamadı:", data);
+                hataliSayac++;
                 continue;
             }
 
             await pool.query(
-                `UPDATE sertifikalar
-                 SET turkak_id=$2, turkak_durum='Taslak'
-                 WHERE id=$1`,
+                `UPDATE sertifikalar SET turkak_id=$2, turkak_durum='Taslak' WHERE id=$1`,
                 [id, turkakId]
             );
 
@@ -2832,45 +2838,73 @@ try {
 
             const detayRes = await fetch(
                 `https://api.turkak.org.tr/TBDS/api/v1/CalibrationService/CalibrationCertificateGetCertificate/${turkakId}`,
-                {
-                    headers:{
-                        'Authorization': `Bearer ${token}`
-
-                    }
-                }
+                { headers: { 'Authorization': `Bearer ${token}` } }
             );
 
             const detayText = await detayRes.text();
+            let detay;
+            try { detay = JSON.parse(detayText); } catch(e) { hataliSayac++; continue; }
 
-console.log('TBDS detail status:', detayRes.status);
-console.log('TBDS detail raw response:', detayText);
-
-let detay;
-try {
-    detay = JSON.parse(detayText);
-} catch (e) {
-    throw new Error(`TBDS detail JSON değil. Status: ${detayRes.status}, Cevap: ${detayText}`);
-}
-
-            const tbdsNo = detay?.TBDSNumber || null;
+            const tbdsNo   = detay?.TBDSNumber || null;
             const turkakNo = detay?.CertificationBodyDocumentNumber || null;
-            const state = detay?.State || 'Taslak';
+            const state    = detay?.State || 'Taslak';
 
             await pool.query(`
-                UPDATE sertifikalar
-                SET
-                sertifika_no=$2,
-                tbds_no=$3,
-                turkak_durum=$4
-                WHERE id=$1
+                UPDATE sertifikalar SET sertifika_no=$2, tbds_no=$3, turkak_durum=$4 WHERE id=$1
             `,[id, turkakNo, tbdsNo, state]);
 
+            if (state === 'Active' || state === 'Aktif') basariliSayac++;
+            else beklemede++;
         }
 
-        res.json({ success:true });
+        res.json({ success: true, basarili: basariliSayac, beklemede, hatali: hataliSayac });
 
     } catch(err){
         console.error("Türkak işlem hatası:",err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// TBDS sertifika durumunu güncelle (Taslak → Active kontrolü)
+app.post('/api/turkak/sertifika-aktif-et', async (req, res) => {
+    try {
+        const { idler } = req.body;
+        if (!idler || !idler.length) return res.status(400).json({ error: "Sertifika seçilmedi" });
+
+        const tokenResult = await pool.query("SELECT deger FROM ayarlar WHERE anahtar='turkak_token'");
+        if (!tokenResult.rows.length) return res.status(400).json({ error: "Türkak token bulunamadı" });
+        const token = tokenResult.rows[0].deger;
+
+        let aktifSayac = 0, taslakSayac = 0, hataliSayac = 0;
+
+        for (const id of idler) {
+            const s = await pool.query('SELECT turkak_id FROM sertifikalar WHERE id=$1', [id]);
+            if (!s.rows.length || !s.rows[0].turkak_id) { hataliSayac++; continue; }
+
+            const turkakId = s.rows[0].turkak_id;
+            const detayRes = await fetch(
+                `https://api.turkak.org.tr/TBDS/api/v1/CalibrationService/CalibrationCertificateGetCertificate/${turkakId}`,
+                { headers: { 'Authorization': `Bearer ${token}` } }
+            );
+
+            let detay;
+            try { detay = await detayRes.json(); } catch(e) { hataliSayac++; continue; }
+
+            const tbdsNo   = detay?.TBDSNumber || null;
+            const turkakNo = detay?.CertificationBodyDocumentNumber || null;
+            const state    = detay?.State || 'Taslak';
+
+            await pool.query(
+                `UPDATE sertifikalar SET tbds_no=$2, sertifika_no=$3, turkak_durum=$4 WHERE id=$1`,
+                [id, tbdsNo, turkakNo, state]
+            );
+
+            if (state === 'Active' || state === 'Aktif') aktifSayac++;
+            else taslakSayac++;
+        }
+
+        res.json({ success: true, aktif: aktifSayac, taslak: taslakSayac, hatali: hataliSayac });
+    } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });

@@ -537,7 +537,7 @@
             <button class="btn-toplu" onclick="topluImzala()" id="btnTopluImzala">✍️ Seçilenleri İmzala</button>
             <button class="btn-toplu" onclick="topluOnayla()" id="btnTopluOnayla">✅ Seçilenleri Onayla</button>
             <button class="btn-toplu" onclick="topluMail()" id="btnTopluMail">📧 Seçilenlere Mail Gönder</button>
-
+            <button class="btn-toplu" onclick="topluTbdsAktif()" id="btnTopluTbdsAktif" style="background:#dcfce7;color:#166534;">✅ TBDS Aktif Et</button>
         </div>
     </div>
 
@@ -1273,7 +1273,8 @@
         document.getElementById("btnTopluAkrNo").style.display  = hazir ? "" : "none";
         document.getElementById("btnTopluImzala").style.display = hazir ? "" : "none";
         document.getElementById("btnTopluOnayla").style.display = imzali ? "" : "none";
-        document.getElementById("btnTopluMail").style.display   = onayliSec ? "" : "none";
+        document.getElementById("btnTopluMail").style.display       = onayliSec ? "" : "none";
+        document.getElementById("btnTopluTbdsAktif").style.display  = onayliSec ? "" : "none";
     }
 
     function secilenIdler() {
@@ -1605,6 +1606,45 @@
 }
 
     
+
+    async function topluTbdsAktif() {
+        const idler = secilenIdler();
+        if (!idler.length) return showToast('❌ Sertifika seçin!', true);
+
+        const uygunlar = idler.filter(id => {
+            const s = tumSertifikalar.find(x => String(x.id) === String(id));
+            return s && s.asama === 'onaylandı' && s.turkak_id;
+        });
+
+        if (!uygunlar.length) {
+            return showToast('❌ TBDS numarası alınmış ve onaylandı aşamasındaki sertifika seçin!', true);
+        }
+
+        if (!confirm(`${uygunlar.length} sertifikanın TBDS durumu güncellenecek. Onaylıyor musunuz?`)) return;
+
+        const btn = document.getElementById('btnTopluTbdsAktif');
+        btn.disabled = true; btn.textContent = '⏳ TBDS...';
+
+        try {
+            const res = await fetch('/api/turkak/sertifika-aktif-et', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idler: uygunlar })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Hata');
+
+            let mesaj = `✅ ${data.aktif} sertifika Aktif`;
+            if (data.taslak) mesaj += `, ${data.taslak} hâlâ Taslak`;
+            if (data.hatali) mesaj += `, ${data.hatali} hatalı`;
+            showToast(mesaj + '!');
+            await sertYukle();
+        } catch(e) {
+            showToast('❌ ' + e.message, true);
+        } finally {
+            btn.disabled = false; btn.textContent = '✅ TBDS Aktif Et';
+        }
+    }
 
     async function topluMail() {
         const idler = secilenIdler();
