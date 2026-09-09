@@ -176,6 +176,20 @@ async function yukle() {
         const olcumSayfa = s.olcum_pdf_sayfa || 0;
         const toplamSayfa = 2 + olcumSayfa;
         const sertNo = s.sertifika_no || '—';
+        const kapsamDisi = s.sertifika_tipi === 'kapsam_disi';
+
+        const yasalTr = kapsamDisi
+            ? 'Bu sertifika, laboratuvarın yazılı izni olmadan kısmen kopyalanıp çoğaltılamaz. &nbsp;|&nbsp; İmzasız sertifikalar geçersizdir.'
+            : 'Bu sertifika, laboratuvarın yazılı izni olmadan kısmen kopyalanıp çoğaltılamaz. &nbsp;|&nbsp; İmzasız ve TÜRKAK Doğrulama Kare Kodu bulunmayan sertifikalar geçersizdir. &nbsp;|&nbsp; Bu sertifikanın kullanımından önce <b>asist.turkak.org.tr</b> bağlantısı üzerinden kare kodu okutarak doğrulayınız.';
+        const yasalEn = kapsamDisi
+            ? 'This certificate shall not be reproduced other than in full except with the permission of the laboratory. &nbsp;|&nbsp; Certificates that are unsigned are invalid.'
+            : 'This certificate shall not be reproduced other than in full except with the permission of the laboratory. &nbsp;|&nbsp; Certificates that are unsigned and do not contain TÜRKAK Certificate Verification System\'s verification QR code are invalid. &nbsp;|&nbsp; Before using this certificate, verify it by scanning the QR code via <b>asist.turkak.org.tr</b>.';
+
+        const akreditasyonParagraflari = kapsamDisi ? '' : `
+            <p class="std-metin">Kalibrasyon laboratuvarı olarak faaliyet gösteren <b>${labAdi}</b>, Türkak'tan <b>${akredNo}</b> akreditasyon dosya numarası ile <b>${akredStd}</b> standardına göre akredite edilmiştir.</p>
+            <p class="std-metin-en">${labAdi} Calibration Laboratory accredited by TÜRKAK under registration number ${akredNo} for ${akredStd} as Calibration Laboratory.</p>
+            <p class="std-metin">Türk Akreditasyon Kurumu (TÜRKAK) kalibrasyon sertifikalarının tanınırlığı konusunda Avrupa Akreditasyon Birliği (EA) ile Çok Taraflı Anlaşma ve Uluslararası Laboratuvar Akreditasyon Birliği (ILAC) ile karşılıklı tanıma anlaşması imzalamıştır.</p>
+            <p class="std-metin-en">Turkish Accreditation Agency (TURKAK) is signatory to the EA Multilateral Agreement (MLA) and to the ILAC Mutual Recognition Arrangement (MRA) for the recognition of calibration certificates.</p>`;
 
         document.getElementById('tbSertNo').textContent = sertNo;
         document.getElementById('tbToplamSayfa').textContent = 'Toplam: ' + toplamSayfa + ' sayfa';
@@ -220,8 +234,8 @@ async function yukle() {
                     <div class="sert-baslik">KALİBRASYON SERTİFİKASI</div><div class="sert-baslik-en">Calibration Certificate</div>
                 </div>
                 <div class="sag-blok">
-                    <div class="turkak-kutu">${ayar.turkak_logo ? `<img src="${ayar.turkak_logo}" style="max-width:24mm;max-height:24mm;object-fit:contain;display:block;margin:0 auto 2px;">` : ''}</div>
-                    <div class="qr-sag"><div class="qr-placeholder">QR<br>${sertNo}</div><div style="font-size:6pt;color:var(--orta);margin-top:1mm;">TÜRKAK BDS NO</div><div style="font-size:7pt;font-weight:700;color:var(--lacivert);">${sertNo}</div></div>
+                    <div class="turkak-kutu">${(!kapsamDisi && ayar.turkak_logo) ? `<img src="${ayar.turkak_logo}" style="max-width:24mm;max-height:24mm;object-fit:contain;display:block;margin:0 auto 2px;">` : ''}</div>
+                    <div class="qr-sag"><div class="qr-placeholder">QR<br>${sertNo}</div><div style="font-size:6pt;color:var(--orta);margin-top:1mm;">${kapsamDisi ? 'SERTİFİKA NO' : 'TÜRKAK BDS NO'}</div><div style="font-size:7pt;font-weight:700;color:var(--lacivert);">${sertNo}</div></div>
                 </div>
             </div>
             <hr class="hr-koyu">
@@ -240,10 +254,7 @@ async function yukle() {
             <div style="height:3mm;"></div>
             <p class="std-metin">Bu kalibrasyon sertifikası, Uluslararası Birimler Sisteminde (SI) tanımlanmış birimleri realize eden ulusal ölçüm standartlarına izlenebilirliği belgeler.</p>
             <p class="std-metin-en">This calibration certificate documents the traceability to national standards, which realize the unit of measurement according to the International System of Units (SI).</p>
-            <p class="std-metin">Kalibrasyon laboratuvarı olarak faaliyet gösteren <b>${labAdi}</b>, Türkak'tan <b>${akredNo}</b> akreditasyon dosya numarası ile <b>${akredStd}</b> standardına göre akredite edilmiştir.</p>
-            <p class="std-metin-en">${labAdi} Calibration Laboratory accredited by TÜRKAK under registration number ${akredNo} for ${akredStd} as Calibration Laboratory.</p>
-            <p class="std-metin">Türk Akreditasyon Kurumu (TÜRKAK) kalibrasyon sertifikalarının tanınırlığı konusunda Avrupa Akreditasyon Birliği (EA) ile Çok Taraflı Anlaşma ve Uluslararası Laboratuvar Akreditasyon Birliği (ILAC) ile karşılıklı tanıma anlaşması imzalamıştır.</p>
-            <p class="std-metin-en">Turkish Accreditation Agency (TURKAK) is signatory to the EA Multilateral Agreement (MLA) and to the ILAC Mutual Recognition Arrangement (MRA) for the recognition of calibration certificates.</p>
+            ${akreditasyonParagraflari}
             <p class="std-metin">Ölçüm sonuçları, genişletilmiş ölçüm belirsizlikleri ve kalibrasyon metotları bu sertifikanın tamamlayıcı kısmı olan takip eden sayfalarda verilmiştir.</p>
             <p class="std-metin-en">The measurements, the uncertainties with confidence probability and calibration methods are given on the following pages which are part of this certificate.</p>
             <table class="imza-tablo">
@@ -256,8 +267,8 @@ async function yukle() {
             </table>
             <div style="margin-top:auto;">
                 <div class="yasal">
-                    <div class="yasal-tr">Bu sertifika, laboratuvarın yazılı izni olmadan kısmen kopyalanıp çoğaltılamaz. &nbsp;|&nbsp; İmzasız ve TÜRKAK Doğrulama Kare Kodu bulunmayan sertifikalar geçersizdir. &nbsp;|&nbsp; Bu sertifikanın kullanımından önce <b>asist.turkak.org.tr</b> bağlantısı üzerinden kare kodu okutarak doğrulayınız.</div>
-                    <div class="yasal-en">This certificate shall not be reproduced other than in full except with the permission of the laboratory. &nbsp;|&nbsp; Certificates that are unsigned and do not contain TÜRKAK Certificate Verification System's verification QR code are invalid. &nbsp;|&nbsp; Before using this certificate, verify it by scanning the QR code via <b>asist.turkak.org.tr</b>.</div>
+                    <div class="yasal-tr">${yasalTr}</div>
+                    <div class="yasal-en">${yasalEn}</div>
                 </div>
                 <div class="alt-bar">
                     <div class="alt-sol">${labAdi}  ${labAdres}</div><div class="alt-sag">Tel: ${labTel}  |  ${labWeb}  |  ${labMail}</div>
@@ -294,8 +305,8 @@ async function yukle() {
             <div class="bolum-baslik">9. GÖRÜŞ VE YORUMLAR / OPINION AND COMMENTS</div><p class="s2-metin">${s.yorum||'—'}</p>
             <div style="margin-top:auto;padding-top:4mm;">
                 <div class="yasal">
-                    <div class="yasal-tr">Bu sertifika, laboratuvarın yazılı izni olmadan kısmen kopyalanıp çoğaltılamaz. &nbsp;|&nbsp; İmzasız ve TÜRKAK Doğrulama Kare Kodu bulunmayan sertifikalar geçersizdir. &nbsp;|&nbsp; Bu sertifikanın kullanımından önce <b>asist.turkak.org.tr</b> bağlantısı üzerinden kare kodu okutarak doğrulayınız.</div>
-                    <div class="yasal-en">This certificate shall not be reproduced other than in full except with the permission of the laboratory. &nbsp;|&nbsp; Certificates that are unsigned and do not contain TÜRKAK Certificate Verification System's verification QR code are invalid. &nbsp;|&nbsp; Before using this certificate, verify it by scanning the QR code via <b>asist.turkak.org.tr</b>.</div>
+                    <div class="yasal-tr">${yasalTr}</div>
+                    <div class="yasal-en">${yasalEn}</div>
                 </div>
                 <div class="alt-bar"><div class="alt-sol">${labAdi}  ${labAdres}</div><div class="alt-sag">Tel: ${labTel}  |  ${labWeb}  |  ${labMail}</div></div>
                 <div class="sayfa-no"><span>${formNo}</span><span>Sayfa No: 2 / ${toplamSayfa}</span></div>
@@ -357,8 +368,8 @@ async function yukle() {
                     ft.style.cssText = 'padding:0 15mm 2mm;';
                     ft.innerHTML = `
                         <div style="font-size:5.5pt;color:#555;text-align:center;line-height:1.5;border-top:0.5pt solid #ccc;padding-top:2px;margin-bottom:1px;">
-                            <div style="font-style:italic;margin-bottom:1px;">Bu sertifika, laboratuvarın yazılı izni olmadan kısmen kopyalanıp çoğaltılamaz. &nbsp;|&nbsp; İmzasız ve TÜRKAK Doğrulama Kare Kodu bulunmayan sertifikalar geçersizdir. &nbsp;|&nbsp; Bu sertifikanın kullanımından önce <b>asist.turkak.org.tr</b> bağlantısı üzerinden kare kodu okutarak doğrulayınız.</div>
-                            <div style="color:#aaa;">This certificate shall not be reproduced other than in full except with the permission of the laboratory. &nbsp;|&nbsp; Certificates that are unsigned and do not contain TÜRKAK Certificate Verification System's verification QR code are invalid. &nbsp;|&nbsp; Before using this certificate, verify it by scanning the QR code via <b>asist.turkak.org.tr</b>.</div>
+                            <div style="font-style:italic;margin-bottom:1px;">${yasalTr}</div>
+                            <div style="color:#aaa;">${yasalEn}</div>
                         </div>
                         <div style="display:flex;justify-content:space-between;border-top:0.3pt solid #ccc;padding-top:2px;margin-top:2px;font-size:6pt;color:#555;">
                             <span>${labAdi}  ${labAdres}</span>
