@@ -2338,9 +2338,15 @@ app.get('/api/sertifikalar/:id/tam', async (req, res) => {
                 COALESCE(
                     (SELECT json_agg(json_build_object(
                         'cihaz_adi', rc.cihaz_adi, 'marka', rc.marka, 'model', rc.model,
-                        'seri_no', rc.seri_no, 'envanter_no', rc.envanter_no
+                        'seri_no', rc.seri_no, 'envanter_no', rc.envanter_no,
+                        'kal_tarihi', rt.kal_tarihi, 'gelecek_kal', rt.sonraki_kal_tarihi,
+                        'son_sert_no', rt.sertifika_no, 'izlenebilirlik', rt.izlenebilirlik
                     ))
-                    FROM referans_cihazlar rc WHERE rc.id = ANY(km.referanslar)), '[]'
+                    FROM referans_cihazlar rc
+                    LEFT JOIN (
+                        SELECT DISTINCT ON (referans_id) * FROM referans_takip ORDER BY referans_id, kal_tarihi DESC
+                    ) rt ON rt.referans_id = rc.id
+                    WHERE rc.id = ANY(km.referanslar)), '[]'
                 ) as referans_detay
             FROM sertifikalar s
             LEFT JOIN musteriler m ON s.musteri_id = m.id

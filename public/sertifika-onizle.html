@@ -208,7 +208,10 @@ async function yukle() {
 
         let refRows = '';
         if(s.referans_detay && s.referans_detay.length) {
-            refRows = s.referans_detay.map(r => `<tr><td>${r.envanter_no||'—'}</td><td>${[r.cihaz_adi, r.marka, r.model].filter(Boolean).join(' / ')}</td><td>${r.seri_no||'—'}</td><td>${r.gelecek_kal||'—'}</td><td>${r.son_sert_no||'—'}</td><td>${r.izlenebilirlik||akredNo}</td></tr>`).join('');
+            refRows = s.referans_detay.map(r => {
+                const refKalTarihi = r.kal_tarihi ? new Date(r.kal_tarihi).toLocaleDateString('tr-TR') : '—';
+                return `<tr><td>${r.envanter_no||'—'}</td><td>${[r.cihaz_adi, r.marka, r.model].filter(Boolean).join(' / ')}</td><td>${r.seri_no||'—'}</td><td>${refKalTarihi}</td><td>${r.son_sert_no||'—'}</td><td>${r.izlenebilirlik||akredNo}</td></tr>`;
+            }).join('');
         } else {
             refRows = `<tr><td colspan="6" style="color:#94a3b8;font-style:italic;">—</td></tr>`;
         }
@@ -313,7 +316,7 @@ async function yukle() {
             <div class="bolum-baslik">5. KALİBRASYON PROSEDÜRLERİ / CALIBRATION PROCEDURES</div>
             <table class="prosedur-tablo"><thead><tr><th style="width:40mm;">Prosedür No</th><th>Prosedür Adı</th></tr></thead><tbody>${prosedurRows}</tbody></table>
             <div class="bolum-baslik">6. KALİBRASYONDA KULLANILAN REFERANSLAR / REFERENCES USED IN CALIBRATION</div>
-            <table class="ref-tablo"><colgroup><col style="width:16mm;"><col style="width:60mm;"><col style="width:24mm;"><col style="width:22mm;"><col style="width:32mm;"><col style="width:22mm;"></colgroup><thead><tr><th>Demirbaş No</th><th>Cihaz Tanımı / Marka / Model</th><th>Seri No</th><th>Gelecek Kal.</th><th>Sertifika No</th><th>İzlenebilirlik</th></tr></thead><tbody>${refRows}</tbody></table>
+            <table class="ref-tablo"><colgroup><col style="width:16mm;"><col style="width:60mm;"><col style="width:24mm;"><col style="width:22mm;"><col style="width:32mm;"><col style="width:22mm;"></colgroup><thead><tr><th>Demirbaş No</th><th>Cihaz Tanımı / Marka / Model</th><th>Seri No</th><th>Kal. Tarihi</th><th>Sertifika No</th><th>İzlenebilirlik</th></tr></thead><tbody>${refRows}</tbody></table>
             <div class="bolum-baslik">7. AÇIKLAMALAR / REMARKS</div><p class="s2-metin">Kalibrasyon sonuçları, kalibrasyon tarihinden itibaren ve sertifikada belirtilmiş olan şartlar altında geçerlidir.</p>
             <div class="bolum-baslik">8. UYGUNLUK DEĞERLENDİRME VE KARAR KURALI / CONFORMITY ASSESSMENT AND DECISION RULE</div><p class="s2-metin">Ölçüm sonuçları raporda belirtilmiş olup, değerlendirme kullanıcıya bırakılmıştır.</p>
             <div class="bolum-baslik">9. GÖRÜŞ VE YORUMLAR / OPINION AND COMMENTS</div><p class="s2-metin">${s.yorum||'—'}</p>
