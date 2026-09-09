@@ -56,6 +56,9 @@
     .turkak-alt  { font-size:6.5pt; color:var(--lacivert); line-height:1.4; margin-top:1mm; }
     .qr-sag      { text-align:center; padding:2mm; margin-top:1mm; }
     .qr-placeholder { width:24mm; height:24mm; background:#f0f0f0; display:inline-flex; align-items:center; justify-content:center; font-size:7pt; color:#999; border:1px solid #ddd; }
+    .kdisi-kutu { width:27mm; margin:2mm auto 0; border:0.75pt solid var(--lacivert); border-radius:1.5mm; overflow:hidden; }
+    .kdisi-satir { padding:1.8mm 1mm; text-align:center; font-weight:700; color:var(--lacivert); border-bottom:0.5pt solid var(--lacivert); font-size:9pt; line-height:1.2; }
+    .kdisi-satir:last-child { border-bottom:none; }
     .sag-blok    { display:flex; flex-direction:column; }
 
     /* BİLGİ SATIRLARI */
@@ -210,6 +213,10 @@ async function yukle() {
         }
 
         const kal_tarihi   = s.kal_tarihi   ? new Date(s.kal_tarihi).toLocaleDateString('tr-TR')   : '—';
+        const kalAyYil = s.kal_tarihi ? (() => {
+            const d = new Date(s.kal_tarihi);
+            return String(d.getMonth()+1).padStart(2,'0') + '.' + d.getFullYear();
+        })() : '—';
         const yayin_tarihi = s.yayin_tarihi ? new Date(s.yayin_tarihi).toLocaleDateString('tr-TR') : '—';
         const onay_tarihi  = s.onay_tarihi  ? new Date(s.onay_tarihi).toLocaleDateString('tr-TR')  : '—';
         const gelecek_kal  = s.gelecek_kal  ? new Date(s.gelecek_kal).toLocaleDateString('tr-TR')  : '—';
@@ -234,8 +241,14 @@ async function yukle() {
                     <div class="sert-baslik">KALİBRASYON SERTİFİKASI</div><div class="sert-baslik-en">Calibration Certificate</div>
                 </div>
                 <div class="sag-blok">
-                    <div class="turkak-kutu">${(!kapsamDisi && ayar.turkak_logo) ? `<img src="${ayar.turkak_logo}" style="max-width:24mm;max-height:24mm;object-fit:contain;display:block;margin:0 auto 2px;">` : ''}</div>
-                    <div class="qr-sag"><div class="qr-placeholder">QR<br>${sertNo}</div><div style="font-size:6pt;color:var(--orta);margin-top:1mm;">${kapsamDisi ? 'SERTİFİKA NO' : 'TÜRKAK BDS NO'}</div><div style="font-size:7pt;font-weight:700;color:var(--lacivert);">${sertNo}</div></div>
+                    ${kapsamDisi ? `
+                    <div class="kdisi-kutu">
+                        <div class="kdisi-satir">AYER</div>
+                        <div class="kdisi-satir">${sertNo}</div>
+                        <div class="kdisi-satir">${kalAyYil}</div>
+                    </div>` : `
+                    <div class="turkak-kutu">${ayar.turkak_logo ? `<img src="${ayar.turkak_logo}" style="max-width:24mm;max-height:24mm;object-fit:contain;display:block;margin:0 auto 2px;">` : ''}</div>
+                    <div class="qr-sag"><div class="qr-placeholder">QR<br>${sertNo}</div><div style="font-size:6pt;color:var(--orta);margin-top:1mm;">TÜRKAK BDS NO</div><div style="font-size:7pt;font-weight:700;color:var(--lacivert);">${sertNo}</div></div>`}
                 </div>
             </div>
             <hr class="hr-koyu">
