@@ -193,6 +193,7 @@
                     <textarea id="hf_adres" style="min-height:50px;" placeholder="Firma adresi..."></textarea>
                 </div>
             </div>
+            <div style="font-size:0.75rem;color:#94a3b8;margin-top:10px;">💡 Diğer bilgileri (yetkili, il/ilçe, fatura maili vb.) sonra Müşteriler sayfasından tamamlayabilirsiniz.</div>
         </div>
         <div class="hizli-foot">
             <button onclick="hizliFirmaModalKapat()" style="background:#f1f5f9;color:#475569;border:none;padding:9px 18px;border-radius:8px;font-weight:600;cursor:pointer;">İptal</button>
@@ -641,25 +642,40 @@
         if(oncekiAd) document.getElementById("hf_firma_adi").value = oncekiAd;
         document.getElementById("firmaSonuclar").style.display="none";
         document.getElementById("hizliFirmaModal").classList.add("open");
+        setTimeout(() => document.getElementById("hf_firma_adi").focus(), 50);
     }
     function hizliFirmaModalKapat() {
         document.getElementById("hizliFirmaModal").classList.remove("open");
     }
+    const firmaNorm = t => (t || '').toLocaleLowerCase('tr-TR')
+        .replace(/ı/g,'i').replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ş/g,'s').replace(/ö/g,'o').replace(/ç/g,'c')
+        .replace(/\s+/g,' ').trim();
     async function hizliFirmaKaydet() {
         const firmaAdi = document.getElementById("hf_firma_adi").value.trim();
+        const subeAdi  = document.getElementById("hf_sube_adi").value.trim();
         if(!firmaAdi) return showToast("❌ Firma adı gerekli!", true);
+
+        // Aynı ad + şubede firma zaten varsa uyar
+        const ayni = musteriler.find(m => firmaNorm(m.firma_adi) === firmaNorm(firmaAdi) && firmaNorm(m.sube_adi) === firmaNorm(subeAdi));
+        if(ayni && !confirm(`"${ayni.firma_adi}${ayni.sube_adi ? ' / ' + ayni.sube_adi : ''}" zaten kayıtlı görünüyor.\nYine de yeni bir firma kaydı oluşturulsun mu?`)) return;
+
+        const tel  = document.getElementById("hf_telefon").value.trim();
+        const mail = document.getElementById("hf_email").value.trim();
         const btn = document.getElementById("hizliFirmaKaydetBtn");
         btn.disabled=true; btn.textContent="Kaydediliyor...";
         try {
+            // Sunucu telefon/mail alanlarını liste olarak bekler (Müşteriler sayfasıyla aynı biçim)
             const res = await fetch("/api/musteriler", {
                 method:"POST", headers:{"Content-Type":"application/json"},
                 body: JSON.stringify({
-                    firma_adi:  firmaAdi,
-                    sube_adi:   document.getElementById("hf_sube_adi").value.trim()||null,
-                    vergi_no:   document.getElementById("hf_vergi_no").value.trim()||null,
-                    telefon:    document.getElementById("hf_telefon").value.trim()||null,
-                    email:      document.getElementById("hf_email").value.trim()||null,
-                    adres:      document.getElementById("hf_adres").value.trim()||null
+                    firma_adi: firmaAdi,
+                    sube_adi:  subeAdi || null,
+                    vergi_no:  document.getElementById("hf_vergi_no").value.trim() || null,
+                    adres:     document.getElementById("hf_adres").value.trim() || null,
+                    yetkililer: [],
+                    telefonlar: tel ? [tel] : [],
+                    sertifika_mailleri: mail ? [mail] : [],
+                    fatura_mailleri:    mail ? [mail] : []
                 })
             });
             if(!res.ok) throw new Error();
