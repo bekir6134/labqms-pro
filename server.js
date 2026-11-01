@@ -413,28 +413,32 @@ app.post('/api/teklifler/:id/gonder', async (req, res) => {
         ayarlarResult.rows.forEach(r => ay[r.anahtar] = r.deger);
         if (!ay.smtp_host) return res.status(400).json({ error: 'SMTP ayarları yapılandırılmamış. Lütfen Ayarlar sayfasını kontrol edin.' });
 
-        const kalemler = (() => {
-            try {
-                const kd = typeof t.kalemler === 'object' ? t.kalemler : JSON.parse(t.kalemler || '{}');
-                return Array.isArray(kd) ? kd : (kd.items || []);
-            } catch(e) { return []; }
+        // Teklif verisi: yeni biçimde yol/konaklama kalem olarak items içinde gelir,
+        // eski kayıtlarda ayrı alanlardaydı (aşağıda kaleme çevrilir)
+        const kdHam = (() => {
+            try { return typeof t.kalemler === 'object' ? t.kalemler : JSON.parse(t.kalemler || '{}'); }
+            catch(e) { return {}; }
         })();
-        const kdObj = (() => {
-            try {
-                const kd = typeof t.kalemler === 'object' ? t.kalemler : JSON.parse(t.kalemler || '{}');
-                return Array.isArray(kd) ? { yol_ucreti:0, konaklama_ucreti:0, kdv_oran:20 } : kd;
-            } catch(e) { return { yol_ucreti:0, konaklama_ucreti:0, kdv_oran:20 }; }
-        })();
+        const kdObj = Array.isArray(kdHam) ? { items: kdHam } : (kdHam || {});
 
         const tarih = t.teklif_tarihi ? new Date(t.teklif_tarihi).toLocaleDateString('tr-TR') : '-';
         const pb = t.para_birimi || '₺';
         const fmt = v => parseFloat(v||0).toLocaleString('tr-TR', {minimumFractionDigits:2});
-        const araToplam = parseFloat(t.ara_toplam || 0);
+
+        const kalemler = (kdObj.items || []).slice();
+        [['yol','Yol Ücreti',kdObj.yol_ucreti],['konaklama','Konaklama Ücreti',kdObj.konaklama_ucreti]].forEach(([tur,ad,tutar]) => {
+            const v = parseFloat(tutar) || 0;
+            if (v > 0 && !kalemler.some(k => k.tur === tur)) kalemler.push({ ad, fiyat: v, pb, adet: 1, ozellik_not: '', hizmet_sekli: '', kapsam_durumu: '', tur });
+        });
+        const toplaK = f => kalemler.filter(f).reduce((sum,k) => sum + (parseFloat(k.fiyat)||0) * (parseInt(k.adet)||1), 0);
+        const araToplam = toplaK(k => !k.tur);
+        const yolU = toplaK(k => k.tur === 'yol');
+        const konU = toplaK(k => k.tur === 'konaklama');
         const indOran = parseFloat(t.indirim_oran || 0);
         const indTutar = araToplam * indOran / 100;
-        const yolU = parseFloat(kdObj.yol_ucreti) || 0;
-        const konU = parseFloat(kdObj.konaklama_ucreti) || 0;
-        const kdvOran = kdObj.kdv_oran != null ? parseFloat(kdObj.kdv_oran) : 20;
+        const kdvOranHam = kdObj.kdv_oran != null ? parseFloat(kdObj.kdv_oran) : 20;
+        const kdvYok = kdObj.kdv_yok === true || kdvOranHam === 0;
+        const kdvOran = kdvYok ? 0 : kdvOranHam;
         const kdvHaric = (araToplam - indTutar) + yolU + konU;
         const kdvTutar = kdvHaric * kdvOran / 100;
         const kdvDahil = kdvHaric + kdvTutar;
@@ -444,7 +448,7 @@ app.post('/api/teklifler/:id/gonder', async (req, res) => {
         const kalemlerHTML = kalemler.map((k,i) => `
             <tr style="background:${i%2===0?'#f8fafc':'#fff'}">
                 <td style="padding:6px 8px;border-bottom:1px solid #e2e8f0;">${i+1}</td>
-                <td style="padding:6px 8px;border-bottom:1px solid #e2e8f0;"><strong>${k.ad||''}</strong></td>
+                <td style="padding:6px 8px;border-bottom:1px solid #e2e8f0;">${k.tur === 'yol' ? '🚗 ' : (k.tur === 'konaklama' ? '🏨 ' : '')}<strong>${k.ad||''}</strong></td>
                 <td style="padding:6px 8px;border-bottom:1px solid #e2e8f0;font-size:11px;">${k.ozellik_not||'-'}</td>
                 <td style="padding:6px 8px;border-bottom:1px solid #e2e8f0;font-size:11px;">${k.hizmet_sekli||'-'}</td>
                 <td style="padding:6px 8px;border-bottom:1px solid #e2e8f0;text-align:center;">${k.adet||1}</td>
@@ -491,9 +495,9 @@ app.post('/api/teklifler/:id/gonder', async (req, res) => {
         ${indOran > 0 ? `<div style="display:flex;justify-content:space-between;padding:6px 12px;border-bottom:1px solid #e2e8f0;"><span style="color:#64748b;">İndirim (%${indOran})</span><span style="color:#dc2626;">− ${fmt(indTutar)} ${pb}</span></div>` : ''}
         ${yolU > 0 ? `<div style="display:flex;justify-content:space-between;padding:6px 12px;border-bottom:1px solid #e2e8f0;"><span>Yol Ücreti</span><span>${fmt(yolU)} ${pb}</span></div>` : ''}
         ${konU > 0 ? `<div style="display:flex;justify-content:space-between;padding:6px 12px;border-bottom:1px solid #e2e8f0;"><span>Konaklama Ücreti</span><span>${fmt(konU)} ${pb}</span></div>` : ''}
-        <div style="display:flex;justify-content:space-between;padding:6px 12px;border-bottom:1px solid #e2e8f0;background:#f0f9ff;"><span style="color:#0369a1;font-weight:bold;">KDV Hariç Toplam</span><span style="color:#0369a1;font-weight:bold;">${fmt(kdvHaric)} ${pb}</span></div>
-        ${kdvOran > 0 ? `<div style="display:flex;justify-content:space-between;padding:6px 12px;border-bottom:1px solid #e2e8f0;"><span>KDV (%${kdvOran})</span><span>${fmt(kdvTutar)} ${pb}</span></div>` : ''}
-        <div style="display:flex;justify-content:space-between;padding:10px 12px;background:#1E40AF;color:white;"><span style="font-weight:bold;">GENEL TOPLAM (KDV DAHİL)</span><span style="font-size:14px;font-weight:800;">${fmt(kdvDahil)} ${pb}</span></div>
+        ${kdvYok ? '' : `<div style="display:flex;justify-content:space-between;padding:6px 12px;border-bottom:1px solid #e2e8f0;background:#f0f9ff;"><span style="color:#0369a1;font-weight:bold;">KDV Hariç Toplam</span><span style="color:#0369a1;font-weight:bold;">${fmt(kdvHaric)} ${pb}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:6px 12px;border-bottom:1px solid #e2e8f0;"><span>KDV (%${kdvOran})</span><span>${fmt(kdvTutar)} ${pb}</span></div>`}
+        <div style="display:flex;justify-content:space-between;padding:10px 12px;background:#1E40AF;color:white;"><span style="font-weight:bold;">${kdvYok ? 'GENEL TOPLAM' : 'GENEL TOPLAM (KDV DAHİL)'}</span><span style="font-size:14px;font-weight:800;">${fmt(kdvDahil)} ${pb}</span></div>
     </div>
     <p style="margin-top:20px;font-size:11px;color:#64748b;">Teklifimizin kabulü halinde imzalı, firma kaşeli onayınızı tarafımıza iletmenizi rica ederiz.<br>Bu teklif ${tarih} tarihinde düzenlenmiş olup ${t.gecerlilik_gun||30} gün geçerlidir.</p>
     <hr style="border:none;border-top:1px solid #e2e8f0;margin:16px 0;">
