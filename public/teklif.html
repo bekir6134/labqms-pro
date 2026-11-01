@@ -881,11 +881,15 @@ tbody tr:nth-child(even) { background:#f8fafc; }
 .aciklamalar h3 { font-size:11px; color:#1E40AF; margin-bottom:8px; border-bottom:1px solid #e2e8f0; padding-bottom:4px; }
 .aciklamalar ol { padding-left:18px; }
 .aciklamalar li { margin-bottom:5px; }
-.signature-area { display:grid; grid-template-columns:1fr 1fr; gap:30px; margin-top:30px; }
+.signature-area { display:grid; grid-template-columns:1fr 1fr; gap:30px; margin-top:16px; }
 .sig-box { border:1px solid #e2e8f0; border-radius:8px; padding:15px; }
 .sig-title { font-size:10px; font-weight:bold; color:#1E40AF; margin-bottom:8px; border-bottom:1px solid #e2e8f0; padding-bottom:5px; }
 .sig-line { border-top:1px solid #94a3b8; margin-top:40px; padding-top:6px; font-size:9px; color:#64748b; }
-.karar-kuralı { margin-top:12px; padding:10px; border:1px solid #e2e8f0; border-radius:6px; background:#f8fafc; }
+.karar-kuralı { margin-top:10px; padding:8px 10px; border:1px solid #e2e8f0; border-radius:6px; background:#f8fafc; font-size:9.5px; page-break-inside:avoid; break-inside:avoid; }
+.kk-not { font-size:8.5px; color:#64748b; font-weight:normal; line-height:1.4; }
+.kk-not b { color:#475569; }
+.kk-alt { margin-top:4px; padding-top:4px; border-top:1px dashed #cbd5e1; }
+.kk-satir { margin:2px 0; line-height:1.45; }
 @media print {
     .toolbar { display:none !important; }
     body { padding:12px 18px; }
@@ -1000,7 +1004,14 @@ ${t.teklif_notu ? `<div class="note-box"><strong>Not / Note:</strong> ${t.teklif
 </div>
 
 <div class="karar-kuralı">
-<strong>Karar Kuralı / Uygunluk Değerlendirmesi Talebi:</strong> &nbsp;&nbsp; ○ İstiyorum &nbsp;&nbsp; ○ İstemiyorum
+<div><strong>Karar Kuralı / Uygunluk Değerlendirmesi Talebi:</strong> &nbsp;&nbsp; ○ İstiyorum &nbsp;&nbsp; ○ İstemiyorum
+<span class="kk-not">&nbsp;&nbsp;(İstemiyorum: sertifikada uygunluk beyanı yer almaz.)</span></div>
+<div class="kk-alt">
+<div class="kk-satir"><b>“İstiyorum” ise, uygunluk neye göre?</b> &nbsp; ○ Üretici spesifikasyonu &nbsp; ○ Standart / şartname: ________________ &nbsp; ○ Müşteri toleransı: ________________</div>
+<div class="kk-satir"><b>Uygulanacak karar kuralı:</b> &nbsp; ○ Basit kabul &nbsp; ○ Koruma bandı &nbsp; ○ Müşteri tanımlı kural: ____________________</div>
+<div class="kk-not"><b>Basit kabul:</b> sonuç tolerans içindeyse uygun, dışındaysa uygun değil; ölçüm belirsizliği dikkate alınmaz (paylaşılan risk). <b>Koruma bandı:</b> sonuç ± genişletilmiş belirsizlik (U) tamamen tolerans içindeyse uygun, tamamen dışındaysa uygun değil, sınırı kesiyorsa karar verilemez.</div>
+</div>
+</div>
 </div>
 
 <div class="signature-area">
