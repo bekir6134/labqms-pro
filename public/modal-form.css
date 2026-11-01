@@ -1,0 +1,119 @@
+/* ============================================================
+   KAYIT FORMU POPUP (MODAL)
+   Eski accordion yapısını bozmadan, form açıldığında ön planda
+   bir pencere olarak gösterir. Arka plandaki sayfa kararır.
+   Kullanım: sayfaya modal-form.css + modal-form.js eklenir.
+   ============================================================ */
+
+/* Başlık çubuğu artık açılır panel değil, "Yeni Kayıt" butonu gibi */
+.accordion { overflow: visible !important; }
+.accordion .accordion-header,
+.accordion .accordion-header.active {
+    background: #fff;
+    border-bottom: 1px solid transparent;
+    border-radius: 12px;
+    gap: 12px;
+}
+.accordion .accordion-header #accIcon { display: none; }
+.accordion .accordion-header::after {
+    content: "＋ Yeni Kayıt Ekle";
+    background: var(--primary, #1e3a5f);
+    color: #fff;
+    padding: 9px 18px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+.accordion .accordion-header:hover::after { filter: brightness(1.15); }
+
+/* Arka plan karartma (toast ve form içinden açılan ikinci pencereler bunun üstünde kalır) */
+.mf-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    z-index: 1000;
+}
+.accordion.mf-open .mf-backdrop { display: block; animation: mfFade .15s ease-out; }
+
+/* Pencere */
+.accordion.mf-open > .accordion-content {
+    position: fixed;
+    top: 4vh;
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    width: min(1100px, 95vw);
+    max-height: 92vh;
+    overflow-y: auto;
+    padding: 0 !important;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
+    z-index: 1001;
+    animation: mfPop .18s ease-out;
+}
+.mf-head {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 22px;
+    background: #f8fafc;
+    border-bottom: 1px solid var(--border, #e2e8f0);
+    border-radius: 14px 14px 0 0;
+}
+.mf-title { margin: 0; font-size: 1.05rem; color: var(--primary, #1e3a5f); font-weight: 700; }
+.mf-close {
+    background: none;
+    border: none;
+    font-size: 1.3rem;
+    line-height: 1;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+}
+.mf-close:hover { background: #fee2e2; color: #dc2626; }
+.mf-body { padding: 22px 24px 26px; }
+
+body.mf-lock { overflow: hidden; }
+
+@keyframes mfFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes mfPop  { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: none; } }
+
+@media (max-width: 640px) {
+    .accordion.mf-open > .accordion-content { top: 1vh; max-height: 98vh; width: 98vw; }
+    .mf-body { padding: 16px; }
+    .accordion .accordion-header::after { padding: 8px 12px; font-size: 0.8rem; }
+}
+
+/* --- Accordion kullanmayan sayfalar için (ör. personel) --- */
+.mf-open-btn {
+    background: var(--primary, #1e3a5f);
+    color: #fff;
+    padding: 9px 18px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+.mf-backdrop.mf-show { display: block; animation: mfFade .15s ease-out; }
+.mf-card { display: none; }
+.mf-card.mf-open {
+    display: block;
+    position: fixed;
+    top: 4vh;
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    width: min(1100px, 95vw);
+    max-height: 92vh;
+    overflow-y: auto;
+    z-index: 1001;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
+    animation: mfPop .18s ease-out;
+}

@@ -66,15 +66,28 @@
         .act-drop-item.danger:hover { background:#fee2e2; }
         .act-drop hr { margin:4px 0; border:none; border-top:1px solid var(--border); }
     </style>
+<link rel="stylesheet" href="modal-form.css">
 </head>
 <body>
 
     <div id="toast"></div>
 
-    <div class="card">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h2 id="formBaslik">➕ Yeni Personel Ekle</h2>
-            <button onclick="formSifirla()" style="background:none; border:none; color:#64748b; cursor:pointer; font-weight:600; text-decoration:underline;">Temizle / Yeni Kayıt</button>
+    <!-- YENİ KAYIT BUTONU -->
+    <div class="card" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="personelFormAc()">
+        <h2 style="margin:0;">👤 Yeni Personel Kaydı</h2>
+        <span class="mf-open-btn">＋ Yeni Kayıt Ekle</span>
+    </div>
+
+    <div class="mf-backdrop" id="personelBackdrop"></div>
+
+    <!-- KAYIT FORMU (popup olarak açılır) -->
+    <div class="card mf-card" id="personelFormKart">
+        <div style="display:flex; justify-content:space-between; align-items:center; position:sticky; top:-20px; background:#fff; z-index:2; padding:6px 0 10px;">
+            <h2 id="formBaslik" style="margin:0;">➕ Yeni Personel Ekle</h2>
+            <div style="display:flex; align-items:center; gap:14px;">
+                <button type="button" onclick="formSifirla()" style="background:none; border:none; color:#64748b; cursor:pointer; font-weight:600; text-decoration:underline;">Temizle</button>
+                <button type="button" class="mf-close" title="Kapat" onclick="personelFormKapat()">✕</button>
+            </div>
         </div>
         
         <form id="personelForm">
@@ -407,7 +420,21 @@
                 cb.checked = erisimler.includes(cb.value);
             });
 
-            window.scrollTo({ top: 0, behavior: "smooth" });
+            personelFormAc();
+        }
+
+        // --- POPUP AÇ / KAPAT ---
+        function personelFormAc() {
+            document.getElementById("personelFormKart").classList.add("mf-open");
+            document.getElementById("personelBackdrop").classList.add("mf-show");
+            document.body.classList.add("mf-lock");
+            document.getElementById("personelFormKart").scrollTop = 0;
+        }
+        function personelFormKapat() {
+            formSifirla();
+            document.getElementById("personelFormKart").classList.remove("mf-open");
+            document.getElementById("personelBackdrop").classList.remove("mf-show");
+            document.body.classList.remove("mf-lock");
         }
 
         // --- FORMU SIFIRLAMA ---
@@ -452,7 +479,7 @@
                 
                 if(res.ok) {
                     showToast(duzenle_id ? "✅ Personel başarıyla güncellendi!" : "✅ Personel başarıyla eklendi!");
-                    formSifirla();
+                    personelFormKapat();
                     personelleriGetir();
                 } else {
                     const errorData = await res.json();
