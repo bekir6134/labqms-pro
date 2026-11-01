@@ -109,6 +109,23 @@
         .combo-dropdown { display: none; position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid var(--border); border-top: none; border-radius: 0 0 8px 8px; max-height: 200px; overflow-y: auto; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .combo-item { padding: 9px 13px; cursor: pointer; border-bottom: 1px solid #f1f5f9; }
         .combo-item:hover { background: #f1f5f9; }
+        .combo-item.aktif { background: #eff6ff; }
+        .combo-ekle { position: sticky; bottom: 0; background: #f0fdf4; color: #166534; font-weight: 700; font-size: 0.85rem; border-top: 1px solid #bbf7d0; }
+        .combo-ekle:hover, .combo-ekle.aktif { background: #dcfce7; }
+        .secili-badge { display: none; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 9px 12px; font-size: 0.9rem; color: #1e40af; font-weight: 600; justify-content: space-between; align-items: center; gap: 10px; }
+        .secili-badge.goster { display: flex; }
+        .temizle-btn { background: none; border: none; cursor: pointer; color: #64748b; font-size: 0.78rem; font-weight: 600; white-space: nowrap; }
+        .temizle-btn:hover { color: #dc2626; }
+
+        /* HIZLI FİRMA KAYDI */
+        #hizliFirmaModal { display: none; position: fixed; z-index: 3000; inset: 0; background: rgba(0,0,0,0.55); align-items: center; justify-content: center; }
+        #hizliFirmaModal.open { display: flex; }
+        .hizli-box { background: #fff; border-radius: 14px; width: 90%; max-width: 600px; max-height: 88vh; overflow-y: auto; }
+        .hizli-head { padding: 16px 22px; border-bottom: 1px solid var(--border); background: #f8fafc; display: flex; align-items: center; justify-content: space-between; border-radius: 14px 14px 0 0; }
+        .hizli-title { font-weight: 700; color: var(--primary); font-size: 0.95rem; }
+        .hizli-close { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748b; }
+        .hizli-body { padding: 20px 22px; }
+        .hizli-foot { padding: 14px 22px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
         .combo-item-name { font-weight: 600; font-size: 0.87rem; }
         .combo-item-sub { font-size: 0.75rem; color: #94a3b8; }
 
@@ -134,6 +151,49 @@
 <div id="toast"></div>
 
 <!-- MAİL MODALI -->
+<!-- HIZLI FİRMA KAYDI -->
+<div id="hizliFirmaModal">
+    <div class="hizli-box">
+        <div class="hizli-head">
+            <div class="hizli-title">🏢 Hızlı Firma Kaydı</div>
+            <button class="hizli-close" type="button" onclick="hizliFirmaModalKapat()">✕</button>
+        </div>
+        <div class="hizli-body">
+            <div class="form-grid g2">
+                <div class="full">
+                    <label>Firma Adı *</label>
+                    <input type="text" id="hf_firma_adi" placeholder="Firma unvanı...">
+                </div>
+                <div>
+                    <label>Şube / Departman</label>
+                    <input type="text" id="hf_sube_adi" placeholder="İstanbul Şubesi vb.">
+                </div>
+                <div>
+                    <label>Vergi No</label>
+                    <input type="text" id="hf_vergi_no">
+                </div>
+                <div>
+                    <label>Telefon</label>
+                    <input type="text" id="hf_telefon">
+                </div>
+                <div>
+                    <label>E-posta</label>
+                    <input type="text" id="hf_email">
+                </div>
+                <div class="full">
+                    <label>Adres</label>
+                    <input type="text" id="hf_adres" placeholder="Firma adresi...">
+                </div>
+            </div>
+            <div style="font-size:0.75rem;color:#94a3b8;margin-top:10px;">💡 Diğer bilgileri (yetkili, il/ilçe, fatura maili vb.) sonra Müşteriler sayfasından tamamlayabilirsiniz.</div>
+        </div>
+        <div class="hizli-foot">
+            <button type="button" onclick="hizliFirmaModalKapat()" style="width:auto;background:#f1f5f9;color:#475569;border:none;padding:9px 18px;border-radius:8px;font-weight:600;cursor:pointer;">İptal</button>
+            <button type="button" id="hizliFirmaKaydetBtn" onclick="hizliFirmaKaydet()" style="width:auto;background:var(--primary);color:white;border:none;padding:9px 20px;border-radius:8px;font-weight:700;cursor:pointer;">🏢 Kaydet & Seç</button>
+        </div>
+    </div>
+</div>
+
 <div id="mailModal" style="display:none;position:fixed;z-index:2000;inset:0;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;">
     <div style="background:#fff;border-radius:14px;width:90%;max-width:520px;padding:28px;position:relative;">
         <button onclick="mailModalKapat()" style="position:absolute;right:16px;top:16px;background:none;border:none;font-size:20px;cursor:pointer;color:#64748b;">✕</button>
@@ -173,7 +233,16 @@
         <div class="form-grid g2" style="margin-bottom:15px;">
             <div>
                 <label>Firma</label>
-                <select id="firma_adi" onchange="firmaSecildi()">
+                <div class="combo-wrapper">
+                    <input type="text" id="firmaAramaInput" placeholder="🔍 Firma ara (ad veya şube yazın)..." autocomplete="off">
+                    <div class="combo-dropdown" id="firmaSonuclar"></div>
+                </div>
+                <div class="secili-badge" id="firmaSeciliBadge">
+                    <span id="firmaSeciliAdi"></span>
+                    <button type="button" class="temizle-btn" onclick="firmaSifirla()" title="Firmayı değiştir">✕ Değiştir</button>
+                </div>
+                <!-- Asıl değer burada tutulur (diğer kodlar bu alanı okur/yazar) -->
+                <select id="firma_adi" onchange="firmaSecildi()" style="display:none;">
                     <option value="">-- Firma Seçin --</option>
                 </select>
             </div>
@@ -380,15 +449,157 @@
         musteriler = onVeriler.musteriler;
         cihazVerileri = onVeriler.cihazlar;
         ayarlar = ayarlarRes;
-        const fSel = document.getElementById("firma_adi");
-        fSel.innerHTML = '<option value="">-- Firma Seçin --</option>' +
-            musteriler.map(m => `<option value="${m.id}">${m.firma_adi}</option>`).join('');
+        firmaSelectDoldur();
+        firmaAramaKur();
         document.getElementById("teklif_tarihi").valueAsDate = new Date();
         listele();
     }
 
+    // ── FİRMA ARAMA / HIZLI KAYIT ──
+    const firmaNorm = s => (s || '').toLocaleLowerCase('tr-TR')
+        .replace(/ı/g,'i').replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ş/g,'s').replace(/ö/g,'o').replace(/ç/g,'c')
+        .replace(/\s+/g,' ').trim();
+    const firmaGoruntuAdi = m => m.firma_adi + (m.sube_adi ? ' / ' + m.sube_adi : '');
+    const htmlKacis = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    let firmaAktifIndex = -1;
+
+    function firmaSelectDoldur() {
+        const sel = document.getElementById("firma_adi");
+        const secili = sel.value;
+        sel.innerHTML = '<option value="">-- Firma Seçin --</option>' +
+            musteriler.map(m => `<option value="${m.id}">${htmlKacis(firmaGoruntuAdi(m))}</option>`).join('');
+        sel.value = secili;
+    }
+
+    function firmaGorunumGuncelle() {
+        const id = document.getElementById("firma_adi").value;
+        const m = musteriler.find(x => String(x.id) === String(id));
+        const badge = document.getElementById("firmaSeciliBadge");
+        const kutu  = document.getElementById("firmaAramaInput").parentElement;
+        if (m) {
+            document.getElementById("firmaSeciliAdi").textContent = firmaGoruntuAdi(m);
+            badge.classList.add("goster");
+            kutu.style.display = "none";
+        } else {
+            badge.classList.remove("goster");
+            kutu.style.display = "";
+        }
+    }
+
+    function firmaAramaKur() {
+        const input = document.getElementById("firmaAramaInput");
+        const kutu  = document.getElementById("firmaSonuclar");
+        input.addEventListener("input", () => { firmaAktifIndex = -1; firmaSonuclariGoster(); });
+        input.addEventListener("focus", () => { firmaAktifIndex = -1; firmaSonuclariGoster(); });
+        input.addEventListener("keydown", e => {
+            const items = kutu.querySelectorAll(".combo-item[data-id]");
+            if (e.key === "ArrowDown") { e.preventDefault(); firmaAktifIndex = Math.min(firmaAktifIndex + 1, items.length - 1); firmaAktifIsaretle(items); }
+            else if (e.key === "ArrowUp") { e.preventDefault(); firmaAktifIndex = Math.max(firmaAktifIndex - 1, 0); firmaAktifIsaretle(items); }
+            else if (e.key === "Enter") {
+                e.preventDefault();
+                const it = items[firmaAktifIndex >= 0 ? firmaAktifIndex : (input.value.trim() ? 0 : -1)];
+                if (it) firmaSec(it.dataset.id);
+            }
+            else if (e.key === "Escape") { kutu.style.display = "none"; }
+        });
+        kutu.addEventListener("mousedown", e => {
+            const it = e.target.closest(".combo-item");
+            if (!it) return;
+            e.preventDefault();
+            if (it.dataset.id) firmaSec(it.dataset.id);
+            else if (it.dataset.ekle) hizliFirmaModalAc(input.value.trim());
+        });
+        document.addEventListener("click", e => {
+            if (!e.target.closest("#firmaAramaInput") && !e.target.closest("#firmaSonuclar")) kutu.style.display = "none";
+        });
+    }
+
+    function firmaAktifIsaretle(items) {
+        items.forEach((el, i) => el.classList.toggle("aktif", i === firmaAktifIndex));
+        if (items[firmaAktifIndex]) items[firmaAktifIndex].scrollIntoView({ block: "nearest" });
+    }
+
+    function firmaSonuclariGoster() {
+        const input = document.getElementById("firmaAramaInput");
+        const kutu  = document.getElementById("firmaSonuclar");
+        const q = firmaNorm(input.value);
+        const eslesen = q ? musteriler.filter(m => firmaNorm(firmaGoruntuAdi(m)).includes(q)) : musteriler;
+        const LIMIT = 50;
+        let html = eslesen.slice(0, LIMIT).map(m =>
+            `<div class="combo-item" data-id="${m.id}"><div class="combo-item-name">${htmlKacis(m.firma_adi)}` +
+            `${m.sube_adi ? ` <span style="color:#94a3b8;font-weight:400;font-size:0.8rem;">/ ${htmlKacis(m.sube_adi)}</span>` : ''}</div></div>`
+        ).join('');
+        if (!eslesen.length) html = '<div class="combo-item" style="color:#94a3b8;cursor:default;">Firma bulunamadı</div>';
+        else if (eslesen.length > LIMIT) html += `<div class="combo-item" style="color:#94a3b8;cursor:default;font-size:0.8rem;">… ${eslesen.length - LIMIT} firma daha var, aramayı daraltın</div>`;
+        html += `<div class="combo-item combo-ekle" data-ekle="1">➕ Yeni firma kaydet${input.value.trim() ? ': “' + htmlKacis(input.value.trim()) + '”' : ''}</div>`;
+        kutu.innerHTML = html;
+        kutu.style.display = "block";
+    }
+
+    function firmaSec(id) {
+        document.getElementById("firma_adi").value = String(id);
+        document.getElementById("firmaAramaInput").value = "";
+        document.getElementById("firmaSonuclar").style.display = "none";
+        firmaSecildi();
+    }
+
+    function firmaSifirla() {
+        document.getElementById("firma_adi").value = "";
+        firmaSecildi();
+        document.getElementById("firmaAramaInput").focus();
+    }
+
+    function hizliFirmaModalAc(oncekiAd = '') {
+        ['hf_firma_adi','hf_sube_adi','hf_vergi_no','hf_telefon','hf_email','hf_adres'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById("hf_firma_adi").value = oncekiAd;
+        document.getElementById("firmaSonuclar").style.display = "none";
+        document.getElementById("hizliFirmaModal").classList.add("open");
+        setTimeout(() => document.getElementById("hf_firma_adi").focus(), 50);
+    }
+    function hizliFirmaModalKapat() {
+        document.getElementById("hizliFirmaModal").classList.remove("open");
+    }
+    async function hizliFirmaKaydet() {
+        const firmaAdi = document.getElementById("hf_firma_adi").value.trim();
+        const subeAdi  = document.getElementById("hf_sube_adi").value.trim();
+        if (!firmaAdi) return showToast("❌ Firma adı gerekli!", true);
+
+        const ayni = musteriler.find(m => firmaNorm(m.firma_adi) === firmaNorm(firmaAdi) && firmaNorm(m.sube_adi) === firmaNorm(subeAdi));
+        if (ayni && !confirm(`"${firmaGoruntuAdi(ayni)}" zaten kayıtlı görünüyor.\nYine de yeni bir firma kaydı oluşturulsun mu?`)) return;
+
+        const tel  = document.getElementById("hf_telefon").value.trim();
+        const mail = document.getElementById("hf_email").value.trim();
+        const btn  = document.getElementById("hizliFirmaKaydetBtn");
+        btn.disabled = true; btn.textContent = "Kaydediliyor...";
+        try {
+            const res = await fetch("/api/musteriler", {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    firma_adi: firmaAdi,
+                    sube_adi: subeAdi || null,
+                    vergi_no: document.getElementById("hf_vergi_no").value.trim() || null,
+                    adres: document.getElementById("hf_adres").value.trim() || null,
+                    yetkililer: [],
+                    telefonlar: tel ? [tel] : [],
+                    sertifika_mailleri: mail ? [mail] : [],
+                    fatura_mailleri: mail ? [mail] : []
+                })
+            });
+            if (!res.ok) throw new Error();
+            const yeni = await res.json();
+            musteriler.push({ id: yeni.id, firma_adi: yeni.firma_adi, sube_adi: yeni.sube_adi });
+            musteriler.sort((a, b) => (a.firma_adi || '').localeCompare(b.firma_adi || '', 'tr'));
+            firmaSelectDoldur();
+            hizliFirmaModalKapat();
+            firmaSec(yeni.id);
+            showToast(`✅ "${firmaGoruntuAdi(yeni)}" kaydedildi ve seçildi!`);
+        } catch (e) { showToast("❌ Firma kaydedilemedi!", true); }
+        btn.disabled = false; btn.textContent = "🏢 Kaydet & Seç";
+    }
+
     // ── FİRMA SEÇİLDİ ──
     async function firmaSecildi() {
+        firmaGorunumGuncelle();
         const musteriId = document.getElementById("firma_adi").value;
         firmaCihazlari = [];
         document.getElementById("cihaz_adi").value = "";
@@ -941,6 +1152,7 @@ ${t.teklif_notu ? `<div class="note-box"><strong>Not / Note:</strong> ${t.teklif
     function formTemizle() {
         document.getElementById("duzenle_id").value = "";
         document.getElementById("firma_adi").value = "";
+        firmaGorunumGuncelle();
         document.getElementById("teklif_tarihi").valueAsDate = new Date();
         document.getElementById("gecerlilik").value = "30";
         document.getElementById("teklif_notu").value = "";

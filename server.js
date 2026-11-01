@@ -339,7 +339,7 @@ app.delete('/api/cihaz-kutuphanesi/:id', async (req, res) => {
 // 1. Teklif için müşteri ve cihaz bilgilerini getiren endpoint
 app.get('/api/teklif-on-veriler', async (req, res) => {
     try {
-        const musteriler = await pool.query('SELECT id, firma_adi FROM musteriler ORDER BY firma_adi ASC');
+        const musteriler = await pool.query('SELECT id, firma_adi, sube_adi FROM musteriler ORDER BY firma_adi ASC, sube_adi ASC');
         const cihazlar = await pool.query(`
             SELECT ck.id, ck.cihaz_adi, ck.fiyat, ck.para_birimi, k.kategori_adi 
             FROM cihaz_kutuphanesi ck 
