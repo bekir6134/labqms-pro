@@ -168,6 +168,7 @@ async function yukle() {
             : (ayarlar || {});
 
         const labAdi     = ayar.lab_adi     || 'AYER KALİBRASYON VE DANIŞMANLIK DIŞ TİC.LTD.ŞTİ.';
+        const kisaAd     = String(ayar.lab_kisa_adi || labAdi.split(/\s+/)[0] || '').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
         const labAdres   = ayar.adres       || ayar.lab_adres || '';
         const labTel     = ayar.telefon     || ayar.lab_tel   || '';
         const labWeb     = ayar.website     || ayar.lab_web   || '';
@@ -247,7 +248,7 @@ async function yukle() {
                 <div class="sag-blok"${kapsamDisi ? ' style="justify-content:center;"' : ''}>
                     ${kapsamDisi ? `
                     <div class="kdisi-kutu">
-                        <div class="kdisi-satir">AYER</div>
+                        <div class="kdisi-satir">${kisaAd}</div>
                         <div class="kdisi-satir">${sertNo}</div>
                         <div class="kdisi-satir">${kalAyYil}</div>
                     </div>` : `

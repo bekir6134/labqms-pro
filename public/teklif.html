@@ -812,6 +812,8 @@
         const labLogo = ayarlar.lab_logo || '';
         const turkakLogo = ayarlar.turkak_logo || '';
         const labAdi = ayarlar.lab_adi || 'KALİBRASYON LABORATUVARI';
+        const kisaAd = String(ayarlar.lab_kisa_adi || labAdi.split(/\s+/)[0] || '').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+        const akredNo = ayarlar.akreditasyon_no || 'AB-0088-K';
 
         // Tutarlar
         const araToplam = parseFloat(t.ara_toplam || 0);
@@ -969,23 +971,23 @@ ${t.teklif_notu ? `<div class="note-box"><strong>Not / Note:</strong> ${t.teklif
 <ol>
 <li>Fiyatlara KDV dahil değildir. / Prices are exclusive of VAT.</li>
 <li>Ödeme, sertifika tesliminden önce nakit ya da karşılıklı anlaşılan ve Müşteri tarafından yazılı teyid edilen şartlarda tahsil edilir.</li>
-<li>Bu sözleşmede verilmiş olan toplam fiyat, mevcut cihaz sayısına göre belirlenmiş olup, cihaz sayısının değişmesi durumunda AYER Kalibrasyon laboratuvarı sözleşmeyi değiştirme hakkına sahiptir.</li>
+<li>Bu sözleşmede verilmiş olan toplam fiyat, mevcut cihaz sayısına göre belirlenmiş olup, cihaz sayısının değişmesi durumunda ${kisaAd} Kalibrasyon laboratuvarı sözleşmeyi değiştirme hakkına sahiptir.</li>
 <li>Laboratuarımıza gelen/gönderilen cihazların kayıt ve kabul işlemleri görsel kontrol ile yapılmaktadır. Görsel kontrol hiçbir şekilde fonksiyon kontrolünü kapsamaz.</li>
-<li>Müşterinin kendi tesislerinde yapılacak kalibrasyon hizmetlerinde, kalibrasyona tabi tutulacak cihazları sökme ve takma sorumluluğu hizmet alan Müşteriye aittir. Sökme ve takma işlemlerinden dolayı oluşabilecek hasarlardan AYER Kalibrasyon sorumlu değildir.</li>
+<li>Müşterinin kendi tesislerinde yapılacak kalibrasyon hizmetlerinde, kalibrasyona tabi tutulacak cihazları sökme ve takma sorumluluğu hizmet alan Müşteriye aittir. Sökme ve takma işlemlerinden dolayı oluşabilecek hasarlardan ${kisaAd} Kalibrasyon sorumlu değildir.</li>
 <li>Bu sözleşmenin yorumundan ve uygulanmasından doğacak anlaşmazlıkların çözüm yeri, İstanbul Anadolu Adliyesi Mahkemeleridir.</li>
-<li>Ayer Kalibrasyon tarafından istendiği takdirde Cihaza ait teknik el kitabı, gerekli aksesuarlar ve donanım, son kalibrasyon sertifikası kalibre edilecek Cihaz/Alet ile getirilmesi gerekebilir.</li>
+<li>${kisaAd} Kalibrasyon tarafından istendiği takdirde Cihaza ait teknik el kitabı, gerekli aksesuarlar ve donanım, son kalibrasyon sertifikası kalibre edilecek Cihaz/Alet ile getirilmesi gerekebilir.</li>
 <li>Teslim ve Taşımada olabilecek gecikme ve hasarlardan firmamız sorumlu değildir. Kargo ve Nakliye ücretleri müşteriye aittir.</li>
 <li>Herhangi bir nedenle (tahribat, kaybolma, yırtılma v.b.) Müşteri tarafından Kalibrasyon Sertifikasının yenilenmesi talebi durumunda, kalibrasyon bedelinin %10'u kadar ücretlendirme yapılır.</li>
 <li>Kalibrasyon işlemine alınan cihazın/cihazların yapılan ölçümler esnasında veya sonunda hatalı veya arızalı olduğu tespit edilmesi durumunda, kalibrasyon bedelinin %50'si faturaya ilave edilir.</li>
 <li>Yazılı teklif almadan cihazların gönderilmesi durumunda sözleşmedeki şartlar Müşteri tarafından aynen kabul edilmiş sayılır.</li>
-<li>Cihazın Sertifikalandırılması ayar ve tamir işlemini kapsamaz. Ayer Kalibrasyon personeli tarafından tamire ihtiyaç duyulan cihaz, müşteri onayı alındıktan sonra tamir edilir ve tamir bedeli müşterimizin faturasına ilave edilir.</li>
-<li>Kalibrasyonu yapılacak cihaz veya aletin özel ölçme aralığı veya ilave ölçüm noktaları varsa teslim anında bildirilmelidir. Bildirilmediği durumda, Ulusal, Uluslararası veya AYER Kalibrasyon laboratuvarının kendi hazırladığı kalibrasyon metodu uygulanacaktır.</li>
+<li>Cihazın Sertifikalandırılması ayar ve tamir işlemini kapsamaz. ${kisaAd} Kalibrasyon personeli tarafından tamire ihtiyaç duyulan cihaz, müşteri onayı alındıktan sonra tamir edilir ve tamir bedeli müşterimizin faturasına ilave edilir.</li>
+<li>Kalibrasyonu yapılacak cihaz veya aletin özel ölçme aralığı veya ilave ölçüm noktaları varsa teslim anında bildirilmelidir. Bildirilmediği durumda, Ulusal, Uluslararası veya ${kisaAd} Kalibrasyon laboratuvarının kendi hazırladığı kalibrasyon metodu uygulanacaktır.</li>
 <li>Kalibrasyon faaliyeti için ulusal, uluslararası veya ilgili linkten ulaşılan kapsamda belirtilen standartlar kullanılır. İlgili link: https://secure.turkak.org.tr/pdf/AB0088K.pdf. Kalibrasyon öncesinde Müşteri tarafından Sertifika uygunluk değerlendirmesi yazılı olarak talep edildiği takdirde sertifika değerlendirmesi Karar Kuralı Prosedürüne göre gerçekleştirilir.</li>
 <li>Sözleşmede veya kalibrasyon metodunda herhangi bir değişiklik söz konusu olduğunda kalibrasyon işlemi durdurulur, müşteri bilgilendirilerek yazılı onay alınır.</li>
 <li>Laboratuvarımızda Müşteri gizliliğinin ve tarafsızlığının sağlanması esastır. Müşteri bilgileri üçüncü taraflarla, kanunen zorunlu olduğu veya sözleşmeden kaynaklı olarak yetkili kılındığı durumlar haricinde paylaşılmaz.</li>
-<li>Teklif onaylamadan cihazların AYER laboratuvarlarına gönderilmesi veya müşterinin kendi tesislerine kalibrasyon personelinin çağrılması durumunda, mail/fax v.b. gibi müşteri tarafından yapılan yazılı çağrılar, teklifin müşteri tarafından kabul edildiği anlamına gelir ve kalibrasyon işlemine başlanır.</li>
+<li>Teklif onaylamadan cihazların ${kisaAd} laboratuvarlarına gönderilmesi veya müşterinin kendi tesislerine kalibrasyon personelinin çağrılması durumunda, mail/fax v.b. gibi müşteri tarafından yapılan yazılı çağrılar, teklifin müşteri tarafından kabul edildiği anlamına gelir ve kalibrasyon işlemine başlanır.</li>
 <li>Teklifimizin Kabulü Halinde İmzalı, Firma Kaşeli onayınızı tarafımıza iletmenizi rica ederiz.</li>
-<li>AB-0088-K Nolu Türkak Markası Kullanım hakkı sadece Akredite olduğu konularda "Ayer Kalibrasyon ve Danışmanlık Dış Tic. Ltd. Şti." firmasına aittir.</li>
+<li>${akredNo} Nolu Türkak Markası Kullanım hakkı sadece Akredite olduğu konularda "${labAdi}" firmasına aittir.</li>
 </ol>
 
 <div style="margin-top:14px;">

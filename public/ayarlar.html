@@ -96,6 +96,11 @@
                 <div class="hint">💡 Sol menüde "LabQMS Pro" yazısının altında görünecek</div>
             </div>
             <div>
+                <label>Kısa Ad</label>
+                <input type="text" id="lab_kisa_adi" placeholder="Örn: AYER">
+                <div class="hint">💡 Kapsam dışı sertifika kutusunda ve teklif şartlarında kullanılır</div>
+            </div>
+            <div>
                 <label>Akreditasyon No</label>
                 <input type="text" id="akreditasyon_no" placeholder="Örn: AB-0123-T">
             </div>
@@ -404,6 +409,7 @@
             const data = await res.json();
             const set = (id, key) => { if (data[key]) document.getElementById(id).value = data[key]; };
             set('lab_adi', 'lab_adi');
+            set('lab_kisa_adi', 'lab_kisa_adi');
             set('akreditasyon_no', 'akreditasyon_no');
             set('vergi_no', 'vergi_no');
             set('telefon', 'telefon');
@@ -498,6 +504,7 @@
         btn.disabled = true; btn.textContent = "Kaydediliyor...";
         const payload = {
             lab_adi: document.getElementById("lab_adi").value,
+            lab_kisa_adi: document.getElementById("lab_kisa_adi").value.trim(),
             akreditasyon_no: document.getElementById("akreditasyon_no").value,
             vergi_no: document.getElementById("vergi_no").value,
             telefon: document.getElementById("telefon").value,
