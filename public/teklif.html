@@ -60,6 +60,12 @@
         .price-green { font-weight: 700; color: #059669; }
         .btn-del-row { background: #fee2e2; color: #dc2626; border: none; width: 26px; height: 26px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
         .btn-del-row:hover { background: #dc2626; color: #fff; }
+        .btn-edit-row { background: #e0e7ff; color: #3730a3; border: none; width: 26px; height: 26px; border-radius: 6px; cursor: pointer; padding: 0; margin-right: 4px; display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; }
+        .btn-edit-row:hover { background: #4f46e5; color: #fff; }
+        .btn-iptal { background: #f1f5f9; color: #475569; border: none; padding: 11px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.9rem; width: auto; }
+        .btn-iptal:hover { background: #e2e8f0; }
+        #kalemPanel.kalem-duzenleniyor { border-color: #f59e0b !important; background: #fffbeb !important; }
+        .kalem-satir-duzenleniyor td { background: #fffbeb; }
 
         /* İNDİRİM & ÖZET */
         .discount-row { display: flex; align-items: center; gap: 12px; padding: 12px 15px; background: #fffbeb; border-radius: 8px; border: 1px solid #fde68a; margin-top: 15px; }
@@ -279,8 +285,8 @@
         </div>
 
         <!-- KALEM EKLE -->
-        <div style="background:#f8fafc; border-radius:10px; padding:15px; border:1px solid var(--border); margin-bottom:5px;">
-            <div style="font-weight:700; color:var(--primary); font-size:0.88rem; margin-bottom:12px;">🔧 Kalibrasyon Kalemi Ekle</div>
+        <div id="kalemPanel" style="background:#f8fafc; border-radius:10px; padding:15px; border:1px solid var(--border); margin-bottom:5px;">
+            <div id="kalemPanelBaslik" style="font-weight:700; color:var(--primary); font-size:0.88rem; margin-bottom:12px;">🔧 Kalibrasyon Kalemi Ekle</div>
             <div class="form-grid g3" style="align-items:start;">
                 <div>
                     <label>Cihaz Tanımı</label>
@@ -334,8 +340,9 @@
                     </select>
                 </div>
             </div>
-            <div style="margin-top:12px; text-align:right;">
-                <button class="btn-add" onclick="teklifeEkle()">➕ Kaleme Ekle</button>
+            <div style="margin-top:12px; display:flex; gap:10px; justify-content:flex-end;">
+                <button type="button" class="btn-iptal" id="kalemIptalBtn" onclick="kalemDuzenleIptal()" style="display:none;">Vazgeç</button>
+                <button class="btn-add" id="kalemEkleBtn" onclick="teklifeEkle()">➕ Kaleme Ekle</button>
             </div>
         </div>
 
@@ -351,7 +358,7 @@
                     <th style="width:55px; text-align:center;">Adet</th>
                     <th style="width:110px;">Birim Fiyat</th>
                     <th style="width:110px;">Toplam</th>
-                    <th style="width:35px;"></th>
+                    <th style="width:68px;"></th>
                 </tr>
             </thead>
             <tbody id="teklifBody">
@@ -702,7 +709,55 @@
         toplamHesapla();
     }
 
-    // ── KALEM EKLE ──
+    // ── KALEM EKLE / DÜZENLE ──
+    let kalemDuzenleIndex = -1;   // -1: yeni kalem ekleniyor, >=0: tablodaki bu kalem düzenleniyor
+
+    function kalemFormTemizle() {
+        document.getElementById("cihaz_adi").value = "";
+        document.getElementById("birim_fiyat").value = "";
+        document.getElementById("adet").value = "1";
+        document.getElementById("ozellik_not").value = "";
+        document.getElementById("hizmet_sekli").value = "Müşteri Yerinde";
+        document.getElementById("kapsam_durumu").value = "Akredite";
+    }
+
+    function kalemDuzenleBitir() {
+        kalemDuzenleIndex = -1;
+        document.getElementById("kalemPanel").classList.remove("kalem-duzenleniyor");
+        document.getElementById("kalemPanelBaslik").textContent = "🔧 Kalibrasyon Kalemi Ekle";
+        document.getElementById("kalemEkleBtn").textContent = "➕ Kaleme Ekle";
+        document.getElementById("kalemIptalBtn").style.display = "none";
+    }
+
+    function kalemDuzenle(i) {
+        const k = satirlar[i];
+        if (!k) return;
+        kalemDuzenleIndex = i;
+        document.getElementById("cihaz_adi").value = k.ad || "";
+        document.getElementById("birim_fiyat").value = k.fiyat;
+        document.getElementById("para_birimi").value = k.pb || "₺";
+        document.getElementById("adet").value = k.adet || 1;
+        document.getElementById("ozellik_not").value = k.ozellik_not || "";
+        if (!k.tur) {
+            if (k.hizmet_sekli) document.getElementById("hizmet_sekli").value = k.hizmet_sekli;
+            if (k.kapsam_durumu) document.getElementById("kapsam_durumu").value = kapsamEtiket(k.kapsam_durumu);
+        }
+        document.getElementById("kalemPanel").classList.add("kalem-duzenleniyor");
+        document.getElementById("kalemPanelBaslik").textContent = `✏️ Kalem düzenleniyor (${i + 1}. satır)`;
+        document.getElementById("kalemEkleBtn").textContent = "💾 Kalemi Güncelle";
+        document.getElementById("kalemIptalBtn").style.display = "";
+        renderKalemler();
+        document.getElementById("kalemPanel").scrollIntoView({ behavior: "smooth", block: "center" });
+        const adetEl = document.getElementById("adet");
+        adetEl.focus(); adetEl.select();
+    }
+
+    function kalemDuzenleIptal() {
+        kalemDuzenleBitir();
+        kalemFormTemizle();
+        renderKalemler();
+    }
+
     function teklifeEkle() {
         const ad = document.getElementById("cihaz_adi").value.trim();
         const fiyat = parseFloat(document.getElementById("birim_fiyat").value);
@@ -713,19 +768,26 @@
         const kapsam_durumu = document.getElementById("kapsam_durumu").value;
         if (!ad || !fiyat) { showToast("❌ Cihaz ve fiyat giriniz!", true); return; }
         const tur = hizmetTuru(ad);   // "Yol Ücreti" / "Konaklama Ücreti" kalemleri
-        satirlar.push(tur
+        const kalem = tur
             ? {ad: HIZMET_ADLARI[tur], fiyat, pb, adet, ozellik_not, hizmet_sekli: '', kapsam_durumu: '', tur}
-            : {ad, fiyat, pb, adet, ozellik_not, hizmet_sekli, kapsam_durumu});
+            : {ad, fiyat, pb, adet, ozellik_not, hizmet_sekli, kapsam_durumu};
+        if (kalemDuzenleIndex >= 0 && satirlar[kalemDuzenleIndex]) {
+            satirlar[kalemDuzenleIndex] = kalem;
+            kalemDuzenleBitir();
+            showToast("✅ Kalem güncellendi (teklifi kaydetmeyi unutmayın)");
+        } else {
+            satirlar.push(kalem);
+        }
         renderKalemler();
-        document.getElementById("cihaz_adi").value = "";
-        document.getElementById("birim_fiyat").value = "";
-        document.getElementById("adet").value = "1";
-        document.getElementById("ozellik_not").value = "";
-        document.getElementById("hizmet_sekli").value = "Müşteri Yerinde";
-        document.getElementById("kapsam_durumu").value = "Akredite";
+        kalemFormTemizle();
     }
 
-    function kalemSil(i) { satirlar.splice(i,1); renderKalemler(); }
+    function kalemSil(i) {
+        if (kalemDuzenleIndex === i) { kalemDuzenleBitir(); kalemFormTemizle(); }
+        else if (kalemDuzenleIndex > i) kalemDuzenleIndex--;
+        satirlar.splice(i,1);
+        renderKalemler();
+    }
 
     function renderKalemler() {
         const tbody = document.getElementById("teklifBody");
@@ -734,7 +796,7 @@
             toplamHesapla(); return;
         }
         tbody.innerHTML = satirlar.map((s,i) => `
-            <tr>
+            <tr class="${i === kalemDuzenleIndex ? 'kalem-satir-duzenleniyor' : ''}">
                 <td><span class="row-num">${i+1}</span></td>
                 <td><strong>${s.ad}</strong></td>
                 <td><small style="color:#475569;">${s.ozellik_not || '-'}</small></td>
@@ -743,7 +805,7 @@
                 <td style="text-align:center;">${s.adet}</td>
                 <td class="price-green">${s.fiyat.toLocaleString('tr-TR',{minimumFractionDigits:2})} ${s.pb}</td>
                 <td class="price-green">${(s.fiyat*s.adet).toLocaleString('tr-TR',{minimumFractionDigits:2})} ${s.pb}</td>
-                <td><button class="btn-del-row" onclick="kalemSil(${i})">✕</button></td>
+                <td style="white-space:nowrap;"><button type="button" class="btn-edit-row" onclick="kalemDuzenle(${i})" title="Kalemi düzenle" aria-label="Kalemi düzenle"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button><button type="button" class="btn-del-row" onclick="kalemSil(${i})" title="Kalemi sil" aria-label="Kalemi sil">✕</button></td>
             </tr>`).join('');
         toplamHesapla();
     }
@@ -1207,6 +1269,7 @@ ${t.teklif_notu ? `<div class="note-box"><strong>Not / Note:</strong> ${t.teklif
         document.getElementById("teklif_notu").value = t.teklif_notu||'';
         document.getElementById("indirim").value = t.indirim_oran||0;
         const veri = teklifVerisiCoz(t.kalemler);
+        kalemDuzenleBitir(); kalemFormTemizle();
         satirlar = veri.items;
         document.getElementById("kdv_kaldir").checked = veri.kdvYok;
         document.getElementById("kdv_oran").value = String(veri.kdvOran);
@@ -1228,6 +1291,7 @@ ${t.teklif_notu ? `<div class="note-box"><strong>Not / Note:</strong> ${t.teklif
 
     // ── FORM TEMİZLE ──
     function formTemizle() {
+        kalemDuzenleBitir();
         document.getElementById("duzenle_id").value = "";
         document.getElementById("firma_adi").value = "";
         firmaGorunumGuncelle();
