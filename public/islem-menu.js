@@ -10,7 +10,7 @@
        </div>
      </div>
    Bu script bunu otomatik olarak şu hale çevirir:
-     [✏️ Düzenle] [👁️] [⋯]   (sık işlemler satırda, gerisi ⋯ menüsünde)
+     [✏️ Düzenle] [📄 Önizle veya 👁️] [⋯]   (sık işlemler satırda, gerisi ⋯ menüsünde)
 
    YENİ İŞLEM EKLEMEK: menüye yeni bir .act-drop-item eklemek yeterli,
    otomatik olarak ⋯ menüsüne girer. Satırda görünmesi için:
@@ -21,7 +21,12 @@
    Öncelik sırası ve en fazla kaç işlemin satırda görüneceği aşağıda.
    ============================================================ */
 (function () {
-    var ONCELIK = [/düzenle|duzenle/i, /detay|görüntüle|goruntule/i];
+    // Sırayla aranır. yazili:true olanlar ikon + yazı, diğerleri sadece ikon olarak görünür.
+    var ONCELIK = [
+        { re: /düzenle|duzenle/i, yazili: true },
+        { re: /önizle|onizle|önizleme/i, yazili: true },
+        { re: /detay|görüntüle|goruntule/i, yazili: false }
+    ];
     var MAX_GORUNUR = 2;
 
     var NOKTALAR = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">' +
@@ -46,37 +51,45 @@
         wrap.dataset.ah = '1';
 
         var uygun = function (x) { return !tehlikeli(x) && !x.dataset.menu; };
-        var secilen = [];
+        var secilen = [];   // { el, yazili }
+        var var_ = function (x) { return secilen.some(function (k) { return k.el === x; }); };
 
         items.forEach(function (it) {
-            if (it.dataset.oncelik === '1' && uygun(it)) secilen.push(it);
+            if (it.dataset.oncelik === '1' && uygun(it)) secilen.push({ el: it, yazili: false });
         });
-        ONCELIK.forEach(function (re) {
+        ONCELIK.forEach(function (o) {
             if (secilen.length >= MAX_GORUNUR) return;
             var it = items.filter(function (x) {
-                return uygun(x) && secilen.indexOf(x) < 0 && re.test(etiket(x));
+                return uygun(x) && !var_(x) && o.re.test(etiket(x));
             })[0];
-            if (it) secilen.push(it);
+            if (it) secilen.push({ el: it, yazili: o.yazili });
         });
         if (!secilen.length) {
             var ilk = items.filter(uygun)[0];
-            if (ilk) secilen.push(ilk);
+            if (ilk) secilen.push({ el: ilk, yazili: true });
         }
         secilen = secilen.slice(0, MAX_GORUNUR);
+        secilen[0] && (secilen[0].yazili = true);   // ilk buton her zaman yazılı
 
         // Satırda doğrudan görünen butonlar (orijinal onclick ve data-* korunur)
-        secilen.forEach(function (it, i) {
+        secilen.forEach(function (k) {
+            var it = k.el;
             var b = document.createElement('button');
             b.type = 'button';
-            b.className = 'ah-btn' + (i > 0 ? ' ah-ikon' : '');
             [].slice.call(it.attributes).forEach(function (a) {
                 if (a.name !== 'class') b.setAttribute(a.name, a.value);
             });
             var t = etiket(it), p = ikonVeMetin(t);
             b.title = p.metin || t;
             b.setAttribute('aria-label', b.title);
-            b.textContent = (i === 0 || !p.ikon) ? t : p.ikon;
-            if (i > 0 && !p.ikon) b.classList.remove('ah-ikon');
+            if (k.yazili || !p.ikon) {
+                b.className = 'ah-btn';
+                // "📄 PDF Önizle" gibi uzun etiketleri satırda kısalt: "📄 Önizle"
+                b.textContent = (p.ikon ? p.ikon + ' ' : '') + (p.metin || t).replace(/^PDF\s+/i, '');
+            } else {
+                b.className = 'ah-btn ah-ikon';
+                b.textContent = p.ikon;
+            }
             wrap.insertBefore(b, btn);
             drop.removeChild(it);
         });
