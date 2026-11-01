@@ -434,12 +434,13 @@ app.post('/api/teklifler/:id/gonder', async (req, res) => {
         const araToplam = toplaK(k => !k.tur);
         const yolU = toplaK(k => k.tur === 'yol');
         const konU = toplaK(k => k.tur === 'konaklama');
+        const ykU = toplaK(k => k.tur === 'yol_konaklama');
         const indOran = parseFloat(t.indirim_oran || 0);
         const indTutar = araToplam * indOran / 100;
         const kdvOranHam = kdObj.kdv_oran != null ? parseFloat(kdObj.kdv_oran) : 20;
         const kdvYok = kdObj.kdv_yok === true || kdvOranHam === 0;
         const kdvOran = kdvYok ? 0 : kdvOranHam;
-        const kdvHaric = (araToplam - indTutar) + yolU + konU;
+        const kdvHaric = (araToplam - indTutar) + yolU + konU + ykU;
         const kdvTutar = kdvHaric * kdvOran / 100;
         const kdvDahil = kdvHaric + kdvTutar;
         const labAdi = ay.lab_adi || 'Kalibrasyon Laboratuvarı';
@@ -448,7 +449,7 @@ app.post('/api/teklifler/:id/gonder', async (req, res) => {
         const kalemlerHTML = kalemler.map((k,i) => `
             <tr style="background:${i%2===0?'#f8fafc':'#fff'}">
                 <td style="padding:6px 8px;border-bottom:1px solid #e2e8f0;">${i+1}</td>
-                <td style="padding:6px 8px;border-bottom:1px solid #e2e8f0;">${k.tur === 'yol' ? '🚗 ' : (k.tur === 'konaklama' ? '🏨 ' : '')}<strong>${k.ad||''}</strong></td>
+                <td style="padding:6px 8px;border-bottom:1px solid #e2e8f0;"><strong>${k.ad||''}</strong></td>
                 <td style="padding:6px 8px;border-bottom:1px solid #e2e8f0;font-size:11px;">${k.ozellik_not||'-'}</td>
                 <td style="padding:6px 8px;border-bottom:1px solid #e2e8f0;font-size:11px;">${k.hizmet_sekli||'-'}</td>
                 <td style="padding:6px 8px;border-bottom:1px solid #e2e8f0;text-align:center;">${k.adet||1}</td>
@@ -495,6 +496,7 @@ app.post('/api/teklifler/:id/gonder', async (req, res) => {
         ${indOran > 0 ? `<div style="display:flex;justify-content:space-between;padding:6px 12px;border-bottom:1px solid #e2e8f0;"><span style="color:#64748b;">İndirim (%${indOran})</span><span style="color:#dc2626;">− ${fmt(indTutar)} ${pb}</span></div>` : ''}
         ${yolU > 0 ? `<div style="display:flex;justify-content:space-between;padding:6px 12px;border-bottom:1px solid #e2e8f0;"><span>Yol Ücreti</span><span>${fmt(yolU)} ${pb}</span></div>` : ''}
         ${konU > 0 ? `<div style="display:flex;justify-content:space-between;padding:6px 12px;border-bottom:1px solid #e2e8f0;"><span>Konaklama Ücreti</span><span>${fmt(konU)} ${pb}</span></div>` : ''}
+        ${ykU > 0 ? `<div style="display:flex;justify-content:space-between;padding:6px 12px;border-bottom:1px solid #e2e8f0;"><span>Yol ve Konaklama Ücreti</span><span>${fmt(ykU)} ${pb}</span></div>` : ''}
         ${kdvYok ? '' : `<div style="display:flex;justify-content:space-between;padding:6px 12px;border-bottom:1px solid #e2e8f0;background:#f0f9ff;"><span style="color:#0369a1;font-weight:bold;">KDV Hariç Toplam</span><span style="color:#0369a1;font-weight:bold;">${fmt(kdvHaric)} ${pb}</span></div>
         <div style="display:flex;justify-content:space-between;padding:6px 12px;border-bottom:1px solid #e2e8f0;"><span>KDV (%${kdvOran})</span><span>${fmt(kdvTutar)} ${pb}</span></div>`}
         <div style="display:flex;justify-content:space-between;padding:10px 12px;background:#1E40AF;color:white;"><span style="font-weight:bold;">${kdvYok ? 'GENEL TOPLAM' : 'GENEL TOPLAM (KDV DAHİL)'}</span><span style="font-size:14px;font-weight:800;">${fmt(kdvDahil)} ${pb}</span></div>

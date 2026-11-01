@@ -292,8 +292,9 @@
                     </div>
                     <div id="cihazHint" style="font-size:0.73rem; color:#94a3b8; margin-top:4px;">💡 Önce firma seçin</div>
                     <div class="hizmet-chips">Hızlı ekle:
-                        <button type="button" class="hizmet-chip" onclick="hizmetKalemiSec('yol')">🚗 Yol Ücreti</button>
-                        <button type="button" class="hizmet-chip" onclick="hizmetKalemiSec('konaklama')">🏨 Konaklama Ücreti</button>
+                        <button type="button" class="hizmet-chip" onclick="hizmetKalemiSec('yol')">Yol Ücreti</button>
+                        <button type="button" class="hizmet-chip" onclick="hizmetKalemiSec('konaklama')">Konaklama Ücreti</button>
+                        <button type="button" class="hizmet-chip" onclick="hizmetKalemiSec('yol_konaklama')" title="Yol ve konaklama tek tutar olarak veriliyorsa: Yol ve Konaklama Ücreti">Yol ve Konaklama</button>
                     </div>
                 </div>
                 <div class="price-field">
@@ -650,13 +651,13 @@
     }
 
     // ── TEKLİF VERİSİ YARDIMCILARI (form, PDF ve eski kayıtlar için ortak) ──
-    const HIZMET_ADLARI = { yol: 'Yol Ücreti', konaklama: 'Konaklama Ücreti' };
-    const HIZMET_IKON = { yol: '🚗', konaklama: '🏨' };
+    const HIZMET_ADLARI = { yol: 'Yol Ücreti', konaklama: 'Konaklama Ücreti', yol_konaklama: 'Yol ve Konaklama Ücreti' };
     function kapsamEtiket(v) { return v === 'Kapsam Dışı' ? 'Akreditasyon Dışı' : (v || ''); }
     function hizmetTuru(ad) {
-        const a = (ad || '').toLocaleLowerCase('tr-TR').trim();
+        const a = (ad || '').toLocaleLowerCase('tr-TR').replace(/\s+/g, ' ').trim();
         if (a === 'yol ücreti' || a === 'yol') return 'yol';
         if (a === 'konaklama ücreti' || a === 'konaklama') return 'konaklama';
+        if (a === 'yol ve konaklama ücreti' || a === 'yol ve konaklama' || a === 'yol / konaklama ücreti') return 'yol_konaklama';
         return '';
     }
     // Kayıtlı teklif verisini (yeni ve eski biçim) tek biçime çevirir
@@ -684,10 +685,11 @@
         const kalib = topla(k => !k.tur);
         const yol = topla(k => k.tur === 'yol');
         const kon = topla(k => k.tur === 'konaklama');
+        const yk = topla(k => k.tur === 'yol_konaklama');
         const indTutar = kalib * indOran / 100;
-        const kdvHaric = kalib - indTutar + yol + kon;
+        const kdvHaric = kalib - indTutar + yol + kon + yk;
         const kdvTutar = kdvYok ? 0 : kdvHaric * kdvOran / 100;
-        return { kalib, yol, kon, indTutar, kdvHaric, kdvTutar, genel: kdvHaric + kdvTutar };
+        return { kalib, yol, kon, yk, indTutar, kdvHaric, kdvTutar, genel: kdvHaric + kdvTutar };
     }
 
     function hizmetKalemiSec(tur) {
@@ -734,7 +736,7 @@
         tbody.innerHTML = satirlar.map((s,i) => `
             <tr>
                 <td><span class="row-num">${i+1}</span></td>
-                <td>${s.tur ? HIZMET_IKON[s.tur] + ' ' : ''}<strong>${s.ad}</strong></td>
+                <td><strong>${s.ad}</strong></td>
                 <td><small style="color:#475569;">${s.ozellik_not || '-'}</small></td>
                 <td><small style="color:#475569;">${s.hizmet_sekli || '-'}</small></td>
                 <td>${s.tur ? '-' : `<span style="font-size:0.72rem;font-weight:700;padding:2px 5px;border-radius:4px;white-space:nowrap;background:${s.kapsam_durumu==='Akredite'?'#dcfce7':'#dbeafe'};color:${s.kapsam_durumu==='Akredite'?'#166534':'#1e40af'};">${kapsamEtiket(s.kapsam_durumu)||'-'}</span>`}</td>
@@ -754,12 +756,12 @@
         const fmt = v => v.toLocaleString('tr-TR',{minimumFractionDigits:2});
         const pb = satirlar.length>0?satirlar[0].pb:'₺';
         document.getElementById("kalemSayisi").textContent = satirlar.length+" kalem";
-        document.getElementById("araToplam").textContent = fmt(T.kalib+T.yol+T.kon)+' '+pb;
+        document.getElementById("araToplam").textContent = fmt(T.kalib+T.yol+T.kon+T.yk)+' '+pb;
         document.getElementById("genelToplam").textContent = kdvYok
             ? `Toplam: ${fmt(T.kdvHaric)} ${pb}`
             : `KDV Hariç: ${fmt(T.kdvHaric)} ${pb} | KDV Dahil: ${fmt(T.genel)} ${pb}`;
         document.getElementById("indirimTutar").textContent = ind>0
-            ? `− ${fmt(T.indTutar)} ${pb} indirim` + ((T.yol+T.kon)>0 ? ' (yol ve konaklama hariç)' : '')
+            ? `− ${fmt(T.indTutar)} ${pb} indirim` + ((T.yol+T.kon+T.yk)>0 ? ' (yol ve konaklama hariç)' : '')
             : '';
     }
 
@@ -875,6 +877,7 @@
         const indTutar = T.indTutar;
         const yolUcreti = T.yol;
         const konaklamaUcreti = T.kon;
+        const yolKonaklamaUcreti = T.yk;
         const kdvHaric = T.kdvHaric;
         const kdvTutar = T.kdvTutar;
         const kdvDahil = T.genel;
@@ -885,7 +888,7 @@
         const kalemlerHTML = kalemler.map((k, i) => `
             <tr>
                 <td>${i + 1}</td>
-                <td>${k.tur ? HIZMET_IKON[k.tur] + ' ' : ''}<strong>${k.ad || ''}</strong></td>
+                <td><strong>${k.ad || ''}</strong></td>
                 <td style="font-size:9px;color:#475569;">${k.ozellik_not || '-'}</td>
                 <td style="font-size:9px;">${k.hizmet_sekli || '-'}</td>
                 <td>${k.tur ? '-' : `<span style="padding:2px 5px;border-radius:3px;font-size:9px;font-weight:bold;white-space:nowrap;background:${k.kapsam_durumu === 'Akredite' ? '#dcfce7' : '#dbeafe'};color:${k.kapsam_durumu === 'Akredite' ? '#166534' : '#1e40af'};">${kapsamEtiket(k.kapsam_durumu) || '-'}</span>`}</td>
@@ -1014,8 +1017,9 @@ ${t.teklif_notu ? `<div class="note-box"><strong>Not / Note:</strong> ${t.teklif
     <div class="totals-row">
         <div class="totals-item"><div class="t-lbl">Kalibrasyon Ara Toplam / Subtotal</div><div class="t-val">${fmt(araToplam)} ${pb}</div></div>
         ${indOran > 0 ? `<div class="totals-item"><div class="t-lbl">İndirim / Discount (%${indOran})</div><div class="t-val" style="color:#dc2626;">− ${fmt(indTutar)} ${pb}</div></div>` : ''}
-        ${yolUcreti > 0 ? `<div class="totals-item"><div class="t-lbl">🚗 Yol Ücreti / Travel Fee</div><div class="t-val">${fmt(yolUcreti)} ${pb}</div></div>` : ''}
-        ${konaklamaUcreti > 0 ? `<div class="totals-item"><div class="t-lbl">🏨 Konaklama Ücreti / Accommodation Fee</div><div class="t-val">${fmt(konaklamaUcreti)} ${pb}</div></div>` : ''}
+        ${yolUcreti > 0 ? `<div class="totals-item"><div class="t-lbl">Yol Ücreti / Travel Fee</div><div class="t-val">${fmt(yolUcreti)} ${pb}</div></div>` : ''}
+        ${konaklamaUcreti > 0 ? `<div class="totals-item"><div class="t-lbl">Konaklama Ücreti / Accommodation Fee</div><div class="t-val">${fmt(konaklamaUcreti)} ${pb}</div></div>` : ''}
+        ${yolKonaklamaUcreti > 0 ? `<div class="totals-item"><div class="t-lbl">Yol ve Konaklama Ücreti / Travel & Accommodation Fee</div><div class="t-val">${fmt(yolKonaklamaUcreti)} ${pb}</div></div>` : ''}
         ${kdvYok ? '' : `<div class="totals-item" style="background:#f0f9ff;"><div class="t-lbl" style="color:#0369a1;font-weight:bold;">KDV Hariç Toplam / Total Excl. VAT</div><div class="t-val" style="color:#0369a1;">${fmt(kdvHaric)} ${pb}</div></div>
         <div class="totals-item"><div class="t-lbl">KDV (%${kdvOran}) / VAT</div><div class="t-val">${fmt(kdvTutar)} ${pb}</div></div>`}
     </div>
