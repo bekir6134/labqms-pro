@@ -80,11 +80,15 @@
         .durum-Taslak { background: #f1f5f9; color: #64748b; }
         .durum-Onaylandı { background: #dcfce7; color: #166534; }
         .durum-Reddedildi { background: #fee2e2; color: #dc2626; }
-        .durum-select { outline: none; }
-        .durum-sel-Taslak { background: #f1f5f9; color: #64748b; }
-        .durum-sel-Gönderildi { background: #e0f2fe; color: #0369a1; }
-        .durum-sel-Onaylandı { background: #dcfce7; color: #166534; }
-        .durum-sel-Reddedildi { background: #fee2e2; color: #dc2626; }
+        /* DURUM ROZETİ: tıklanınca değiştirilebilen küçük kapsül */
+        .durum-select { appearance: none; -webkit-appearance: none; width: auto; min-width: 0; padding: 4px 26px 4px 12px; border: 1px solid transparent; border-radius: 999px; font-size: 0.74rem; font-weight: 700; line-height: 1.4; cursor: pointer; outline: none; background-repeat: no-repeat; background-position: right 9px center; background-size: 10px 6px; transition: filter .15s, box-shadow .15s; }
+        .durum-select:hover { filter: brightness(0.96); }
+        .durum-select:focus { box-shadow: 0 0 0 3px rgba(59,130,246,0.18); }
+        .durum-select option { background: #fff; color: #334155; font-weight: 500; }
+        .durum-sel-Taslak { background-color: #f1f5f9; color: #64748b; border-color: #e2e8f0; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%2364748b' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+        .durum-sel-Gönderildi { background-color: #e0f2fe; color: #0369a1; border-color: #bae6fd; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%230369a1' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+        .durum-sel-Onaylandı { background-color: #dcfce7; color: #166534; border-color: #bbf7d0; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23166534' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+        .durum-sel-Reddedildi { background-color: #fee2e2; color: #dc2626; border-color: #fecaca; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23dc2626' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
         .mail-chip { display:inline-flex; align-items:center; gap:5px; background:#e0e7ff; color:#4338ca; padding:4px 10px; border-radius:20px; font-size:0.82rem; font-weight:600; }
         .mail-chip button { background:none; border:none; cursor:pointer; color:#4338ca; font-size:1rem; padding:0; line-height:1; }
         .btn-view { background: #dcfce7; color: #059669; border: none; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 0.78rem; font-weight: 600; margin-right: 4px; }
@@ -758,8 +762,7 @@
                 <td>${t.gecerlilik_gun||30} Gün</td>
                 <td class="price-green">${parseFloat(t.genel_toplam||0).toLocaleString('tr-TR',{minimumFractionDigits:2})} ${t.para_birimi||'₺'}</td>
                 <td>
-                    <select class="durum-select durum-sel-${durum}" onchange="durumDegistir(${t.id}, this.value, this)"
-                        style="padding:4px 8px;border-radius:6px;font-size:0.78rem;font-weight:700;border:1px solid #e2e8f0;cursor:pointer;">
+                    <select class="durum-select durum-sel-${durum}" onchange="durumDegistir(${t.id}, this.value, this)">
                         ${durumOptions}
                     </select>
                 </td>
