@@ -2381,7 +2381,7 @@ app.get('/api/sertifikalar/:id/pdf', async (req, res) => {
     try {
         // Ölçüm PDF'ini DB'den çek
         const sertRow = await pool.query(
-            'SELECT olcum_pdf_url, sertifika_no, cihaz_adi FROM sertifikalar WHERE id=$1',
+            'SELECT olcum_pdf_url, sertifika_no, cihaz_adi, sertifika_tipi FROM sertifikalar WHERE id=$1',
             [req.params.id]
         );
         if(!sertRow.rows.length) return res.status(404).json({ error: 'Sertifika bulunamadı' });
@@ -2432,6 +2432,15 @@ app.get('/api/sertifikalar/:id/pdf', async (req, res) => {
 
         // Footer HTML → PDF (Puppeteer ile, browser hâlâ açık)
         const formNo = ayar.form_no || 'AKFG448 Rev02 110625';
+
+        // Kapsam dışı sertifikalarda TÜRKAK ifadesi / doğrulama metni olmaz (sertifika-onizle.html ile aynı kural)
+        const kapsamDisi = sert.sertifika_tipi === 'kapsam_disi';
+        const yasalTr = kapsamDisi
+            ? 'Bu sertifika, laboratuvarın yazılı izni olmadan kısmen kopyalanıp çoğaltılamaz. &nbsp;|&nbsp; İmzasız sertifikalar geçersizdir.'
+            : 'Bu sertifika, laboratuvarin yazili izni olmadan kismen kopyalanip cogaltilamaz. &nbsp;|&nbsp; Imzasiz ve TURKAK Dogrulama Kare Kodu bulunmayan sertifikalar gecersizdir. &nbsp;|&nbsp; Bu sertifikanin kullanimindan once <b>asist.turkak.org.tr</b> uzerinden kare kodu okutarak dogrulayiniz.';
+        const yasalEn = kapsamDisi
+            ? 'This certificate shall not be reproduced other than in full except with the permission of the laboratory. &nbsp;|&nbsp; Certificates that are unsigned are invalid.'
+            : 'This certificate shall not be reproduced other than in full except with the permission of the laboratory. &nbsp;|&nbsp; Certificates unsigned or without TURKAK QR code are invalid. &nbsp;|&nbsp; Before using this certificate, verify it by scanning the QR code via asist.turkak.org.tr.';
         const footerHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8">
         <style>*{margin:0;padding:0;box-sizing:border-box}
         body{width:794px;height:120px;background:white;font-family:Arial,sans-serif;padding:0 15px 2px;display:flex;flex-direction:column;justify-content:flex-end;}
@@ -2442,8 +2451,8 @@ app.get('/api/sertifikalar/:id/pdf', async (req, res) => {
         .sayfa-no{display:flex;justify-content:space-between;margin-top:2px;font-size:6.5pt;color:#555;padding-bottom:2px;}
         </style></head><body>
         <div class="yasal">
-          <div class="yasal-tr">Bu sertifika, laboratuvarin yazili izni olmadan kismen kopyalanip cogaltilamaz. &nbsp;|&nbsp; Imzasiz ve TURKAK Dogrulama Kare Kodu bulunmayan sertifikalar gecersizdir. &nbsp;|&nbsp; Bu sertifikanin kullanimindan once <b>asist.turkak.org.tr</b> uzerinden kare kodu okutarak dogrulayiniz.</div>
-          <div class="yasal-en">This certificate shall not be reproduced other than in full except with the permission of the laboratory. &nbsp;|&nbsp; Certificates unsigned or without TURKAK QR code are invalid. &nbsp;|&nbsp; Before using this certificate, verify it by scanning the QR code via asist.turkak.org.tr.</div>
+          <div class="yasal-tr">${yasalTr}</div>
+          <div class="yasal-en">${yasalEn}</div>
         </div>
         <div class="alt-bar"><span>${labAdi}  ${labAdres}</span><span>${[labTel?'Tel: '+labTel:'',labWeb,labMail].filter(Boolean).join('  |  ')}</span></div>
         <div class="sayfa-no"><span>${formNo}</span><span></span></div>
