@@ -48,7 +48,7 @@
             [].slice.call(body.querySelectorAll('input, select, textarea')).forEach(function (el) {
                 var t = (el.type || '').toLowerCase();
                 if (t === 'hidden') {
-                    if (/(^id$|_id$|^id_|edit|duzenle)/i.test(el.id || '')) el.value = '';
+                    if (/(^id$|_id$|^id_|edit|duzenle)/i.test(el.id || '') || /[a-z]Id$/.test(el.id || '')) el.value = '';
                 } else if (t === 'checkbox' || t === 'radio') {
                     el.checked = el.defaultChecked;
                 } else if (el.tagName === 'SELECT') {
@@ -78,7 +78,30 @@
         }
         window.mfKapat = closeForm;
 
-        head.querySelector('.mf-close').addEventListener('click', closeForm);
+        // Kayıt başarılı olunca pencereyi kapat (sayfanın kendi kodu bittikten sonra çalışsın diye ertelenir)
+        window.mfBasarili = function () { setTimeout(closeForm, 0); };
+
+        // Sayfanın formTemizle() fonksiyonu yalnızca kayıt sonrası ve İptal'de çağrılır:
+        // formu temizlerken pencereyi de kapat
+        if (typeof window.formTemizle === 'function' && !window.formTemizle.__mf) {
+            var orijinalTemizle = window.formTemizle;
+            var sarilmis = function () {
+                var sonuc = orijinalTemizle.apply(this, arguments);
+                if (content.style.display === 'block') {
+                    content.style.display = 'none';
+                    if (header) header.classList.remove('active');
+                }
+                return sonuc;
+            };
+            sarilmis.__mf = true;
+            window.formTemizle = sarilmis;
+        }
+
+        // ✕ düğmesi: sayfa kaydedilmemiş değişiklik için onay istiyorsa (window.mfOnKapat) önce onu çalıştır
+        head.querySelector('.mf-close').addEventListener('click', function () {
+            if (typeof window.mfOnKapat === 'function') window.mfOnKapat(closeForm);
+            else closeForm();
+        });
         // Arka plana tıklayınca kapanmaz (yanlışlıkla veri kaybı olmasın)
 
         function sync() {

@@ -465,6 +465,14 @@
         _accAc();
         formDegisti = false;
     }
+    // Popup ✕ düğmesi: kaydedilmemiş değişiklik varsa önce onay iste
+    window.mfOnKapat = function (devam) {
+        if (formDegisti) {
+            onayGoster("⚠️", "Kaydedilmemiş değişiklikler var",
+                "Formu kapatırsanız yaptığınız değişiklikler kaybolacak. Devam etmek istiyor musunuz?",
+                "Evet, Kapat", () => { formDegisti = false; devam(); });
+        } else devam();
+    };
 
     // ── FİRMA ARAMA ──
     function firmaAramaKur() {

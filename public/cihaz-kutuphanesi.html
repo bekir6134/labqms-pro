@@ -177,6 +177,7 @@
             btn.innerText = "🚀 Kütüphaneye Ekle";
             showToast(duzenleId ? "✅ Cihaz güncellendi!" : "✅ Cihaz eklendi!");
             kutüphaneYukle();
+            if (window.mfBasarili) mfBasarili();
         }
         btn.disabled = false; btn.innerText = duzenleId ? "💾 Güncelle" : "🚀 Kütüphaneye Ekle";
     }

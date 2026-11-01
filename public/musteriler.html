@@ -295,6 +295,16 @@
         else showToast("❌ Silinemedi!", true);
     }
 
+    // Formu temizler (kayıt sonrası ve popup kapatılırken); popup'ı kapatma modal-form.js yapar
+    function formTemizle() {
+        document.getElementById("musteriForm").reset();
+        document.getElementById("musteriId").value = "";
+        document.getElementById("saveBtn").innerText = "💾 Kaydet";
+        ['yetkiliList','telList','sMailList','fMailList'].forEach(id => {
+            document.getElementById(id).innerHTML = ""; addField(id);
+        });
+    }
+
     async function kaydet(e) {
         e.preventDefault();
         const body = {
@@ -316,12 +326,7 @@
         });
         if (res.ok) {
             showToast(body.id ? "✅ Müşteri güncellendi!" : "✅ Müşteri kaydedildi!");
-            document.getElementById("musteriForm").reset();
-            document.getElementById("musteriId").value = "";
-            document.getElementById("saveBtn").innerText = "💾 Kaydet";
-            ['yetkiliList','telList','sMailList','fMailList'].forEach(id => {
-                document.getElementById(id).innerHTML = ""; addField(id);
-            });
+            formTemizle();
             listeYukle();
         } else {
             showToast("❌ Kayıt başarısız!", true);

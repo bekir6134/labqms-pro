@@ -148,6 +148,7 @@
             btn.innerText = "➕ Ekle";
             showToast(duzenleId ? "✅ Talimat güncellendi!" : "✅ Talimat kaydedildi!");
             listele();
+            if (window.mfBasarili) mfBasarili();
         }
         btn.disabled = false; btn.innerText = "➕ Ekle";
     }
