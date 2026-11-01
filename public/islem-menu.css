@@ -1,0 +1,49 @@
+/* ============================================================
+   SATIR İŞLEM BUTONLARI - HİBRİT DÜZEN
+   Sık kullanılan işlemler (Düzenle, Detay) satırda doğrudan,
+   diğerleri "⋯" menüsünde. islem-menu.js tarafından uygulanır.
+   ============================================================ */
+.act-wrap.ah {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+.act-wrap.ah .ah-btn {
+    background: #f8fafc;
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text, #334155);
+    height: 30px;
+    padding: 0 11px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+    line-height: 1;
+}
+.act-wrap.ah .ah-btn:hover {
+    background: #e0e7ff;
+    border-color: #a5b4fc;
+    color: var(--primary, #1e40af);
+}
+.act-wrap.ah .ah-btn.ah-ikon {
+    width: 30px;
+    padding: 0;
+    justify-content: center;
+    font-size: 0.95rem;
+}
+/* Üç nokta menü butonu */
+.act-wrap.ah .act-btn {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.act-wrap.ah .act-btn svg { display: block; fill: currentColor; }
